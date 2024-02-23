@@ -1,17 +1,17 @@
 /*-
  * SPDX-License-Identifier: BSD-2-Clause
- * 
+ *
  * Copyright (c) 2024 Maarten L. Hekkelman
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- * 
+ *
  * 1. Redistributions of source code must retain the above copyright notice, this
  *    list of conditions and the following disclaimer
  * 2. Redistributions in binary form must reproduce the above copyright notice,
  *    this list of conditions and the following disclaimer in the documentation
  *    and/or other materials provided with the distribution.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
  * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -26,7 +26,30 @@
 
 module;
 
-export module mxml;
+#include <exception>
+#include <string>
 
-export import :node;
-export import :error;
+export module mxml:error;
+
+namespace mxml
+{
+
+/// \brief base class of the exceptions thrown by libzeep
+class exception : public std::exception
+{
+  public:
+	/// \brief Create an exception with the message in \a message
+	exception(const std::string &message)
+		: m_message(message)
+	{
+	}
+
+	virtual ~exception() throw() {}
+
+	virtual const char *what() const throw() { return m_message.c_str(); }
+
+  protected:
+	std::string m_message;
+};
+
+} // namespace mxml

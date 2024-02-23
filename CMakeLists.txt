@@ -2,15 +2,17 @@ cmake_minimum_required(VERSION 3.28)
 
 project(mxml VERSION 0.1.0 LANGUAGES CXX)
 
+include(CTest)
+
 add_library(mxml STATIC)
 add_library(mxml::mxml ALIAS mxml)
 
 target_sources(mxml
 	PRIVATE
-	FILE_SET private_modules TYPE CXX_MODULES
-	BASE_DIRS
-	${CMAKE_CURRENT_SOURCE_DIR}/src
-	FILES
+	# FILE_SET private_modules TYPE CXX_MODULES
+	# BASE_DIRS
+	# ${CMAKE_CURRENT_SOURCE_DIR}/src
+	# FILES
 	src/node.cxx
 	PUBLIC
 	FILE_SET public_modules TYPE CXX_MODULES
@@ -19,6 +21,7 @@ target_sources(mxml
 	FILES
 	modules/mxml.ixx
 	modules/node.ixx
+	modules/error.ixx
 )
 
 target_compile_features(mxml PUBLIC cxx_std_20)
