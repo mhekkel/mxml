@@ -26,4 +26,6 @@
 
 module;
 
-export import mxml:node;
+export module mxml;
+
+export import :node;

@@ -3,6 +3,8 @@ cmake_minimum_required(VERSION 3.28)
 project(mxml VERSION 0.1.0 LANGUAGES CXX)
 
 add_library(mxml STATIC)
+add_library(mxml::mxml ALIAS mxml)
+
 target_sources(mxml
 	PRIVATE
 	FILE_SET private_modules TYPE CXX_MODULES
@@ -51,11 +53,13 @@ if(CMAKE_GENERATOR_PLATFORM)
 		-A "${CMAKE_GENERATOR_PLATFORM}")
 endif()
 
-add_test(NAME mxml_build
-	COMMAND
-	"${CMAKE_COMMAND}"
-	"-Dexpected_dir=${CMAKE_INSTALL_PREFIX}/lib/cxx/miu"
-	"-Dmxml_DIR=${CMAKE_INSTALL_PREFIX}/lib/cmake/mxml"
-	${generator}
-	-S "${CMAKE_CURRENT_SOURCE_DIR}/test"
-	-B "${CMAKE_CURRENT_BINARY_DIR}/test")
+# add_test(NAME mxml_build
+# 	COMMAND
+# 	"${CMAKE_COMMAND}"
+# 	"-Dexpected_dir=${CMAKE_INSTALL_PREFIX}/lib/cxx/miu"
+# 	"-Dmxml_DIR=${CMAKE_INSTALL_PREFIX}/lib/cmake/mxml"
+# 	${generator}
+# 	-S "${CMAKE_CURRENT_SOURCE_DIR}/test"
+# 	-B "${CMAKE_CURRENT_BINARY_DIR}/test")
+
+add_subdirectory(test)
