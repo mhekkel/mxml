@@ -52,5 +52,9 @@ int main(int argc, char *argv[])
 TEST_CASE("test_1")
 {
 	mxml::element n("test");
+
 	REQUIRE(n.name() == "test");
+
+	for (auto &e : n)
+		REQUIRE(e.parent() == &n);
 }

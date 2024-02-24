@@ -29,6 +29,7 @@ module;
 #include <set>
 #include <stack>
 #include <string>
+#include <utility>
 
 #include <cassert>
 
@@ -87,6 +88,48 @@ const std::set<std::string> kEmptyHTMLElements{
 
 // --------------------------------------------------------------------
 
+node::node()
+{
+}
+
+node::node(const node &n)
+	: m_parent(n.m_parent)
+	, m_next(n.m_next)
+	, m_prev(n.m_prev)
+{
+}
+
+node::node(node &&n)
+	: m_parent(std::exchange(n.m_parent, nullptr))
+	, m_next(std::exchange(n.m_next, nullptr))
+	, m_prev(std::exchange(n.m_prev, nullptr))
+{
+}
+
+node &node::operator=(const node &n)
+{
+	if (this != &n)
+	{
+		m_parent = n.m_parent;
+		m_next = n.m_next;
+		m_prev = n.m_prev;
+	}
+
+	return *this;
+}
+
+node &node::operator=(node &&n)
+{
+	if (this != &n)
+	{
+		m_parent = std::exchange(n.m_parent, nullptr);
+		m_next = std::exchange(n.m_next, nullptr);
+		m_prev = std::exchange(n.m_prev, nullptr);
+	}
+
+	return *this;
+}
+
 node::~node()
 {
 	// avoid deep recursion and stack overflows
@@ -99,23 +142,23 @@ node::~node()
 	}
 }
 
-element* node::root()
+element *node::root()
 {
-	element* result = nullptr;
+	element *result = nullptr;
 	if (m_parent != nullptr)
 		result = m_parent->root();
 	return result;
 }
 
-const element* node::root() const
+const element *node::root() const
 {
-	const element* result = nullptr;
+	const element *result = nullptr;
 	if (m_parent != nullptr)
 		result = m_parent->root();
 	return result;
 }
 
-bool node::equals(const node* n) const
+bool node::equals(const node *n) const
 {
 	assert(false);
 	return n == this;
@@ -155,23 +198,23 @@ void node::insert_sibling(node *n, node *before)
 
 void node::remove_sibling(node *n)
 {
-// 	assert(this != n);
-// 	if (this == n)
-// 		throw exception("inconsistent node tree");
+	// 	assert(this != n);
+	// 	if (this == n)
+	// 		throw exception("inconsistent node tree");
 
-// 	node *p = this;
-// 	while (p != nullptr and p->m_next != n)
-// 		p = p->m_next;
+	// 	node *p = this;
+	// 	while (p != nullptr and p->m_next != n)
+	// 		p = p->m_next;
 
-// 	if (p != nullptr and p->m_next == n)
-// 	{
-// 		p->m_next = n->m_next;
-// 		if (p->m_next != nullptr)
-// 			p->m_next->m_prev = p;
-// 		n->m_next = n->m_prev = n->m_parent = nullptr;
-// 	}
-// 	else
-// 		throw exception("remove for a node not found in the list");
+	// 	if (p != nullptr and p->m_next == n)
+	// 	{
+	// 		p->m_next = n->m_next;
+	// 		if (p->m_next != nullptr)
+	// 			p->m_next->m_prev = p;
+	// 		n->m_next = n->m_prev = n->m_parent = nullptr;
+	// 	}
+	// 	else
+	// 		throw exception("remove for a node not found in the list");
 }
 
 void node::parent(element *n)
@@ -237,29 +280,29 @@ std::string node::prefix_tag(const std::string &tag, const std::string &uri) con
 
 void node::validate()
 {
-// 	if (m_parent and dynamic_cast<element *>(this) != nullptr and
-// 		(std::find_if(m_parent->m_nodes.begin(), m_parent->m_nodes.end(), [this](auto &i)
-// 			 { return &i == this; }) == m_parent->m_nodes.end()))
-// 		throw exception("validation error: parent does not know node");
-// 	if (m_next and m_next->m_prev != this)
-// 		throw exception("validation error: m_next->m_prev != this");
-// 	if (m_prev and m_prev->m_next != this)
-// 		throw exception("validation error: m_prev->m_next != this");
+	// 	if (m_parent and dynamic_cast<element *>(this) != nullptr and
+	// 		(std::find_if(m_parent->m_nodes.begin(), m_parent->m_nodes.end(), [this](auto &i)
+	// 			 { return &i == this; }) == m_parent->m_nodes.end()))
+	// 		throw exception("validation error: parent does not know node");
+	// 	if (m_next and m_next->m_prev != this)
+	// 		throw exception("validation error: m_next->m_prev != this");
+	// 	if (m_prev and m_prev->m_next != this)
+	// 		throw exception("validation error: m_prev->m_next != this");
 
-// 	node *n = this;
-// 	while (n != nullptr and n->m_next != this)
-// 		n = n->m_next;
-// 	if (n == this)
-// 		throw exception("cycle in node list");
+	// 	node *n = this;
+	// 	while (n != nullptr and n->m_next != this)
+	// 		n = n->m_next;
+	// 	if (n == this)
+	// 		throw exception("cycle in node list");
 
-// 	n = this;
-// 	while (n != nullptr and n->m_prev != this)
-// 		n = n->m_prev;
-// 	if (n == this)
-// 		throw exception("cycle in node list");
+	// 	n = this;
+	// 	while (n != nullptr and n->m_prev != this)
+	// 		n = n->m_prev;
+	// 	if (n == this)
+	// 		throw exception("cycle in node list");
 
-// 	if (m_next)
-// 		m_next->validate();
+	// 	if (m_next)
+	// 		m_next->validate();
 }
 
 // // --------------------------------------------------------------------
@@ -528,8 +571,8 @@ void node::validate()
 
 element::element(const std::string &qname)
 	: m_qname(qname)
-	// , m_nodes(*this)
-	// , m_attributes(*this)
+// , m_nodes(*this)
+// , m_attributes(*this)
 {
 }
 
@@ -772,8 +815,8 @@ std::string element::str() const
 {
 	std::string result;
 
-// 	for (auto &n : m_nodes)
-// 		result += n.str();
+	// 	for (auto &n : m_nodes)
+	// 		result += n.str();
 
 	return result;
 }
@@ -822,51 +865,51 @@ std::string element::str() const
 
 void element::write(std::ostream &os, format_info fmt) const
 {
-// 	// if width is set, we wrap and indent the file
-// 	size_t indentation = fmt.indent_level * fmt.indent_width;
+	// 	// if width is set, we wrap and indent the file
+	// 	size_t indentation = fmt.indent_level * fmt.indent_width;
 
-// 	if (fmt.indent)
-// 	{
-// 		if (fmt.indent_level > 0)
-// 			os << '\n';
-// 		os << std::string(indentation, ' ');
-// 	}
+	// 	if (fmt.indent)
+	// 	{
+	// 		if (fmt.indent_level > 0)
+	// 			os << '\n';
+	// 		os << std::string(indentation, ' ');
+	// 	}
 
-// 	os << '<' << m_qname;
+	// 	os << '<' << m_qname;
 
-// 	// if the left flag is set, wrap and indent attributes as well
-// 	auto attr_fmt = fmt;
-// 	attr_fmt.indent_width = 0;
+	// 	// if the left flag is set, wrap and indent attributes as well
+	// 	auto attr_fmt = fmt;
+	// 	attr_fmt.indent_width = 0;
 
-// 	for (auto &attr : attributes())
-// 	{
-// 		attr.write(os, attr_fmt);
-// 		if (attr_fmt.indent_width == 0 and fmt.indent_attributes)
-// 			attr_fmt.indent_width = indentation + 1 + m_qname.length() + 1;
-// 	}
+	// 	for (auto &attr : attributes())
+	// 	{
+	// 		attr.write(os, attr_fmt);
+	// 		if (attr_fmt.indent_width == 0 and fmt.indent_attributes)
+	// 			attr_fmt.indent_width = indentation + 1 + m_qname.length() + 1;
+	// 	}
 
-// 	if ((fmt.html and kEmptyHTMLElements.count(m_qname)) or
-// 		(not fmt.html and fmt.collapse_tags and nodes().empty()))
-// 		os << "/>";
-// 	else
-// 	{
-// 		os << '>';
-// 		auto sub_fmt = fmt;
-// 		++sub_fmt.indent_level;
+	// 	if ((fmt.html and kEmptyHTMLElements.count(m_qname)) or
+	// 		(not fmt.html and fmt.collapse_tags and nodes().empty()))
+	// 		os << "/>";
+	// 	else
+	// 	{
+	// 		os << '>';
+	// 		auto sub_fmt = fmt;
+	// 		++sub_fmt.indent_level;
 
-// 		bool wrote_element = false;
-// 		for (auto &n : nodes())
-// 		{
-// 			n.write(os, sub_fmt);
-// 			wrote_element = dynamic_cast<const element *>(&n) != nullptr;
-// 		}
+	// 		bool wrote_element = false;
+	// 		for (auto &n : nodes())
+	// 		{
+	// 			n.write(os, sub_fmt);
+	// 			wrote_element = dynamic_cast<const element *>(&n) != nullptr;
+	// 		}
 
-// 		if (wrote_element and fmt.indent != 0)
-// 			os << '\n'
-// 			   << std::string(indentation, ' ');
+	// 		if (wrote_element and fmt.indent != 0)
+	// 			os << '\n'
+	// 			   << std::string(indentation, ' ');
 
-// 		os << "</" << m_qname << '>';
-// 	}
+	// 		os << "</" << m_qname << '>';
+	// 	}
 }
 
 // std::ostream &operator<<(std::ostream &os, const element &e)

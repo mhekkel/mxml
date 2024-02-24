@@ -34,6 +34,7 @@ module;
 #include <list>
 #include <string>
 #include <tuple>
+#include <typeinfo>
 
 export module mxml:node;
 
@@ -57,11 +58,11 @@ export class document;
 template <typename T>
 concept NodeType = std::is_base_of_v<mxml::node, T>;
 
-template <NodeType T>
-class basic_node_list;
+// template <NodeType T>
+// class basic_node_list;
 
-using node_set = std::list<node *>;
-using element_set = std::list<element *>;
+// using node_set = std::list<node *>;
+// using element_set = std::list<element *>;
 
 // --------------------------------------------------------------------
 
@@ -104,13 +105,13 @@ struct format_info
 class node
 {
   public:
-	friend class element;
-	friend class document;
-	template <NodeType>
-	friend class basic_node_list;
-	friend class node_list;
+	// friend class element;
+	// friend class document;
+	// template <NodeType>
+	// friend class basic_node_list;
+	// friend class node_list;
 
-	using parent_type = element;
+	// using parent_type = element;
 
 	virtual ~node();
 
@@ -180,11 +181,11 @@ class node
   protected:
 	friend class element;
 
-	node() = default;
-	node(const node &n) = default;
-	node(node &&n) = default;
-	node &operator=(const node &n) = default;
-	node &operator=(node &&n) = default;
+	node();
+	node(const node &n);
+	node(node &&n);
+	node &operator=(const node &n);
+	node &operator=(node &&n);
 
 	virtual void insert_sibling(node *n, node *before);
 	virtual void remove_sibling(node *n);
@@ -197,6 +198,21 @@ class node
 	element *m_parent = nullptr;
 	node *m_next = nullptr;
 	node *m_prev = nullptr;
+};
+
+// --------------------------------------------------------------------
+// A pseudo node, used to indicate end of list
+
+class sentinel_node : public node
+{
+  public:
+	sentinel_node() = default;
+
+	void set_qname(const std::string &qn) override {}
+	std::string str() const override { return {}; }
+	void write(std::ostream &os, format_info fmt) const override {}
+
+  private:
 };
 
 // // --------------------------------------------------------------------
@@ -444,226 +460,119 @@ class node
 // 	bool m_id;
 // };
 
-// // --------------------------------------------------------------------
-// /// \brief generic iterator class.
-// ///
-// /// We can have iterators that point to nodes, elements and attributes.
-// /// Iterating over nodes is simply following next/prev. But iterating
-// /// elements is a bit more difficult, since you then have to skip nodes
-// /// in between that are not an element, like comments or text.
+// --------------------------------------------------------------------
+/// \brief generic iterator class.
+///
+/// We can have iterators that point to nodes, elements and attributes.
+/// Iterating over nodes is simply following next/prev. But iterating
+/// elements is a bit more difficult, since you then have to skip nodes
+/// in between that are not an element, like comments or text.
 
-// template <typename T, typename ContainerNodeType = std::remove_const_t<T>>
-// class iterator_impl
-// {
-//   public:
-// 	friend class element;
-// 	template <NodeType>
-// 	friend class basic_node_list;
-// 	template <typename, typename>
-// 	friend class iterator_impl;
-// 	friend class node_list;
+template <typename T>
+class iterator_impl
+{
+  public:
+	using node_type = T;
+	using node_base_type = std::conditional_t<std::is_const_v<T>, const node, node>;
 
-// 	using node_type = T;
+	// using container_node_type = std::remove_cv_t<ContainerNodeType>;
+	// using container_type = basic_node_list<container_node_type>;
 
-// 	using container_node_type = std::remove_cv_t<ContainerNodeType>;
-// 	using container_type = basic_node_list<container_node_type>;
+	using iterator_category = std::bidirectional_iterator_tag;
+	using value_type = node_type;
+	using pointer = value_type *;
+	using reference = value_type &;
+	using difference_type = std::ptrdiff_t;
 
-// 	using iterator_category = std::bidirectional_iterator_tag;
-// 	using value_type = node_type;
-// 	using pointer = value_type *;
-// 	using reference = value_type &;
+	iterator_impl() = default;
+	iterator_impl(node *current);
+	iterator_impl(const node *current);
 
-// 	iterator_impl() = default;
+	iterator_impl(const iterator_impl &i) = default;
 
-// 	iterator_impl(const iterator_impl &i) = default;
+	/// \brief copy constructor, kind of
+	template <NodeType T2>
+		requires std::is_assignable_v<node_type, T2>
+	iterator_impl(const iterator_impl<T2> &i)
+		: m_current(i.m_current)
+	{
+	}
 
-// 	/// \brief copy constructor, kind of
-// 	template <NodeType OtherNodeType, typename OtherContainerNodeType>
-// 	iterator_impl(const iterator_impl<OtherNodeType, OtherContainerNodeType> &i)
-// 		: m_container(i.m_container)
-// 		, m_current(i.m_current)
-// 		, m_at_end(i.m_at_end)
-// 	{
-// 		skip();
-// 		if (m_current == nullptr)
-// 			m_at_end = true;
-// 	}
+	// template <typename Iterator>
+	// 	requires(not std::is_same_v<std::remove_const_t<typename Iterator::value_type>, element> and
+	// 				std::is_base_of_v<value_type, typename Iterator::value_type>)
+	// iterator_impl(const Iterator &i)
+	// 	: m_container(const_cast<container_type *>(i.m_container))
+	// 	, m_current(i.m_current)
+	// 	, m_at_end(i.m_at_end)
+	// {
+	// }
 
-// 	/// \brief create iterator pointing to begin of parent element
-// 	iterator_impl(const container_type &container)
-// 		: m_container(&container)
-// 		, m_at_end(false)
-// 	{
-// 		m_current = m_container->m_head;
+	iterator_impl &operator=(const iterator_impl &i)
+	{
+		if (this != &i)
+			m_current = i.m_current;
+		return *this;
+	}
 
-// 		skip();
+	template <typename Iterator>
+		requires(std::is_base_of_v<value_type, typename Iterator::value_type>)
+	iterator_impl &operator=(const Iterator &i)
+	{
+		m_current = i.m_current;
+		return *this;
+	}
 
-// 		m_at_end = m_current == nullptr;
-// 	}
+	reference operator*() { return *static_cast<node_type *>(m_current); }
+	pointer operator->() const { return static_cast<node_type *>(m_current); }
 
-// 	/// \brief create iterator pointing to end of parent element
-// 	iterator_impl(const container_type &container, node_type *current)
-// 		: m_container(&container)
-// 		, m_current(const_cast<std::remove_cv_t<node_type> *>(current))
-// 		, m_at_end(true)
-// 	{
-// 		assert(current == nullptr or dynamic_cast<node_type *>(current) != nullptr);
-// #ifndef NDEBUG
-// 		if (m_current != nullptr)
-// 		{
-// 			const node *n;
-// 			for (n = m_container->m_head; n != nullptr; n = n->next())
-// 			{
-// 				if (n == m_current)
-// 					break;
-// 			}
-// 			assert(n == current);
-// 		}
-// #endif
-// 	}
+	iterator_impl &operator++();
 
-// 	/// \brief constructor taking a node pointer
-// 	iterator_impl(node_type *current)
-// 		: m_container(&current->parent()->nodes())
-// 		, m_current(const_cast<std::remove_const_t<node_type> *>(current))
-// 		, m_at_end(current == nullptr)
-// 	{
-// 		assert(current == nullptr or dynamic_cast<node_type *>(current) != nullptr);
-// #ifndef NDEBUG
-// 		if (m_current != nullptr)
-// 		{
-// 			const node *n;
-// 			for (n = m_container->m_head; n != nullptr; n = n->next())
-// 			{
-// 				if (n == m_current)
-// 					break;
-// 			}
-// 			assert(n == current);
-// 		}
-// #endif
-// 	}
+	iterator_impl operator++(int)
+	{
+		iterator_impl iter(*this);
+		operator++();
+		return iter;
+	}
 
-// 	template <typename Iterator>
-// 		requires(not std::is_same_v<std::remove_const_t<typename Iterator::value_type>, element> and
-// 					std::is_base_of_v<value_type, typename Iterator::value_type>)
-// 	iterator_impl(const Iterator &i)
-// 		: m_container(const_cast<container_type *>(i.m_container))
-// 		, m_current(i.m_current)
-// 		, m_at_end(i.m_at_end)
-// 	{
-// 	}
+	iterator_impl &operator--();
 
-// 	iterator_impl &operator=(const iterator_impl &i)
-// 	{
-// 		if (this != &i)
-// 		{
-// 			m_container = i.m_container;
-// 			m_current = i.m_current;
-// 			m_at_end = i.m_at_end;
-// 		}
-// 		return *this;
-// 	}
+	iterator_impl operator--(int)
+	{
+		iterator_impl iter(*this);
+		operator--();
+		return iter;
+	}
 
-// 	template <typename Iterator>
-// 		requires(std::is_base_of_v<value_type, typename Iterator::value_type>)
-// 	iterator_impl &operator=(const Iterator &i)
-// 	{
-// 		m_container = i.m_container;
-// 		m_current = i.m_current;
-// 		m_at_end = i.m_at_end;
-// 		return *this;
-// 	}
+	template <typename IteratorType>
+		requires NodeType<typename IteratorType::node_type>
+	bool operator==(const IteratorType &other) const
+	{
+		return m_current == other.m_current;
+	}
 
-// 	reference operator*() { return *current(); }
-// 	pointer operator->() const { return current(); }
+	bool operator==(const iterator_impl &other) const
+	{
+		return m_current == other.m_current;
+	}
 
-// 	iterator_impl &operator++()
-// 	{
-// 		if (not m_at_end and m_current == nullptr and m_container != nullptr)
-// 			m_current = m_container->m_head;
-// 		else if (m_current != nullptr)
-// 		{
-// 			m_current = m_current->next();
-// 			skip();
-// 		}
+	bool operator!=(const iterator_impl &other) const
+	{
+		return not operator==(other);
+	}
 
-// 		m_at_end = m_current == nullptr;
-// 		return *this;
-// 	}
+	// template <class RNodeType>
+	// bool operator==(const RNodeType *n) const { return m_current == n; }
 
-// 	iterator_impl operator++(int)
-// 	{
-// 		iterator_impl iter(*this);
-// 		operator++();
-// 		return iter;
-// 	}
+	// template <class RNodeType>
+	// bool operator!=(const RNodeType n) const { return m_current != n; }
 
-// 	iterator_impl &operator--()
-// 	{
-// 		if (m_container != nullptr)
-// 		{
-// 			if (m_at_end)
-// 			{
-// 				m_current = m_container->m_tail;
-// 				m_at_end = false;
-// 			}
-// 			else
-// 			{
-// 				while (m_current != nullptr)
-// 				{
-// 					m_current = m_current->prev();
-// 					if (dynamic_cast<node_type *>(m_current) != nullptr)
-// 						break;
-// 				}
-// 			}
-// 		}
-// 		return *this;
-// 	}
+	explicit operator pointer() const { return m_current; }
+	explicit operator pointer() { return m_current; }
 
-// 	iterator_impl operator--(int)
-// 	{
-// 		iterator_impl iter(*this);
-// 		operator--();
-// 		return iter;
-// 	}
-
-// 	template <typename IteratorType>
-// 		requires NodeType<typename IteratorType::node_type>
-// 	bool operator==(const IteratorType &other) const
-// 	{
-// 		return m_container == other.m_container and
-// 		       m_at_end == other.m_at_end and m_current == other.m_current;
-// 	}
-
-// 	bool operator==(const iterator_impl &other) const
-// 	{
-// 		return m_container == other.m_container and
-// 		       m_at_end == other.m_at_end and m_current == other.m_current;
-// 	}
-
-// 	bool operator!=(const iterator_impl &other) const
-// 	{
-// 		return not operator==(other);
-// 	}
-
-// 	template <class RNodeType>
-// 	bool operator==(const RNodeType *n) const { return m_current == n; }
-
-// 	template <class RNodeType>
-// 	bool operator!=(const RNodeType n) const { return m_current != n; }
-
-// 	explicit operator pointer() const { return current(); }
-// 	explicit operator pointer() { return current(); }
-
-//   private:
-// 	node_type *current() const { return dynamic_cast<node_type *>(m_current); }
-
-// 	inline void skip() {}
-
-// 	const container_type *m_container = nullptr;
-// 	node *m_current = nullptr;
-// 	bool m_at_end = true;
-// };
+  private:
+	node_base_type *m_current = nullptr;
+};
 
 // // template <>
 // // void iterator_impl<element, node>::skip();
@@ -1262,32 +1171,34 @@ class node
 class element : public node
 {
   public:
-// 	template <typename, typename>
-// 	friend class iterator_impl;
-// 	template <NodeType>
-// 	friend class basic_node_list;
-// 	friend class node_list;
-// 	friend class node;
+	// 	template <typename, typename>
+	// 	friend class iterator_impl;
+	// 	template <NodeType>
+	// 	friend class basic_node_list;
+	// 	friend class node_list;
+	// 	friend class node;
 
 	// element is a container of elements
 	using value_type = element;
 	using allocator_type = std::allocator<element>;
-	using size_type = size_t;
+	using size_type = std::size_t;
 	using difference_type = std::ptrdiff_t;
 	using reference = element &;
 	using const_reference = const element &;
 	using pointer = element *;
 	using const_pointer = const element *;
+	using iterator = iterator_impl<element>;
+	using const_iterator = iterator_impl<const element>;
 
 	element();
-	element(const std::string &qname);
 
-// 	/// \brief constructor taking a \a qname and a list of \a attributes
-// 	element(const std::string &qname, std::initializer_list<attribute> attributes);
-// 	element(const element &e);
-// 	element(element &&e);
-// 	element &operator=(const element &e);
-// 	element &operator=(element &&e);
+	// 	/// \brief constructor taking a \a qname and a list of \a attributes
+	element(const std::string &qname /*, std::initializer_list<attribute> attributes = {}*/);
+
+	element(const element &e);
+	element(element &&e);
+	element &operator=(const element &e);
+	element &operator=(element &&e);
 
 	~element();
 
@@ -1296,330 +1207,329 @@ class element : public node
 	std::string get_qname() const override { return m_qname; }
 	void set_qname(const std::string &qn) override { m_qname = qn; }
 
-// 	/// content of a xml:lang attribute of this element, or its nearest ancestor
-// 	virtual std::string lang() const;
+	// 	/// content of a xml:lang attribute of this element, or its nearest ancestor
+	// 	virtual std::string lang() const;
 
-// 	/// content of the xml:id attribute, or the attribute that was defined to be
-// 	/// of type ID by the DOCTYPE.
-// 	std::string id() const;
+	// 	/// content of the xml:id attribute, or the attribute that was defined to be
+	// 	/// of type ID by the DOCTYPE.
+	// 	std::string id() const;
 
-// 	bool operator==(const element &e) const { return equals(&e); }
-// 	bool operator!=(const element &e) const { return not equals(&e); }
+	bool operator==(const element &e) const;
+	bool operator!=(const element &e) const;
 
-// 	virtual bool equals(const node *n) const;
+	// 	void swap(element &e) noexcept;
 
-// 	void swap(element &e) noexcept;
+	// --------------------------------------------------------------------
+	// children
 
-// 	// --------------------------------------------------------------------
-// 	// children
+	// 	node_list &nodes() { return m_nodes; }
+	// 	const node_list &nodes() const { return m_nodes; }
 
-// 	node_list &nodes() { return m_nodes; }
-// 	const node_list &nodes() const { return m_nodes; }
+	// 	using iterator = iterator_impl<element, node>;
+	// 	using const_iterator = iterator_impl<const element, node>;
 
-// 	using iterator = iterator_impl<element, node>;
-// 	using const_iterator = iterator_impl<const element, node>;
+	iterator begin() { return iterator(m_head); }
+	iterator end() { return iterator(&m_tail); }
 
-// 	iterator begin() { return iterator(m_nodes.begin()); }
-// 	iterator end() { return iterator(m_nodes.end()); }
+	const_iterator begin() const { return const_iterator(m_head); }
+	const_iterator end() const { return const_iterator(&m_tail); }
 
-// 	const_iterator begin() const { return const_iterator(m_nodes.begin()); }
-// 	const_iterator end() const { return const_iterator(m_nodes.end()); }
+	const_iterator cbegin() { return const_iterator(m_head); }
+	const_iterator cend() { return const_iterator(&m_tail); }
 
-// 	const_iterator cbegin() { return const_iterator(m_nodes.begin()); }
-// 	const_iterator cend() { return const_iterator(m_nodes.end()); }
+	// 	element &front() { return *begin(); }
+	// 	const element &front() const { return *begin(); }
 
-// 	element &front() { return *begin(); }
-// 	const element &front() const { return *begin(); }
+	// 	element &back() { return *(end() - 1); }
+	// 	const element &back() const { return *(end() - 1); }
 
-// 	element &back() { return *(end() - 1); }
-// 	const element &back() const { return *(end() - 1); }
+	// 	using node_iterator = node_list::iterator;
+	// 	using const_node_iterator = node_list::const_iterator;
 
-// 	using node_iterator = node_list::iterator;
-// 	using const_node_iterator = node_list::const_iterator;
+	// 	/// \brief insert a copy of \a e
+	// 	void insert(const_iterator pos, const element &e)
+	// 	{
+	// 		emplace(pos, e);
+	// 	}
 
-// 	/// \brief insert a copy of \a e
-// 	void insert(const_iterator pos, const element &e)
-// 	{
-// 		emplace(pos, e);
-// 	}
+	// 	/// \brief insert a copy of \a e at position \a pos, moving its data
+	// 	void insert(const_iterator pos, element &&e)
+	// 	{
+	// 		emplace(pos, std::move(e));
+	// 	}
 
-// 	/// \brief insert a copy of \a e at position \a pos, moving its data
-// 	void insert(const_iterator pos, element &&e)
-// 	{
-// 		emplace(pos, std::move(e));
-// 	}
+	// 	// iterator insert(const_iterator pos, size_t count, const value_type& n);
 
-// 	// iterator insert(const_iterator pos, size_t count, const value_type& n);
+	// 	/// \brief insert copies of the nodes from \a first to \a last at position \a pos
+	// 	template <typename InputIter>
+	// 	iterator insert(const_iterator pos, InputIter first, InputIter last)
+	// 	{
+	// 		difference_type offset = pos - cbegin();
+	// 		for (auto i = first; i != last; ++i, ++pos)
+	// 			insert(pos, *i);
+	// 		return begin() + offset;
+	// 	}
 
-// 	/// \brief insert copies of the nodes from \a first to \a last at position \a pos
-// 	template <typename InputIter>
-// 	iterator insert(const_iterator pos, InputIter first, InputIter last)
-// 	{
-// 		difference_type offset = pos - cbegin();
-// 		for (auto i = first; i != last; ++i, ++pos)
-// 			insert(pos, *i);
-// 		return begin() + offset;
-// 	}
+	// 	/// \brief insert copies of the nodes in \a nodes at position \a pos
+	// 	iterator insert(const_iterator pos, std::initializer_list<element> nodes)
+	// 	{
+	// 		return insert(pos, nodes.begin(), nodes.end());
+	// 	}
 
-// 	/// \brief insert copies of the nodes in \a nodes at position \a pos
-// 	iterator insert(const_iterator pos, std::initializer_list<element> nodes)
-// 	{
-// 		return insert(pos, nodes.begin(), nodes.end());
-// 	}
+	// 	/// \brief insert the data of node \a n at position \a pos, using move semantics
+	// 	iterator emplace(const_iterator pos, text &&n)
+	// 	{
+	// 		return insert_impl(pos, new text(std::move(n)));
+	// 	}
 
-// 	/// \brief insert the data of node \a n at position \a pos, using move semantics
-// 	iterator emplace(const_iterator pos, text &&n)
-// 	{
-// 		return insert_impl(pos, new text(std::move(n)));
-// 	}
+	// 	/// \brief insert the data of node \a n at position \a pos, using move semantics
+	// 	iterator emplace(const_iterator pos, cdata &&n)
+	// 	{
+	// 		return insert_impl(pos, new cdata(std::move(n)));
+	// 	}
 
-// 	/// \brief insert the data of node \a n at position \a pos, using move semantics
-// 	iterator emplace(const_iterator pos, cdata &&n)
-// 	{
-// 		return insert_impl(pos, new cdata(std::move(n)));
-// 	}
+	// 	/// \brief insert the data of node \a n at position \a pos, using move semantics
+	// 	iterator emplace(const_iterator pos, comment &&n)
+	// 	{
+	// 		return insert_impl(pos, new comment(std::move(n)));
+	// 	}
 
-// 	/// \brief insert the data of node \a n at position \a pos, using move semantics
-// 	iterator emplace(const_iterator pos, comment &&n)
-// 	{
-// 		return insert_impl(pos, new comment(std::move(n)));
-// 	}
+	// 	/// \brief insert the data of node \a n at position \a pos, using move semantics
+	// 	iterator emplace(const_iterator pos, processing_instruction &&n)
+	// 	{
+	// 		return insert_impl(pos, new processing_instruction(std::move(n)));
+	// 	}
 
-// 	/// \brief insert the data of node \a n at position \a pos, using move semantics
-// 	iterator emplace(const_iterator pos, processing_instruction &&n)
-// 	{
-// 		return insert_impl(pos, new processing_instruction(std::move(n)));
-// 	}
+	// 	/// \brief emplace a newly constructed element at \a pos using argument \a arg
+	// 	template <typename Arg>
+	// 		requires std::is_same_v<std::remove_cv_t<Arg>, element>
+	// 	inline iterator emplace(const_iterator pos, Arg &&arg)
+	// 	{
+	// 		return insert_impl(pos, new element(std::forward<Arg>(arg)));
+	// 	}
 
-// 	/// \brief emplace a newly constructed element at \a pos using argument \a arg
-// 	template <typename Arg>
-// 		requires std::is_same_v<std::remove_cv_t<Arg>, element>
-// 	inline iterator emplace(const_iterator pos, Arg &&arg)
-// 	{
-// 		return insert_impl(pos, new element(std::forward<Arg>(arg)));
-// 	}
+	// 	/// \brief emplace a newly constructed element at \a pos using arguments \a args
+	// 	template <typename... Args>
+	// 	inline iterator emplace(const_iterator pos, Args &&...args)
+	// 	{
+	// 		return insert_impl(pos, new element(std::forward<Args>(args)...));
+	// 	}
 
-// 	/// \brief emplace a newly constructed element at \a pos using arguments \a args
-// 	template <typename... Args>
-// 	inline iterator emplace(const_iterator pos, Args &&...args)
-// 	{
-// 		return insert_impl(pos, new element(std::forward<Args>(args)...));
-// 	}
+	// 	/// \brief emplace a newly constructed element at \a pos using name \a name and attributes \a attrs
+	// 	inline iterator emplace(const_iterator pos, const std::string &name,
+	// 		std::initializer_list<attribute> attrs)
+	// 	{
+	// 		return insert_impl(pos, new element(name,
+	// 									std::forward<std::initializer_list<attribute>>(attrs)));
+	// 	}
 
-// 	/// \brief emplace a newly constructed element at \a pos using name \a name and attributes \a attrs
-// 	inline iterator emplace(const_iterator pos, const std::string &name,
-// 		std::initializer_list<attribute> attrs)
-// 	{
-// 		return insert_impl(pos, new element(name,
-// 									std::forward<std::initializer_list<attribute>>(attrs)));
-// 	}
+	// 	/// \brief emplace an element at the front using arguments \a args
+	// 	template <typename... Args>
+	// 	inline element &emplace_front(Args &&...args)
+	// 	{
+	// 		return *emplace(begin(), std::forward<Args>(args)...);
+	// 	}
 
-// 	/// \brief emplace an element at the front using arguments \a args
-// 	template <typename... Args>
-// 	inline element &emplace_front(Args &&...args)
-// 	{
-// 		return *emplace(begin(), std::forward<Args>(args)...);
-// 	}
+	// 	/// \brief emplace a newly constructed element at the front using name \a name and attributes \a attrs
+	// 	inline element &emplace_front(const std::string &name,
+	// 		std::initializer_list<attribute> attrs)
+	// 	{
+	// 		return *emplace(begin(), name,
+	// 			std::forward<std::initializer_list<attribute>>(attrs));
+	// 	}
 
-// 	/// \brief emplace a newly constructed element at the front using name \a name and attributes \a attrs
-// 	inline element &emplace_front(const std::string &name,
-// 		std::initializer_list<attribute> attrs)
-// 	{
-// 		return *emplace(begin(), name,
-// 			std::forward<std::initializer_list<attribute>>(attrs));
-// 	}
+	// 	/// \brief emplace an element at the back using arguments \a args
+	// 	template <typename... Args>
+	// 	inline element &emplace_back(Args &&...args)
+	// 	{
+	// 		return *emplace(end(), std::forward<Args>(args)...);
+	// 	}
 
-// 	/// \brief emplace an element at the back using arguments \a args
-// 	template <typename... Args>
-// 	inline element &emplace_back(Args &&...args)
-// 	{
-// 		return *emplace(end(), std::forward<Args>(args)...);
-// 	}
+	// 	/// \brief emplace a newly constructed element at the back using name \a name and attributes \a attrs
+	// 	inline element &emplace_back(const std::string &name,
+	// 		std::initializer_list<attribute> attrs)
+	// 	{
+	// 		return *emplace(end(), name,
+	// 			std::forward<std::initializer_list<attribute>>(attrs));
+	// 	}
 
-// 	/// \brief emplace a newly constructed element at the back using name \a name and attributes \a attrs
-// 	inline element &emplace_back(const std::string &name,
-// 		std::initializer_list<attribute> attrs)
-// 	{
-// 		return *emplace(end(), name,
-// 			std::forward<std::initializer_list<attribute>>(attrs));
-// 	}
+	// 	/// \brief erase the node at \a pos
+	// 	inline iterator erase(const_node_iterator pos)
+	// 	{
+	// 		return m_nodes.erase_impl(pos);
+	// 	}
 
-// 	/// \brief erase the node at \a pos
-// 	inline iterator erase(const_node_iterator pos)
-// 	{
-// 		return m_nodes.erase_impl(pos);
-// 	}
+	// 	/// \brief erase the nodes from \a first to \a last
+	// 	iterator erase(iterator first, iterator last)
+	// 	{
+	// 		while (first != last)
+	// 		{
+	// 			auto next = first;
+	// 			++next;
 
-// 	/// \brief erase the nodes from \a first to \a last
-// 	iterator erase(iterator first, iterator last)
-// 	{
-// 		while (first != last)
-// 		{
-// 			auto next = first;
-// 			++next;
+	// 			erase(first);
+	// 			first = next;
+	// 		}
+	// 		return last;
+	// 	}
 
-// 			erase(first);
-// 			first = next;
-// 		}
-// 		return last;
-// 	}
+	// 	/// \brief erase the first node
+	// 	inline void pop_front()
+	// 	{
+	// 		erase(begin());
+	// 	}
 
-// 	/// \brief erase the first node
-// 	inline void pop_front()
-// 	{
-// 		erase(begin());
-// 	}
+	// 	/// \brief erase the last node
+	// 	inline void pop_back()
+	// 	{
+	// 		erase(end() - 1);
+	// 	}
 
-// 	/// \brief erase the last node
-// 	inline void pop_back()
-// 	{
-// 		erase(end() - 1);
-// 	}
+	// 	/// \brief move the element \a e to the front of this element.
+	// 	inline void push_front(element &&e)
+	// 	{
+	// 		emplace(begin(), std::move(e));
+	// 	}
 
-// 	/// \brief move the element \a e to the front of this element.
-// 	inline void push_front(element &&e)
-// 	{
-// 		emplace(begin(), std::move(e));
-// 	}
+	// 	/// \brief copy the element \a e to the front of this element.
+	// 	inline void push_front(const element &e)
+	// 	{
+	// 		emplace(begin(), e);
+	// 	}
 
-// 	/// \brief copy the element \a e to the front of this element.
-// 	inline void push_front(const element &e)
-// 	{
-// 		emplace(begin(), e);
-// 	}
+	// 	/// \brief move the element \a e to the back of this element.
+	// 	inline void push_back(element &&e)
+	// 	{
+	// 		emplace(end(), std::move(e));
+	// 	}
 
-// 	/// \brief move the element \a e to the back of this element.
-// 	inline void push_back(element &&e)
-// 	{
-// 		emplace(end(), std::move(e));
-// 	}
+	// 	/// \brief copy the element \a e to the back of this element.
+	// 	inline void push_back(const element &e)
+	// 	{
+	// 		emplace(end(), e);
+	// 	}
 
-// 	/// \brief copy the element \a e to the back of this element.
-// 	inline void push_back(const element &e)
-// 	{
-// 		emplace(end(), e);
-// 	}
+	// 	/// \brief remove all nodes
+	// 	void clear();
 
-// 	/// \brief remove all nodes
-// 	void clear();
+	// 	size_t size() const { return std::distance(begin(), end()); }
+	// 	bool empty() const { return size() == 0; }
 
-// 	size_t size() const { return std::distance(begin(), end()); }
-// 	bool empty() const { return size() == 0; }
+	// 	// --------------------------------------------------------------------
+	// 	// attribute support
 
-// 	// --------------------------------------------------------------------
-// 	// attribute support
+	// 	/// \brief return the set of attributes for this element
+	// 	attribute_set &attributes() { return m_attributes; }
 
-// 	/// \brief return the set of attributes for this element
-// 	attribute_set &attributes() { return m_attributes; }
+	// 	/// \brief return the set of attributes for this element
+	// 	const attribute_set &attributes() const { return m_attributes; }
 
-// 	/// \brief return the set of attributes for this element
-// 	const attribute_set &attributes() const { return m_attributes; }
+	// 	// --------------------------------------------------------------------
 
-// 	// --------------------------------------------------------------------
-
-// 	/// \brief write the element to \a os
-// 	friend std::ostream &operator<<(std::ostream &os, const element &e);
-// 	friend class document;
+	// 	/// \brief write the element to \a os
+	// 	friend std::ostream &operator<<(std::ostream &os, const element &e);
+	// 	friend class document;
 
 	/// \brief will return the concatenation of str() from all child nodes
 	std::string str() const override;
 
-// 	/// \brief return the URI of the namespace for \a prefix
-// 	virtual std::string namespace_for_prefix(const std::string &prefix) const;
+	// 	/// \brief return the URI of the namespace for \a prefix
+	// 	virtual std::string namespace_for_prefix(const std::string &prefix) const;
 
-// 	/// \brief return the prefix for the XML namespace with uri \a uri.
-// 	/// \return The result is a pair of a std::string containing the actual prefix value
-// 	/// and a boolean indicating if the namespace was found at all, needed since empty prefixes
-// 	/// are allowed.
-// 	virtual std::pair<std::string, bool> prefix_for_namespace(const std::string &uri) const;
+	// 	/// \brief return the prefix for the XML namespace with uri \a uri.
+	// 	/// \return The result is a pair of a std::string containing the actual prefix value
+	// 	/// and a boolean indicating if the namespace was found at all, needed since empty prefixes
+	// 	/// are allowed.
+	// 	virtual std::pair<std::string, bool> prefix_for_namespace(const std::string &uri) const;
 
-// 	/// \brief move this element and optionally everyting beneath it to the
-// 	///        specified namespace/prefix
-// 	///
-// 	/// \param prefix				The new prefix name
-// 	/// \param uri					The new namespace uri
-// 	/// \param recursive			Apply this to the child nodes as well
-// 	/// \param including_attributes	Move the attributes to this new namespace as well
-// 	void move_to_name_space(const std::string &prefix, const std::string &uri,
-// 		bool recursive, bool including_attributes);
+	// 	/// \brief move this element and optionally everyting beneath it to the
+	// 	///        specified namespace/prefix
+	// 	///
+	// 	/// \param prefix				The new prefix name
+	// 	/// \param uri					The new namespace uri
+	// 	/// \param recursive			Apply this to the child nodes as well
+	// 	/// \param including_attributes	Move the attributes to this new namespace as well
+	// 	void move_to_name_space(const std::string &prefix, const std::string &uri,
+	// 		bool recursive, bool including_attributes);
 
-// 	/// \brief return the concatenation of the content of all enclosed zeep::xml::text nodes
-// 	std::string get_content() const;
+	// 	/// \brief return the concatenation of the content of all enclosed zeep::xml::text nodes
+	// 	std::string get_content() const;
 
-// 	/// \brief replace all existing child text nodes with a new single text node containing \a content
-// 	void set_content(const std::string &content);
+	// 	/// \brief replace all existing child text nodes with a new single text node containing \a content
+	// 	void set_content(const std::string &content);
 
-// 	/// \brief return the value of attribute name \a qname or the empty string if not found
-// 	std::string get_attribute(const std::string &qname) const;
+	// 	/// \brief return the value of attribute name \a qname or the empty string if not found
+	// 	std::string get_attribute(const std::string &qname) const;
 
-// 	/// \brief set the value of attribute named \a qname to the value \a value
-// 	void set_attribute(const std::string &qname, const std::string &value);
+	// 	/// \brief set the value of attribute named \a qname to the value \a value
+	// 	void set_attribute(const std::string &qname, const std::string &value);
 
-// 	/// \brief The set_text method replaces any text node with the new text (call set_content)
-// 	virtual void set_text(const std::string &s);
+	// 	/// \brief The set_text method replaces any text node with the new text (call set_content)
+	// 	virtual void set_text(const std::string &s);
 
-// 	/// The add_text method checks if the last added child is a text node,
-// 	/// and if so, it appends the string to this node's value. Otherwise,
-// 	/// it adds a new text node child with the new text.
-// 	void add_text(const std::string &s);
+	// 	/// The add_text method checks if the last added child is a text node,
+	// 	/// and if so, it appends the string to this node's value. Otherwise,
+	// 	/// it adds a new text node child with the new text.
+	// 	void add_text(const std::string &s);
 
-// 	/// To combine all adjacent child text nodes into one
-// 	void flatten_text();
+	// 	/// To combine all adjacent child text nodes into one
+	// 	void flatten_text();
 
-// 	/// xpath wrappers
-// 	/// TODO: create recursive iterator and use it as return type here
+	// 	/// xpath wrappers
+	// 	/// TODO: create recursive iterator and use it as return type here
 
-// 	/// \brief return the elements that match XPath \a path.
-// 	///
-// 	/// If you need to find other classes than xml::element, of if your XPath
-// 	/// contains variables, you should create a zeep::xml::xpath object and use
-// 	/// its evaluate method.
-// 	element_set find(const std::string &path) const { return find(path.c_str()); }
+	// 	/// \brief return the elements that match XPath \a path.
+	// 	///
+	// 	/// If you need to find other classes than xml::element, of if your XPath
+	// 	/// contains variables, you should create a zeep::xml::xpath object and use
+	// 	/// its evaluate method.
+	// 	element_set find(const std::string &path) const { return find(path.c_str()); }
 
-// 	/// \brief return the first element that matches XPath \a path.
-// 	///
-// 	/// If you need to find other classes than xml::element, of if your XPath
-// 	/// contains variables, you should create a zeep::xml::xpath object and use
-// 	/// its evaluate method.
-// 	iterator find_first(const std::string &path) { return find_first(path.c_str()); }
-// 	const_iterator find_first(const std::string &path) const
-// 	{
-// 		return const_cast<element *>(this)->find_first(path);
-// 	}
+	// 	/// \brief return the first element that matches XPath \a path.
+	// 	///
+	// 	/// If you need to find other classes than xml::element, of if your XPath
+	// 	/// contains variables, you should create a zeep::xml::xpath object and use
+	// 	/// its evaluate method.
+	// 	iterator find_first(const std::string &path) { return find_first(path.c_str()); }
+	// 	const_iterator find_first(const std::string &path) const
+	// 	{
+	// 		return const_cast<element *>(this)->find_first(path);
+	// 	}
 
-// 	/// \brief return the elements that match XPath \a path.
-// 	///
-// 	/// If you need to find other classes than xml::element, of if your XPath
-// 	/// contains variables, you should create a zeep::xml::xpath object and use
-// 	/// its evaluate method.
-// 	element_set find(const char *path) const;
+	// 	/// \brief return the elements that match XPath \a path.
+	// 	///
+	// 	/// If you need to find other classes than xml::element, of if your XPath
+	// 	/// contains variables, you should create a zeep::xml::xpath object and use
+	// 	/// its evaluate method.
+	// 	element_set find(const char *path) const;
 
-// 	/// \brief return the first element that matches XPath \a path.
-// 	///
-// 	/// If you need to find other classes than xml::element, of if your XPath
-// 	/// contains variables, you should create a zeep::xml::xpath object and use
-// 	/// its evaluate method.
-// 	iterator find_first(const char *path);
-// 	const_iterator find_first(const char *path) const
-// 	{
-// 		return const_cast<element *>(this)->find_first(path);
-// 	}
+	// 	/// \brief return the first element that matches XPath \a path.
+	// 	///
+	// 	/// If you need to find other classes than xml::element, of if your XPath
+	// 	/// contains variables, you should create a zeep::xml::xpath object and use
+	// 	/// its evaluate method.
+	// 	iterator find_first(const char *path);
+	// 	const_iterator find_first(const char *path) const
+	// 	{
+	// 		return const_cast<element *>(this)->find_first(path);
+	// 	}
 
-// 	// debug routine
-// 	virtual void validate();
+	// 	// debug routine
+	// 	virtual void validate();
 
   protected:
 	void write(std::ostream &os, format_info fmt) const override;
 
-// 	// bottleneck to validate insertions (e.g. document may have only one child element)
-// 	virtual node_iterator insert_impl(const_iterator pos, node *n)
-// 	{
-// 		return m_nodes.insert_impl(pos, n);
-// 	}
+	// 	// bottleneck to validate insertions (e.g. document may have only one child element)
+	// 	virtual node_iterator insert_impl(const_iterator pos, node *n)
+	// 	{
+	// 		return m_nodes.insert_impl(pos, n);
+	// 	}
 
   private:
 	std::string m_qname;
-	// node_list m_nodes;
+	sentinel_node m_tail;
+	node *m_head = &m_tail;
 	// attribute_set m_attributes;
 };
 
@@ -1646,6 +1556,68 @@ class element : public node
 // 		m_current = m_current->next();
 // 	}
 // }
+
+template <typename T>
+iterator_impl<T>::iterator_impl(node *current)
+	: m_current(current)
+{
+	if constexpr (std::is_same_v<node_type, element>)
+	{
+		while (m_current)
+		{
+			if (typeid(*m_current) == typeid(element))
+				continue;
+			m_current = m_current->next();
+		}
+	}
+}
+
+template <typename T>
+iterator_impl<T>::iterator_impl(const node *current)
+	: m_current(current)
+{
+	if constexpr (std::is_same_v<node_type, element>)
+	{
+		while (m_current)
+		{
+			if (typeid(*m_current) == typeid(element))
+				continue;
+			m_current = m_current->next();
+		}
+	}
+}
+
+template <typename T>
+iterator_impl<T> &iterator_impl<T>::operator++()
+{
+	while (m_current)
+	{
+		m_current = m_current->next();
+		if constexpr (std::is_same_v<node_type, element>)
+		{
+			if (typeid(*m_current) != typeid(element))
+				continue;
+		}
+	}
+
+	return *this;
+}
+
+template <typename T>
+iterator_impl<T> &iterator_impl<T>::operator--()
+{
+	while (m_current)
+	{
+		m_current = m_current->prev();
+		if constexpr (std::is_same_v<node_type, element>)
+		{
+			if (typeid(*m_current) != typeid(element))
+				continue;
+		}
+	}
+
+	return *this;
+}
 
 // // --------------------------------------------------------------------
 
@@ -1687,4 +1659,4 @@ class element : public node
 // 	using type = decltype(std::declval<::mxml::attribute>().value());
 // };
 
-} // namespace std
+} // namespace mxml
