@@ -53,15 +53,130 @@ TEST_CASE("test_1")
 {
 	mxml::element n("test");
 
-	REQUIRE(n.name() == "test");
+	CHECK(n.name() == "test");
 
-	for (auto &e : n)
-		REQUIRE(e.parent() == &n);
+	SECTION("insert")
+	{
+		auto i1 = n.insert(n.end(), mxml::element("c1"));
 
-	n.emplace(n.end(), "c1");
+		CHECK(i1->name() == "c1");
+		CHECK(i1->empty());
+		CHECK(i1->size() == 0);
+		CHECK(n.size() == 1);
+		CHECK(n.front().name() == "c1");
+		for (auto &e : n)
+			CHECK(e.parent() == &n);
 
-	REQUIRE(n.size() == 1);
-	REQUIRE(n.front().name() == "c1");
+		auto i2 = n.insert(n.end(), mxml::element("c2"));
 
-	
+		CHECK(i2->name() == "c2");
+		CHECK(i2->empty());
+		CHECK(i2->size() == 0);
+		CHECK(n.size() == 2);
+		CHECK(n.front().name() == "c1");
+		CHECK(n.back().name() == "c2");
+		for (auto &e : n)
+			CHECK(e.parent() == &n);
+
+		auto i3 = n.insert(n.begin(), mxml::element("c0"));
+		CHECK(i3->name() == "c0");
+		CHECK(i3->empty());
+		CHECK(i3->size() == 0);
+		CHECK(n.size() == 3);
+		CHECK(n.front().name() == "c0");
+		CHECK(n.back().name() == "c2");
+
+		mxml::element c3("c3");
+		auto i4 = n.insert(n.end(), c3);
+		CHECK(i4->name() == "c3");
+		CHECK(i4->empty());
+		CHECK(i4->size() == 0);
+		CHECK(n.size() == 4);
+		CHECK(n.front().name() == "c0");
+		CHECK(n.back().name() == "c3");
+
+		for (auto &e : n)
+		{
+			CHECK(e.parent() == &n);
+			CHECK(e.empty());
+			CHECK(e.size() == 0);
+		}
+
+		for (int i = 0; auto &e : n)
+		{
+			CHECK(e.name() == "c" + std::to_string(i));
+			++i;
+		}
+
+		// CHECK(find(n.begin(), n.end(), i1) != n.end());
+
+		auto n2 = n;
+
+		CHECK(n2.size() == 4);
+		CHECK(n2.front().name() == "c0");
+		CHECK(n2.back().name() == "c3");
+		for (auto &e : n2)
+			CHECK(e.parent() == &n2);
+
+		for (int i = 0; auto &e : n2)
+		{
+			CHECK(e.name() == "c" + std::to_string(i));
+			++i;
+		}
+
+	}
+
+	SECTION("emplace")
+	{
+		auto &t = n.emplace(n.end(), "c1");
+
+		CHECK(t.name() == "c1");
+		CHECK(n.size() == 1);
+		CHECK(n.front().name() == "c1");
+		for (auto &e : n)
+			CHECK(e.parent() == &n);
+
+		// auto &t2 = n.emplace_back("c2");
+
+		// CHECK(t2.name() == "c2");
+		// CHECK(n.size() == 2);
+		// CHECK(n.front().name() == "c1");
+		// CHECK(n.back().name() == "c2");
+		// for (auto &e : n)
+		// 	CHECK(e.parent() == &n);
+
+		// auto &t3 = n.emplace_front("c0");
+		// CHECK(t3.name() == "c0");
+		// CHECK(n.size() == 3);
+		// CHECK(n.front().name() == "c0");
+		// CHECK(n.back().name() == "c2");
+		// for (auto &e : n)
+		// 	CHECK(e.parent() == &n);
+
+	}
+
+
+
+
+
+	// auto &t = n.emplace(n.end(), "c1");
+
+	// CHECK(t.name() == "c1");
+	// CHECK(n.size() == 1);
+	// CHECK(n.front().name() == "c1");
+
+	// auto &t2 = n.emplace_back("c2");
+
+	// CHECK(t2.name() == "c2");
+	// CHECK(n.size() == 2);
+	// CHECK(n.front().name() == "c1");
+	// CHECK(n.back().name() == "c2");
+
+	// auto &t3 = n.emplace_front("c0");
+	// CHECK(t3.name() == "c0");
+	// CHECK(n.size() == 3);
+	// CHECK(n.front().name() == "c0");
+	// CHECK(n.back().name() == "c2");
+
+
 }

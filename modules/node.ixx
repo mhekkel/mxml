@@ -35,6 +35,7 @@ module;
 #include <string>
 #include <tuple>
 #include <typeinfo>
+#include <utility>
 
 export module mxml:node;
 
@@ -171,6 +172,7 @@ class node
   protected:
 	template <typename>
 	friend class basic_node_list;
+	friend class element;
 
 	node() = default;
 	node(const node &n) = default;
@@ -464,7 +466,7 @@ class iterator_impl
 
 	/// \brief copy constructor, kind of
 	template <NodeType T2>
-		// requires std::is_same_v<pointer, std::remove_const_t<typename T2::pointer>>
+	// requires std::is_same_v<pointer, std::remove_const_t<typename T2::pointer>>
 	iterator_impl(const iterator_impl<T2> &i)
 		: m_current(i.m_current)
 	{
@@ -555,19 +557,6 @@ class basic_node_list
 	using pointer = value_type *;
 	using const_pointer = const value_type *;
 
-	virtual ~basic_node_list()
-	{
-		// avoid deep recursion and stack overflows
-		auto n = m_node.m_next;
-
-		while (n != &m_node)
-		{
-			auto t = n->m_next;
-			delete n;
-			n = t;
-		}
-	}
-
 	// bool operator==(const basic_node_list &l) const
 	// {
 	// 	bool result = true;
@@ -604,41 +593,53 @@ class basic_node_list
 	size_t size() const { return std::distance(begin(), end()); }
 
 	/// \brief insert a copy of \a e
-	void insert(const_iterator pos, const node_type &e)
+	iterator insert(const_iterator pos, const node_type &e)
 	{
-		emplace(pos, e);
+		return insert_impl(pos, new node_type(e));
+	}
+
+	/// \brief insert a copy of \a e at position \a pos, moving its data
+	iterator insert(const_iterator pos, node_type &&e)
+	{
+		return insert_impl(pos, new node_type(std::move(e)));
+	}
+
+	iterator insert(const_iterator pos, size_t count, const node_type& n)
+	{
+		iterator p(const_cast<node_type *>(&*pos));
+		while (count-- > 0)
+			p = insert(p, n);
+		return p;
+	}
+
+	/// \brief insert copies of the nodes from \a first to \a last at position \a pos
+	template <typename InputIter>
+	iterator insert(const_iterator pos, InputIter first, InputIter last)
+	{
+		iterator p(const_cast<node_type *>(&*pos));
+		iterator result = p;
+		bool f = true;
+		for (auto i = first; i != last; ++i, ++p)
+		{
+			p = insert(p, *i);
+			if (std::exchange(f, false))
+				result = p;
+		}
+		return result;
+	}
+
+	/// \brief insert copies of the nodes in \a nodes at position \a pos
+	iterator insert(const_iterator pos, std::initializer_list<node_type> nodes)
+	{
+		return insert(pos, nodes.begin(), nodes.end());
 	}
 
 	template <typename... Args>
 		requires std::is_constructible_v<node_type, Args...>
-	iterator emplace(const_iterator p, Args... args)
+	reference emplace(const_iterator p, Args... args)
 	{
-		return insert_impl(p, new node_type(args...));
+		return *insert_impl(p, new node_type(args...));
 	}
-
-	/// \brief insert a copy of \a e at position \a pos, moving its data
-	void insert(const_iterator pos, node_type &&e)
-	{
-		emplace(pos, std::move(e));
-	}
-
-	// 	// iterator insert(const_iterator pos, size_t count, const value_type& n);
-
-	// 	/// \brief insert copies of the nodes from \a first to \a last at position \a pos
-	// 	template <typename InputIter>
-	// 	iterator insert(const_iterator pos, InputIter first, InputIter last)
-	// 	{
-	// 		difference_type offset = pos - cbegin();
-	// 		for (auto i = first; i != last; ++i, ++pos)
-	// 			insert(pos, *i);
-	// 		return begin() + offset;
-	// 	}
-
-	// 	/// \brief insert copies of the nodes in \a nodes at position \a pos
-	// 	iterator insert(const_iterator pos, std::initializer_list<element> nodes)
-	// 	{
-	// 		return insert(pos, nodes.begin(), nodes.end());
-	// 	}
 
 	// 	/// \brief insert the data of node \a n at position \a pos, using move semantics
 	// 	iterator emplace(const_iterator pos, text &&n)
@@ -803,14 +804,78 @@ class basic_node_list
 	// }
 
   protected:
-	basic_node_list(element &e)
-		: m_element(e)
+	basic_node_list()
 	{
 		m_node.m_next = &m_node;
 		m_node.m_prev = &m_node;
 	}
 
+	basic_node_list(const basic_node_list &nl) = delete;
+	// 	: basic_node_list()
+	// {
+	// 	insert(begin(), nl.begin(), nl.end());
+	// }
+
+	basic_node_list(basic_node_list &&nl) = delete;
+	// 	: basic_node_list()
+	// {
+	// 	if (not nl.empty())
+	// 	{
+	// 		m_node.m_next = std::exchange(nl.m_node.m_next, nullptr);
+	// 		m_node.m_next->m_prev = &m_node;
+	// 		m_node.m_prev = std::exchange(nl.m_node.m_prev, nullptr);
+	// 		m_node.m_prev->m_next = &m_node;
+	// 	}
+	// }
+
+	basic_node_list &operator=(const basic_node_list &nl) = delete;
+	// {
+	// 	if (this != &nl)
+	// 		assign(nl.begin(), nl.end());
+
+	// 	return *this;
+	// }
+
+	basic_node_list &operator=(basic_node_list &&nl) = delete;
+	// {
+	// 	if (this != &nl)
+	// 	{
+	// 		clear();
+
+	// 		if (not nl.empty())
+	// 		{
+	// 			m_node.m_next = std::exchange(nl.m_node.m_next, nullptr);
+	// 			m_node.m_next->m_prev = &m_node;
+	// 			m_node.m_prev = std::exchange(nl.m_node.m_prev, nullptr);
+	// 			m_node.m_prev->m_next = &m_node;
+	// 		}
+	// 	}
+
+	// 	return *this;
+	// }
+
+	virtual ~basic_node_list()
+	{
+		// avoid deep recursion and stack overflows
+		auto n = m_node.m_next;
+
+		assert(n != nullptr);
+
+		while (n != &m_node)
+		{
+			auto t = n->m_next;
+			delete n;
+			n = t;
+			assert(n != nullptr);
+		}
+	}
+
+
+
   protected:
+
+	virtual element *get_element_for_this() = 0;
+
 	// proxy methods for every insertion
 
 	iterator insert_impl(const_iterator pos, node *n)
@@ -825,7 +890,7 @@ class basic_node_list
 		if (n->parent() != nullptr or n->next() != nullptr or n->prev() != nullptr)
 			throw exception("attempt to add a node that already has a parent or siblings");
 
-		n->parent(&m_element);
+		n->parent(get_element_for_this());
 
 		auto p = &*pos;
 
@@ -842,7 +907,7 @@ class basic_node_list
 		if (pos == cend())
 			return pos;
 
-		if (pos->m_parent != &m_element)
+		if (pos->m_parent != get_element_for_this())
 			throw exception("attempt to remove node whose parent is invalid");
 
 		node *n = pos;
@@ -861,8 +926,6 @@ class basic_node_list
 		return result;
 	}
 
-  private:
-	element &m_element;
 	node m_node;
 };
 
@@ -1246,7 +1309,6 @@ class element : public node, public basic_node_list<element>
 	using const_iterator = iterator_impl<const element>;
 
 	element()
-		: basic_node_list<element>(*this)
 	{
 	}
 
@@ -1388,6 +1450,12 @@ class element : public node, public basic_node_list<element>
 	// 	virtual void validate();
 
   protected:
+
+	element *get_element_for_this() override
+	{
+		return this;
+	}
+
 	void write(std::ostream &os, format_info fmt) const override;
 
 	// // bottleneck to validate insertions (e.g. document may have only one child element)

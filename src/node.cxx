@@ -514,9 +514,7 @@ std::string node::prefix_tag(const std::string &tag, const std::string &uri) con
 // }
 
 element::element(const std::string &qname)
-	: basic_node_list(*this)
-	, m_qname(qname)
-// , m_nodes(*this)
+	: m_qname(qname)
 // , m_attributes(*this)
 {
 }
@@ -532,17 +530,23 @@ element::element(const std::string &qname)
 
 // copy constructor. Copy data and children, but not parent and sibling
 element::element(const element &e)
-	: basic_node_list(e)
-	, m_qname(e.m_qname)
+	: m_qname(e.m_qname)
 // , m_nodes(*this, e.m_nodes)
 // , m_attributes(*this, e.m_attributes)
 {
+	insert(begin(), e.begin(), e.end());
 }
 
 element::element(element &&e)
-	: basic_node_list(std::move(e))
-	, m_qname(e.m_qname)
+	: m_qname(std::move(e.m_qname))
 {
+	if (not e.empty())
+	{
+		m_node.m_next = std::exchange(e.m_node.m_next, nullptr);
+		m_node.m_next->m_prev = &m_node;
+		m_node.m_prev = std::exchange(e.m_node.m_prev, nullptr);
+		m_node.m_prev->m_next = &m_node;
+	}
 }
 
 // element &element::operator=(const element &e)
