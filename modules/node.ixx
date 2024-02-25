@@ -105,14 +105,6 @@ struct format_info
 class node
 {
   public:
-	// friend class element;
-	// friend class document;
-	// template <NodeType>
-	// friend class basic_node_list;
-	// friend class node_list;
-
-	// using parent_type = element;
-
 	virtual ~node();
 
 	/// content of a xml:lang attribute of this element, or its nearest ancestor
@@ -180,6 +172,10 @@ class node
 
   protected:
 	friend class element;
+	// friend class document;
+	template <typename>
+	friend class basic_node_list;
+	// friend class node_list;
 
 	node();
 	node(const node &n);
@@ -187,12 +183,12 @@ class node
 	node &operator=(const node &n);
 	node &operator=(node &&n);
 
-	virtual void insert_sibling(node *n, node *before);
-	virtual void remove_sibling(node *n);
+	// virtual void insert_sibling(node *n, node *before);
+	// virtual void remove_sibling(node *n);
 
 	void parent(element *p);
-	void next(node *n);
-	void prev(node *n);
+	void next(const node *n);
+	void prev(const node *n);
 
   protected:
 	element *m_parent = nullptr;
@@ -561,11 +557,11 @@ class iterator_impl
 		return not operator==(other);
 	}
 
-	// template <class RNodeType>
-	// bool operator==(const RNodeType *n) const { return m_current == n; }
+	template <NodeType T2>
+	bool operator==(const T2 *n) const { return m_current == n; }
 
-	// template <class RNodeType>
-	// bool operator!=(const RNodeType n) const { return m_current != n; }
+	template <NodeType T2>
+	bool operator!=(const T2 *n) const { return m_current != n; }
 
 	explicit operator pointer() const { return m_current; }
 	explicit operator pointer() { return m_current; }
@@ -574,242 +570,190 @@ class iterator_impl
 	node_base_type *m_current = nullptr;
 };
 
-// // template <>
-// // void iterator_impl<element, node>::skip();
-// // template <>
-// // void iterator_impl<const element, node>::skip();
+// --------------------------------------------------------------------
+/// \brief basic_node_list, a base class for containers of nodes
+///
+/// We have two container classes (node_list specializations)
+/// One is for attributes and name_spaces. The other is the
+/// node_list for nodes in elements. However, this list can
+/// present itself as node_list for elements hiding all other
+/// node types.
 
-// // --------------------------------------------------------------------
-// /// \brief basic_node_list, a base class for containers of nodes
-// ///
-// /// We have two container classes (node_list specializations)
-// /// One is for attributes and name_spaces. The other is the
-// /// node_list for nodes in elements. However, this list can
-// /// present itself as node_list for elements hiding all other
-// /// node types.
+template <typename T>
+class basic_node_list
+{
+  public:
+	// template <typename>
+	// friend class iterator_impl;
+	// friend class element;
 
-// template <NodeType T>
-// class basic_node_list
-// {
-//   public:
-// 	template <typename, typename>
-// 	friend class iterator_impl;
-// 	friend class element;
+	using node_type = T;
 
-// 	using node_type = T;
+	// element is a container of elements
+	using value_type = node_type;
+	using allocator_type = std::allocator<value_type>;
+	using size_type = size_t;
+	using difference_type = std::ptrdiff_t;
+	using reference = value_type &;
+	using const_reference = const value_type &;
+	using pointer = value_type *;
+	using const_pointer = const value_type *;
 
-// 	// element is a container of elements
-// 	using value_type = node_type;
-// 	using allocator_type = std::allocator<value_type>;
-// 	using size_type = size_t;
-// 	using difference_type = std::ptrdiff_t;
-// 	using reference = value_type &;
-// 	using const_reference = const value_type &;
-// 	using pointer = value_type *;
-// 	using const_pointer = const value_type *;
+  protected:
+	basic_node_list(element &e, node *&head, sentinel_node &sentinel)
+		: m_element(e)
+		, m_head(head)
+		, m_sentinel(sentinel)
+	{
+	}
 
-//   protected:
-// 	basic_node_list(element &e)
-// 		: m_element(e)
-// 		, m_head(nullptr)
-// 		, m_tail(nullptr)
-// 	{
-// 	}
+  public:
+	virtual ~basic_node_list()
+	{
+	}
 
-//   public:
-// 	virtual ~basic_node_list()
-// 	{
-// 		delete m_head;
-// 	}
+	// bool operator==(const basic_node_list &l) const
+	// {
+	// 	bool result = true;
+	// 	auto a = begin(), b = l.begin();
+	// 	for (; result and a != end() and b != l.end(); ++a, ++b)
+	// 		result = a->equals(b.current());
+	// 	return result and a == end() and b == l.end();
+	// }
 
-// 	bool operator==(const basic_node_list &l) const
-// 	{
-// 		bool result = true;
-// 		auto a = begin(), b = l.begin();
-// 		for (; result and a != end() and b != l.end(); ++a, ++b)
-// 			result = a->equals(b.current());
-// 		return result and a == end() and b == l.end();
-// 	}
+	// bool operator!=(const basic_node_list &l) const
+	// {
+	// 	return not operator==(l);
+	// }
 
-// 	bool operator!=(const basic_node_list &l) const
-// 	{
-// 		return not operator==(l);
-// 	}
+	using iterator = iterator_impl<node_type>;
+	using const_iterator = iterator_impl<const node_type>;
 
-// 	using iterator = iterator_impl<node_type>;
-// 	using const_iterator = iterator_impl<const node_type>;
+	iterator begin() { return iterator(m_head); }
+	iterator end() { return iterator(&m_sentinel); }
 
-// 	iterator begin() { return iterator(*this); }
-// 	iterator end() { return iterator(*this, nullptr); }
+	const_iterator cbegin() { return const_iterator(m_head); }
+	const_iterator cend() { return const_iterator(&m_sentinel); }
 
-// 	const_iterator cbegin() { return const_iterator(*this); }
-// 	const_iterator cend() { return const_iterator(*this, nullptr); }
+	const_iterator begin() const { return const_iterator(m_head); }
+	const_iterator end() const { return const_iterator(&m_sentinel); }
 
-// 	const_iterator begin() const { return const_iterator(*this); }
-// 	const_iterator end() const { return const_iterator(*this, nullptr); }
+	value_type &front() { return *begin(); }
+	const value_type &front() const { return *begin(); }
 
-// 	value_type &front() { return *begin(); }
-// 	const value_type &front() const { return *begin(); }
+	value_type &back() { return std::prev(end()); }
+	const value_type &back() const { return std::prev(end()); }
 
-// 	value_type &back()
-// 	{
-// 		auto tmp = end();
-// 		--tmp;
-// 		return *tmp;
-// 	}
-// 	const value_type &back() const
-// 	{
-// 		auto tmp = end();
-// 		--tmp;
-// 		return *tmp;
-// 	}
+	bool empty() const { return m_head == &m_sentinel; }
+	size_t size() const { return std::distance(begin(), end()); }
 
-// 	bool empty() const { return m_head == nullptr; }
-// 	size_t size() const { return std::distance(begin(), end()); }
+	void clear()
+	{
+		delete m_head;
+		m_head = &m_sentinel;
+	}
 
-// 	void clear()
-// 	{
-// 		delete m_head;
-// 		m_head = m_tail = nullptr;
-// 	}
+	// void swap(basic_node_list &l) noexcept; /*
+	//  {
+	//      std::swap(m_head, l.m_head);
+	//      std::swap(m_tail, l.m_tail);
 
-// 	void swap(basic_node_list &l) noexcept
-// 	{
-// 		std::swap(m_head, l.m_head);
-// 		std::swap(m_tail, l.m_tail);
+	//      for (auto &n : *this)
+	//          n.m_parent = &m_element;
 
-// 		for (auto &n : *this)
-// 			n.m_parent = &m_element;
+	//      for (auto &n : l)
+	//          n.m_parent = &l.m_element;
+	//  } */
 
-// 		for (auto &n : l)
-// 			n.m_parent = &l.m_element;
-// 	}
+	// /// \brief sort the (direct) nodes in this list using \a comp as comparator
+	// template <typename Compare>
+	// void sort(Compare comp)
+	// {
+	// 	for (auto a = begin(); a + 1 != end(); ++a)
+	// 	{
+	// 		for (auto b = a + 1; b != end(); ++b)
+	// 		{
+	// 			if (comp(*b, *a))
+	// 				a->swap(*b);
+	// 		}
+	// 	}
+	// }
 
-// 	/// \brief sort the (direct) nodes in this list using \a comp as comparator
-// 	template <typename Compare>
-// 	void sort(Compare comp)
-// 	{
-// 		for (auto a = begin(); a + 1 != end(); ++a)
-// 		{
-// 			for (auto b = a + 1; b != end(); ++b)
-// 			{
-// 				if (comp(*b, *a))
-// 					a->swap(*b);
-// 			}
-// 		}
-// 	}
+  protected:
+	// proxy methods for every insertion
 
-//   protected:
-// 	// proxy methods for every insertion
+	iterator insert_impl(const_iterator pos, node *n)
+	{
+		assert(n != nullptr);
+		assert(n->next() == nullptr);
+		assert(n->prev() == nullptr);
 
-// 	template <NodeType T2>
-// 	iterator insert_impl(const_iterator pos, T2 *n)
-// 	{
-// 		assert(n != nullptr);
-// 		assert(n->next() == nullptr);
-// 		assert(n->prev() == nullptr);
-// 		// assert(&pos.m_container == this);
+		if (n == nullptr)
+			throw exception("Invalid pointer passed to insert");
 
-// 		if (n == nullptr)
-// 			throw exception("Invalid pointer passed to insert");
+		if (n->parent() != nullptr or n->next() != nullptr or n->prev() != nullptr)
+			throw exception("attempt to add a node that already has a parent or siblings");
 
-// 		if (n->parent() != nullptr or n->next() != nullptr or n->prev() != nullptr)
-// 			throw exception("attempt to add a node that already has a parent or siblings");
+		n->parent(&m_element);
 
-// 		n->parent(&m_element);
+		if (pos == m_head)
+		{
+			n->next(m_head);
+			m_head->prev(n);
+			m_head = n;
+		}
+		else
+		{
+			n->prev(pos->prev());
+			n->prev()->next(n);
+			n->next(&(*pos));
+			n->next()->prev(n);
+		}
 
-// 		// insert at end, most often this is the case
-// 		if (pos.m_current == nullptr)
-// 		{
-// 			if (m_head == nullptr)
-// 				m_tail = m_head = n;
-// 			else
-// 			{
-// 				m_tail->insert_sibling(n, nullptr);
-// 				m_tail = n;
-// 			}
-// 		}
-// 		else
-// 		{
-// 			assert(m_head != nullptr);
+		return iterator(n);
+	}
 
-// 			if (pos.m_current == m_head)
-// 			{
-// 				n->m_next = m_head;
-// 				m_head->m_prev = n;
-// 				m_head = n;
-// 			}
-// 			else
-// 				m_head->insert_sibling(n, pos.m_current);
-// 		}
+	iterator erase_impl(const_iterator pos)
+	{
+		if (pos == cend())
+			return pos;
 
-// 		// #if defined(DEBUG)
-// 		// 		validate();
-// 		// #endif
+		if (pos->m_parent != &m_element)
+			throw exception("attempt to remove node whose parent is invalid");
 
-// 		return iterator(*this, n);
-// 	}
+		node *n = pos;
+		iterator result;
 
-// 	iterator erase_impl(const_iterator pos)
-// 	{
-// 		if (pos == cend())
-// 			return pos;
+		if (m_head == n)
+		{
+			m_head = m_head->m_next;
+			m_head->m_prev = nullptr;
 
-// 		if (pos->m_parent != &m_element)
-// 			throw exception("attempt to remove node whose parent is invalid");
+			result = iterator(m_head);
+		}
+		else
+		{
+			result = iterator(n->next());
 
-// 		node_type *n = const_cast<node_type *>(&*pos);
-// 		node_type *cur;
+			n->next()->prev(n->prev());
+			n->prev()->next(n->next());
+		}
 
-// 		if (m_head == n)
-// 		{
-// 			m_head = static_cast<node_type *>(m_head->m_next);
-// 			if (m_head != nullptr)
-// 				m_head->m_prev = nullptr;
-// 			else
-// 				m_tail = nullptr;
 
-// 			n->m_next = n->m_prev = n->m_parent = nullptr;
-// 			delete n;
+		n->next(nullptr);
+		n->prev(nullptr);
+		n->parent(nullptr);
 
-// 			cur = m_head;
-// 		}
-// 		else
-// 		{
-// 			cur = static_cast<node_type *>(n->m_next);
+		delete n;
 
-// 			if (m_tail == n)
-// 				m_tail = static_cast<node_type *>(n->m_prev);
+		return result;
+	}
 
-// 			node *p = m_head;
-// 			while (p != nullptr and p->m_next != n)
-// 				p = p->m_next;
-
-// 			if (p != nullptr and p->m_next == n)
-// 			{
-// 				p->m_next = n->m_next;
-// 				if (p->m_next != nullptr)
-// 					p->m_next->m_prev = p;
-// 				n->m_next = n->m_prev = n->m_parent = nullptr;
-// 			}
-// 			else
-// 				throw exception("remove for a node not found in the list");
-
-// 			delete n;
-// 		}
-
-// 		// #if defined(DEBUG)
-// 		// 		validate();
-// 		// #endif
-
-// 		return iterator(*this, cur);
-// 	}
-
-//   private:
-// 	element &m_element;
-// 	node_type *m_head = nullptr;
-// 	node_type *m_tail = nullptr;
-// };
+  private:
+	element &m_element;
+	sentinel_node &m_sentinel;
+	node *&m_head;
+};
 
 // // --------------------------------------------------------------------
 // /// \brief implementation of basic_node_list for node objects
@@ -1168,7 +1112,7 @@ class iterator_impl
 /// XML element as found in the XML document. It has a qname, can have children,
 /// attributes and a namespace.
 
-class element : public node
+class element : public node, public basic_node_list<element>
 {
   public:
 	// 	template <typename, typename>
@@ -1190,10 +1134,15 @@ class element : public node
 	using iterator = iterator_impl<element>;
 	using const_iterator = iterator_impl<const element>;
 
-	element();
+	element()
+		: basic_node_list<element>(*this, m_head, m_sentinel)
+	{
+	}
 
 	// 	/// \brief constructor taking a \a qname and a list of \a attributes
 	element(const std::string &qname /*, std::initializer_list<attribute> attributes = {}*/);
+
+	element(std::initializer_list<element> il);
 
 	element(const element &e);
 	element(element &&e);
@@ -1229,19 +1178,19 @@ class element : public node
 	// 	using const_iterator = iterator_impl<const element, node>;
 
 	iterator begin() { return iterator(m_head); }
-	iterator end() { return iterator(&m_tail); }
+	iterator end() { return iterator(&m_sentinel); }
 
 	const_iterator begin() const { return const_iterator(m_head); }
-	const_iterator end() const { return const_iterator(&m_tail); }
+	const_iterator end() const { return const_iterator(&m_sentinel); }
 
 	const_iterator cbegin() { return const_iterator(m_head); }
-	const_iterator cend() { return const_iterator(&m_tail); }
+	const_iterator cend() { return const_iterator(&m_sentinel); }
 
-	// 	element &front() { return *begin(); }
-	// 	const element &front() const { return *begin(); }
+	element &front() { return *begin(); }
+	const element &front() const { return *begin(); }
 
-	// 	element &back() { return *(end() - 1); }
-	// 	const element &back() const { return *(end() - 1); }
+	element &back() { return *std::prev(end()); }
+	const element &back() const { return *std::prev(end()); }
 
 	// 	using node_iterator = node_list::iterator;
 	// 	using const_node_iterator = node_list::const_iterator;
@@ -1252,11 +1201,18 @@ class element : public node
 	// 		emplace(pos, e);
 	// 	}
 
-	// 	/// \brief insert a copy of \a e at position \a pos, moving its data
-	// 	void insert(const_iterator pos, element &&e)
-	// 	{
-	// 		emplace(pos, std::move(e));
-	// 	}
+	template <typename... Args>
+		requires std::is_constructible_v<element, Args...>
+	iterator emplace(const_iterator p, Args... args)
+	{
+		return insert_impl(p, new element(args...));
+	}
+
+	/// \brief insert a copy of \a e at position \a pos, moving its data
+	void insert(const_iterator pos, element &&e)
+	{
+		emplace(pos, std::move(e));
+	}
 
 	// 	// iterator insert(const_iterator pos, size_t count, const value_type& n);
 
@@ -1520,16 +1476,57 @@ class element : public node
   protected:
 	void write(std::ostream &os, format_info fmt) const override;
 
-	// 	// bottleneck to validate insertions (e.g. document may have only one child element)
-	// 	virtual node_iterator insert_impl(const_iterator pos, node *n)
+	// // bottleneck to validate insertions (e.g. document may have only one child element)
+	// iterator insert_impl(const_iterator pos, node *n)
+	// {
+	// 	assert(n != nullptr);
+	// 	assert(n->next() == nullptr);
+	// 	assert(n->prev() == nullptr);
+
+	// 	if (n == nullptr)
+	// 		throw exception("Invalid pointer passed to insert");
+
+	// 	if (n->parent() != nullptr or n->next() != nullptr or n->prev() != nullptr)
+	// 		throw exception("attempt to add a node that already has a parent or siblings");
+
+	// 	n->parent(&m_element);
+
+	// 	// insert at end, most often this is the case
+	// 	if (pos.m_current == nullptr)
 	// 	{
-	// 		return m_nodes.insert_impl(pos, n);
+	// 		if (m_head == nullptr)
+	// 			m_tail = m_head = n;
+	// 		else
+	// 		{
+	// 			m_tail->insert_sibling(n, nullptr);
+	// 			m_tail = n;
+	// 		}
 	// 	}
+	// 	else
+	// 	{
+	// 		assert(m_head != nullptr);
+
+	// 		if (pos.m_current == m_head)
+	// 		{
+	// 			n->m_next = m_head;
+	// 			m_head->m_prev = n;
+	// 			m_head = n;
+	// 		}
+	// 		else
+	// 			m_head->insert_sibling(n, pos.m_current);
+	// 	}
+
+	// 	// #if defined(DEBUG)
+	// 	// 		validate();
+	// 	// #endif
+
+	// 	return iterator(*this, n);
+	// }
 
   private:
 	std::string m_qname;
-	sentinel_node m_tail;
-	node *m_head = &m_tail;
+	sentinel_node m_sentinel;
+	node *m_head = &m_sentinel;
 	// attribute_set m_attributes;
 };
 

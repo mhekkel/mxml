@@ -172,55 +172,65 @@ std::string node::lang() const
 	return result;
 }
 
-void node::insert_sibling(node *n, node *before)
-{
-	node *p = this;
-	while (p->m_next != nullptr and p->m_next != before)
-		p = p->m_next;
+// void node::insert_sibling(node *n, node *before)
+// {
+// 	node *p = this;
+// 	while (p->m_next != nullptr and p->m_next != before)
+// 		p = p->m_next;
 
-	if (p->m_next != before and before != nullptr)
-		throw mxml::exception("before argument in insert_sibling is not valid");
+// 	if (p->m_next != before and before != nullptr)
+// 		throw mxml::exception("before argument in insert_sibling is not valid");
 
-	p->m_next = n;
-	n->m_prev = p;
-	n->m_parent = m_parent;
-	n->m_next = before;
+// 	p->m_next = n;
+// 	n->m_prev = p;
+// 	n->m_parent = m_parent;
+// 	n->m_next = before;
 
-	if (before != nullptr)
-		before->m_prev = n;
+// 	if (before != nullptr)
+// 		before->m_prev = n;
 
-	// #if DEBUG
-	// validate();
-	// n->validate();
-	// if (before) before->validate();
-	// #endif
-}
+// 	// #if DEBUG
+// 	// validate();
+// 	// n->validate();
+// 	// if (before) before->validate();
+// 	// #endif
+// }
 
-void node::remove_sibling(node *n)
-{
-	// 	assert(this != n);
-	// 	if (this == n)
-	// 		throw exception("inconsistent node tree");
+// void node::remove_sibling(node *n)
+// {
+// 	// 	assert(this != n);
+// 	// 	if (this == n)
+// 	// 		throw exception("inconsistent node tree");
 
-	// 	node *p = this;
-	// 	while (p != nullptr and p->m_next != n)
-	// 		p = p->m_next;
+// 	// 	node *p = this;
+// 	// 	while (p != nullptr and p->m_next != n)
+// 	// 		p = p->m_next;
 
-	// 	if (p != nullptr and p->m_next == n)
-	// 	{
-	// 		p->m_next = n->m_next;
-	// 		if (p->m_next != nullptr)
-	// 			p->m_next->m_prev = p;
-	// 		n->m_next = n->m_prev = n->m_parent = nullptr;
-	// 	}
-	// 	else
-	// 		throw exception("remove for a node not found in the list");
-}
+// 	// 	if (p != nullptr and p->m_next == n)
+// 	// 	{
+// 	// 		p->m_next = n->m_next;
+// 	// 		if (p->m_next != nullptr)
+// 	// 			p->m_next->m_prev = p;
+// 	// 		n->m_next = n->m_prev = n->m_parent = nullptr;
+// 	// 	}
+// 	// 	else
+// 	// 		throw exception("remove for a node not found in the list");
+// }
 
 void node::parent(element *n)
 {
 	assert(m_parent == nullptr);
 	m_parent = n;
+}
+
+void node::next(const node *n)
+{
+	m_next = const_cast<node *>(n);
+}
+
+void node::prev(const node *n)
+{
+	m_prev = const_cast<node *>(n);
 }
 
 std::string node::get_qname() const
@@ -570,7 +580,8 @@ void node::validate()
 // }
 
 element::element(const std::string &qname)
-	: m_qname(qname)
+	: basic_node_list<element>(*this, m_head, m_sentinel)
+	, m_qname(qname)
 // , m_nodes(*this)
 // , m_attributes(*this)
 {
@@ -585,43 +596,43 @@ element::element(const std::string &qname)
 // 		set_attribute(a.get_qname(), a.value());
 // }
 
-// // copy constructor. Copy data and children, but not parent and sibling
-// element::element(const element &e)
-// 	: node()
-// 	, m_qname(e.m_qname)
-// 	, m_nodes(*this, e.m_nodes)
-// 	, m_attributes(*this, e.m_attributes)
-// {
-// }
+// copy constructor. Copy data and children, but not parent and sibling
+element::element(const element &e)
+	: node()
+	, m_qname(e.m_qname)
+	, m_nodes(*this, e.m_nodes)
+	, m_attributes(*this, e.m_attributes)
+{
+}
 
-// element::element(element &&e)
-// 	: element()
-// {
-// 	swap(e);
-// }
+element::element(element &&e)
+	: element()
+{
+	swap(e);
+}
 
-// element &element::operator=(const element &e)
-// {
-// 	if (this != &e)
-// 	{
-// 		m_qname = e.m_qname;
-// 		m_nodes = e.m_nodes;
-// 		m_attributes = e.m_attributes;
-// 	}
+element &element::operator=(const element &e)
+{
+	if (this != &e)
+	{
+		m_qname = e.m_qname;
+		m_nodes = e.m_nodes;
+		m_attributes = e.m_attributes;
+	}
 
-// 	return *this;
-// }
+	return *this;
+}
 
-// element &element::operator=(element &&e)
-// {
-// 	if (this != &e)
-// 	{
-// 		clear();
-// 		swap(e);
-// 	}
+element &element::operator=(element &&e)
+{
+	if (this != &e)
+	{
+		clear();
+		swap(e);
+	}
 
-// 	return *this;
-// }
+	return *this;
+}
 
 element::~element()
 {
