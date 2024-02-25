@@ -57,4 +57,11 @@ TEST_CASE("test_1")
 
 	for (auto &e : n)
 		REQUIRE(e.parent() == &n);
+
+	n.emplace(n.end(), "c1");
+
+	REQUIRE(n.size() == 1);
+	REQUIRE(n.front().name() == "c1");
+
+	
 }

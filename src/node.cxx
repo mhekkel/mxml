@@ -88,58 +88,8 @@ const std::set<std::string> kEmptyHTMLElements{
 
 // --------------------------------------------------------------------
 
-node::node()
-{
-}
-
-node::node(const node &n)
-	: m_parent(n.m_parent)
-	, m_next(n.m_next)
-	, m_prev(n.m_prev)
-{
-}
-
-node::node(node &&n)
-	: m_parent(std::exchange(n.m_parent, nullptr))
-	, m_next(std::exchange(n.m_next, nullptr))
-	, m_prev(std::exchange(n.m_prev, nullptr))
-{
-}
-
-node &node::operator=(const node &n)
-{
-	if (this != &n)
-	{
-		m_parent = n.m_parent;
-		m_next = n.m_next;
-		m_prev = n.m_prev;
-	}
-
-	return *this;
-}
-
-node &node::operator=(node &&n)
-{
-	if (this != &n)
-	{
-		m_parent = std::exchange(n.m_parent, nullptr);
-		m_next = std::exchange(n.m_next, nullptr);
-		m_prev = std::exchange(n.m_prev, nullptr);
-	}
-
-	return *this;
-}
-
 node::~node()
 {
-	// avoid deep recursion and stack overflows
-	while (m_next != nullptr)
-	{
-		node *n = m_next;
-		m_next = n->m_next;
-		n->m_next = nullptr;
-		delete n;
-	}
 }
 
 element *node::root()
@@ -217,22 +167,6 @@ std::string node::lang() const
 // 	// 		throw exception("remove for a node not found in the list");
 // }
 
-void node::parent(element *n)
-{
-	assert(m_parent == nullptr);
-	m_parent = n;
-}
-
-void node::next(const node *n)
-{
-	m_next = const_cast<node *>(n);
-}
-
-void node::prev(const node *n)
-{
-	m_prev = const_cast<node *>(n);
-}
-
 std::string node::get_qname() const
 {
 	return "";
@@ -288,8 +222,8 @@ std::string node::prefix_tag(const std::string &tag, const std::string &uri) con
 	return prefix.second ? prefix.first + ':' + tag : tag;
 }
 
-void node::validate()
-{
+// void node::validate()
+// {
 	// 	if (m_parent and dynamic_cast<element *>(this) != nullptr and
 	// 		(std::find_if(m_parent->m_nodes.begin(), m_parent->m_nodes.end(), [this](auto &i)
 	// 			 { return &i == this; }) == m_parent->m_nodes.end()))
@@ -313,7 +247,7 @@ void node::validate()
 
 	// 	if (m_next)
 	// 		m_next->validate();
-}
+// }
 
 // // --------------------------------------------------------------------
 // // comment
@@ -580,7 +514,7 @@ void node::validate()
 // }
 
 element::element(const std::string &qname)
-	: basic_node_list<element>(*this, m_head, m_sentinel)
+	: basic_node_list(*this)
 	, m_qname(qname)
 // , m_nodes(*this)
 // , m_attributes(*this)
@@ -598,41 +532,41 @@ element::element(const std::string &qname)
 
 // copy constructor. Copy data and children, but not parent and sibling
 element::element(const element &e)
-	: node()
+	: basic_node_list(e)
 	, m_qname(e.m_qname)
-	, m_nodes(*this, e.m_nodes)
-	, m_attributes(*this, e.m_attributes)
+// , m_nodes(*this, e.m_nodes)
+// , m_attributes(*this, e.m_attributes)
 {
 }
 
 element::element(element &&e)
-	: element()
+	: basic_node_list(std::move(e))
+	, m_qname(e.m_qname)
 {
-	swap(e);
 }
 
-element &element::operator=(const element &e)
-{
-	if (this != &e)
-	{
-		m_qname = e.m_qname;
-		m_nodes = e.m_nodes;
-		m_attributes = e.m_attributes;
-	}
+// element &element::operator=(const element &e)
+// {
+// 	if (this != &e)
+// 	{
+// 		m_qname = e.m_qname;
+// 		m_nodes = e.m_nodes;
+// 		m_attributes = e.m_attributes;
+// 	}
 
-	return *this;
-}
+// 	return *this;
+// }
 
-element &element::operator=(element &&e)
-{
-	if (this != &e)
-	{
-		clear();
-		swap(e);
-	}
+// element &element::operator=(element &&e)
+// {
+// 	if (this != &e)
+// 	{
+// 		clear();
+// 		swap(e);
+// 	}
 
-	return *this;
-}
+// 	return *this;
+// }
 
 element::~element()
 {
