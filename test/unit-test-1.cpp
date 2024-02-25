@@ -124,6 +124,54 @@ TEST_CASE("test_1")
 			++i;
 		}
 
+		auto n3(std::move(n2));
+
+		CHECK(n2.empty());
+		CHECK(n3.size() == 4);
+		CHECK(n3.front().name() == "c0");
+		CHECK(n3.back().name() == "c3");
+		for (auto &e : n3)
+			CHECK(e.parent() == &n3);
+
+		for (int i = 0; auto &e : n3)
+		{
+			CHECK(e.name() == "c" + std::to_string(i));
+			++i;
+		}
+
+		mxml::element n4;
+		n4 = std::move(n3);
+
+		CHECK(n3.empty());
+		CHECK(n4.size() == 4);
+		CHECK(n4.front().name() == "c0");
+		CHECK(n4.back().name() == "c3");
+		for (auto &e : n4)
+			CHECK(e.parent() == &n4);
+
+		for (int i = 0; auto &e : n4)
+		{
+			CHECK(e.name() == "c" + std::to_string(i));
+			++i;
+		}
+
+		// erase
+
+		for (int i = 4; i > 0; --i)
+		{
+			n4.erase(n4.begin());
+			CHECK(n4.size() == i - 1);
+		}
+		CHECK(n4.empty());
+
+		for (int i = 4; i > 0; --i)
+		{
+			n.erase(std::prev(n.end()));
+			CHECK(n.size() == i - 1);
+		}
+		CHECK(n.empty());
+
+
 	}
 
 	SECTION("emplace")
@@ -136,22 +184,22 @@ TEST_CASE("test_1")
 		for (auto &e : n)
 			CHECK(e.parent() == &n);
 
-		// auto &t2 = n.emplace_back("c2");
+		auto &t2 = n.emplace_back("c2");
 
-		// CHECK(t2.name() == "c2");
-		// CHECK(n.size() == 2);
-		// CHECK(n.front().name() == "c1");
-		// CHECK(n.back().name() == "c2");
-		// for (auto &e : n)
-		// 	CHECK(e.parent() == &n);
+		CHECK(t2.name() == "c2");
+		CHECK(n.size() == 2);
+		CHECK(n.front().name() == "c1");
+		CHECK(n.back().name() == "c2");
+		for (auto &e : n)
+			CHECK(e.parent() == &n);
 
-		// auto &t3 = n.emplace_front("c0");
-		// CHECK(t3.name() == "c0");
-		// CHECK(n.size() == 3);
-		// CHECK(n.front().name() == "c0");
-		// CHECK(n.back().name() == "c2");
-		// for (auto &e : n)
-		// 	CHECK(e.parent() == &n);
+		auto &t3 = n.emplace_front("c0");
+		CHECK(t3.name() == "c0");
+		CHECK(n.size() == 3);
+		CHECK(n.front().name() == "c0");
+		CHECK(n.back().name() == "c2");
+		for (auto &e : n)
+			CHECK(e.parent() == &n);
 
 	}
 

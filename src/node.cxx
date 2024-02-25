@@ -542,35 +542,47 @@ element::element(element &&e)
 {
 	if (not e.empty())
 	{
-		m_node.m_next = std::exchange(e.m_node.m_next, nullptr);
+		m_node.m_next = std::exchange(e.m_node.m_next, &e.m_node);
 		m_node.m_next->m_prev = &m_node;
-		m_node.m_prev = std::exchange(e.m_node.m_prev, nullptr);
+		m_node.m_prev = std::exchange(e.m_node.m_prev, &e.m_node);
 		m_node.m_prev->m_next = &m_node;
+
+		for (auto &child : *this)
+			child.parent(this);
 	}
 }
 
-// element &element::operator=(const element &e)
-// {
-// 	if (this != &e)
-// 	{
-// 		m_qname = e.m_qname;
-// 		m_nodes = e.m_nodes;
-// 		m_attributes = e.m_attributes;
-// 	}
+element &element::operator=(const element &e)
+{
+	if (this != &e)
+	{
+		m_qname = e.m_qname;
+		assign(e.begin(), e.end());
+		// m_attributes = e.m_attributes;
+	}
 
-// 	return *this;
-// }
+	return *this;
+}
 
-// element &element::operator=(element &&e)
-// {
-// 	if (this != &e)
-// 	{
-// 		clear();
-// 		swap(e);
-// 	}
+element &element::operator=(element &&e)
+{
+	if (this != &e)
+	{
+		m_qname = std::move(e.m_qname);
 
-// 	return *this;
-// }
+		clear();
+
+		m_node.m_next = std::exchange(e.m_node.m_next, &e.m_node);
+		m_node.m_next->m_prev = &m_node;
+		m_node.m_prev = std::exchange(e.m_node.m_prev, &e.m_node);
+		m_node.m_prev->m_next = &m_node;
+
+		for (auto &child : *this)
+			child.parent(this);
+	}
+
+	return *this;
+}
 
 element::~element()
 {
