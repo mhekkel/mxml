@@ -44,9 +44,9 @@ class exception : public std::exception
 	{
 	}
 
-	virtual ~exception() throw() {}
+	virtual ~exception() noexcept {}
 
-	virtual const char *what() const throw() { return m_message.c_str(); }
+	virtual const char *what() const noexcept { return m_message.c_str(); }
 
   protected:
 	std::string m_message;

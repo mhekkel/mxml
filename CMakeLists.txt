@@ -9,20 +9,25 @@ add_library(mxml::mxml ALIAS mxml)
 
 target_sources(mxml
 	PRIVATE
-	# FILE_SET private_modules TYPE CXX_MODULES
-	# BASE_DIRS
-	# ${CMAKE_CURRENT_SOURCE_DIR}/src
-	# FILES
+	src/doctype.cxx
 	src/node.cxx
+	src/parser.cxx
 	src/text.cxx
+	PRIVATE
+	FILE_SET private_modules TYPE CXX_MODULES
+	BASE_DIRS
+	${CMAKE_CURRENT_SOURCE_DIR}/modules
+	FILES
+	modules/doctype.ixx
 	PUBLIC
 	FILE_SET public_modules TYPE CXX_MODULES
 	BASE_DIRS
 	${CMAKE_CURRENT_SOURCE_DIR}/modules
 	FILES
 	modules/mxml.ixx
-	modules/node.ixx
 	modules/error.ixx
+	modules/node.ixx
+	modules/parser.ixx
 	modules/text.ixx
 )
 
