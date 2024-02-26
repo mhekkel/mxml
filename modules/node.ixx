@@ -163,25 +163,6 @@ class node
 	/// This method is usually called by operator<<(std::ostream&, zeep::xml::document&)
 	virtual void write(std::ostream &os, format_info fmt) const {}
 
-	friend void swap(node &a, node &b) noexcept
-	{
-		std::swap(a.m_next, b.m_next);
-		std::swap(a.m_prev, b.m_prev);
-		std::swap(a.m_parent, b.m_parent);
-
-		a.m_next->m_prev = &a;
-		a.m_prev->m_next = &a;
-
-		b.m_next->m_prev = &b;
-		b.m_prev->m_next = &b;
-
-		for (auto i = a.m_next; i != &a; i = i->m_next)
-			i->m_parent = a.m_parent;
-		
-		for (auto i = b.m_next; i != &b; i = i->m_next)
-			i->m_parent = b.m_parent;
-	}
-
   protected:
 	template <typename>
 	friend class basic_node_list;
@@ -438,7 +419,6 @@ export class attribute final : public node
 
 	friend void swap(attribute &a, attribute &b)
 	{
-		swap(static_cast<node&>(a), static_cast<node&>(b));
 		std::swap(a.m_qname, b.m_qname);
 		std::swap(a.m_value, b.m_value);
 		std::swap(a.m_id, b.m_id);
@@ -627,14 +607,14 @@ class basic_node_list
 	using iterator = iterator_impl<node_type>;
 	using const_iterator = iterator_impl<const node_type>;
 
-	iterator begin() { return iterator(m_node.m_next); }
-	iterator end() { return iterator(&m_node); }
+	iterator begin() { return iterator(m_node->m_next); }
+	iterator end() { return iterator(m_node); }
 
-	const_iterator cbegin() { return const_iterator(m_node.m_next); }
-	const_iterator cend() { return const_iterator(&m_node); }
+	const_iterator cbegin() { return const_iterator(m_node->m_next); }
+	const_iterator cend() { return const_iterator(m_node); }
 
-	const_iterator begin() const { return const_iterator(m_node.m_next); }
-	const_iterator end() const { return const_iterator(&m_node); }
+	const_iterator begin() const { return const_iterator(m_node->m_next); }
+	const_iterator end() const { return const_iterator(m_node); }
 
 	value_type &front() { return *begin(); }
 	const value_type &front() const { return *begin(); }
@@ -642,7 +622,7 @@ class basic_node_list
 	value_type &back() { return *std::prev(end()); }
 	const value_type &back() const { return *std::prev(end()); }
 
-	bool empty() const { return m_node.m_next == &m_node; }
+	bool empty() const { return m_node->m_next == m_node; }
 	size_t size() const { return std::distance(begin(), end()); }
 
 	/// \brief insert a copy of \a e
@@ -776,11 +756,11 @@ class basic_node_list
 	void clear()
 	{
 		// avoid deep recursion and stack overflows
-		auto n = m_node.m_next;
+		auto n = m_node->m_next;
 
 		assert(n != nullptr);
 
-		while (n != &m_node)
+		while (n != m_node)
 		{
 			auto t = n->m_next;
 			delete n;
@@ -788,13 +768,14 @@ class basic_node_list
 			assert(n != nullptr);
 		}
 
-		m_node.m_next = m_node.m_prev = &m_node;
+		m_node->m_next = m_node->m_prev = m_node;
 	}
 
   protected:
 	basic_node_list(element *e)
-		: m_element(e)
+		: m_node(new node)
 	{
+		m_node->m_parent = e;
 	}
 
 	basic_node_list(const basic_node_list &nl) = delete;
@@ -804,13 +785,20 @@ class basic_node_list
 
 	friend void swap(basic_node_list &a, basic_node_list &b)
 	{
-		std::swap(a.m_element, b.m_element);
-		swap(a.m_node, b.m_node);
+		std::swap(a.m_node, b.m_node);
+		std::swap(a.m_node->m_parent, b.m_node->m_parent);
+
+		for (node *n = a.m_node->m_next; n != a.m_node; n = n->m_next)
+			n->parent(a.m_node->m_parent);
+
+		for (node *n = b.m_node->m_next; n != b.m_node; n = n->m_next)
+			n->parent(b.m_node->m_parent);
 	}
 
 	virtual ~basic_node_list()
 	{
 		clear();
+		delete m_node;
 	}
 
   protected:
@@ -828,7 +816,7 @@ class basic_node_list
 		if (n->parent() != nullptr or n->next() != n or n->prev() != n)
 			throw exception("attempt to add a node that already has a parent or siblings");
 
-		n->parent(m_element);
+		n->parent(m_node->m_parent);
 
 		auto p = &*pos;
 
@@ -845,7 +833,7 @@ class basic_node_list
 		if (pos == cend())
 			return pos;
 
-		if (pos->m_parent != m_element)
+		if (pos->m_parent != m_node->m_parent)
 			throw exception("attempt to remove node whose parent is invalid");
 
 		node *n = const_cast<node_type *>((const node_type *)pos);
@@ -864,8 +852,7 @@ class basic_node_list
 		return result;
 	}
 
-	element *m_element;
-	node m_node;
+	node *m_node;
 };
 
 // --------------------------------------------------------------------
