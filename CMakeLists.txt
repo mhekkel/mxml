@@ -13,18 +13,19 @@ target_sources(mxml
 	src/node.cxx
 	src/parser.cxx
 	src/text.cxx
-	PRIVATE
-	FILE_SET private_modules TYPE CXX_MODULES
-	BASE_DIRS
-	${CMAKE_CURRENT_SOURCE_DIR}/modules
-	FILES
-	modules/doctype.ixx
+	# PRIVATE
+	# FILE_SET private_modules TYPE CXX_MODULES
+	# BASE_DIRS
+	# ${CMAKE_CURRENT_SOURCE_DIR}/modules
+	# FILES
+	# modules/doctype.ixx
 	PUBLIC
 	FILE_SET public_modules TYPE CXX_MODULES
 	BASE_DIRS
 	${CMAKE_CURRENT_SOURCE_DIR}/modules
 	FILES
 	modules/mxml.ixx
+	modules/doctype.ixx
 	modules/error.ixx
 	modules/node.ixx
 	modules/parser.ixx

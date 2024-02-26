@@ -39,7 +39,7 @@ class exception : public std::exception
 {
   public:
 	/// \brief Create an exception with the message in \a message
-	exception(const std::string &message)
+	exception(std::string_view message)
 		: m_message(message)
 	{
 	}

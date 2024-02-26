@@ -30,9 +30,6 @@ module;
 
 module mxml;
 
-import :error;
-import :text;
-
 namespace mxml
 {
 

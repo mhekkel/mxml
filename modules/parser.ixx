@@ -36,7 +36,6 @@ module;
 export module mxml:parser;
 
 import :error;
-import :node;
 import :text;
 
 namespace mxml

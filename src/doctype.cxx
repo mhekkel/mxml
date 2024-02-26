@@ -30,9 +30,9 @@ module;
 #include <memory>
 #include <numeric>
 
-module mxml:doctype;
+module mxml;
 
-// import :doctype;
+import :doctype;
 // import :node;
 // import :text;
 

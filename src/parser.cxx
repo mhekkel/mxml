@@ -32,13 +32,13 @@ module;
 #include <sstream>
 #include <stack>
 
-module mxml:parser;
+module mxml;
 
 // import :doctype;
 // import :error;
 // import :node;
-// import :parser;
 // import :text;
+import :parser;
 
 namespace mxml
 {

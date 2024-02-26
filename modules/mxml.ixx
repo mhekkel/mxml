@@ -31,4 +31,4 @@ export module mxml;
 export import :node;
 export import :error;
 export import :text;
-
+export import :parser;
