@@ -163,16 +163,39 @@ class node
 	/// This method is usually called by operator<<(std::ostream&, zeep::xml::document&)
 	virtual void write(std::ostream &os, format_info fmt) const {}
 
+	friend void swap(node &a, node &b) noexcept
+	{
+		std::swap(a.m_next, b.m_next);
+		std::swap(a.m_prev, b.m_prev);
+		std::swap(a.m_parent, b.m_parent);
+
+		a.m_next->m_prev = &a;
+		a.m_prev->m_next = &a;
+
+		b.m_next->m_prev = &b;
+		b.m_prev->m_next = &b;
+
+		for (auto i = a.m_next; i != &a; i = i->m_next)
+			i->m_parent = a.m_parent;
+		
+		for (auto i = b.m_next; i != &b; i = i->m_next)
+			i->m_parent = b.m_parent;
+	}
+
   protected:
 	template <typename>
 	friend class basic_node_list;
 	friend class element;
 
-	node() = default;
-	node(const node &n) = default;
-	node(node &&n) = default;
-	node &operator=(const node &n) = default;
-	node &operator=(node &&n) = default;
+	node()
+	{
+		m_next = m_prev = this;
+	}
+
+	node(const node &n) = delete;
+	node(node &&n) = delete;
+	node &operator=(const node &n) = delete;
+	node &operator=(node &&n) = delete;
 
 	void parent(element *p) { m_parent = p; }
 	void next(const node *n) { m_next = const_cast<node *>(n); }
@@ -190,10 +213,26 @@ class node
 class node_with_text : public node
 {
   public:
-	node_with_text() {}
-	node_with_text(const std::string &s)
+	node_with_text() = default;
+
+	node_with_text(std::string_view s)
 		: m_text(s)
 	{
+	}
+
+	node_with_text(const node_with_text &n)
+		: m_text(n.m_text)
+	{
+	}
+
+	node_with_text(node_with_text &&n) noexcept
+	{
+		swap(*this, n);
+	}
+
+	friend void swap(node_with_text &a, node_with_text &b) noexcept
+	{
+		std::swap(a.m_text, b.m_text);
 	}
 
 	/// \brief return the text content
@@ -203,7 +242,7 @@ class node_with_text : public node
 	virtual std::string get_text() const { return m_text; }
 
 	/// \brief set the text content
-	virtual void set_text(const std::string &text) { m_text = text; }
+	virtual void set_text(std::string_view text) { m_text = text; }
 
   protected:
 	std::string m_text;
@@ -212,17 +251,30 @@ class node_with_text : public node
 // --------------------------------------------------------------------
 /// A node containing a XML comment
 
-export class comment : public node_with_text
+export class comment final : public node_with_text
 {
   public:
-	comment() {}
-	comment(comment &&c) noexcept
-		: node_with_text(std::move(c.m_text))
+	comment() = default;
+
+	comment(const comment &c)
+		: node_with_text(c)
 	{
 	}
-	comment(const std::string &text)
+
+	comment(std::string_view text)
 		: node_with_text(text)
 	{
+	}
+
+	comment(comment &&c) noexcept
+	{
+		swap(*this, c);
+	}
+
+	comment &operator=(comment c)
+	{
+		swap(*this, c);
+		return *this;
 	}
 
 	/// \brief compare nodes for equality
@@ -235,26 +287,44 @@ export class comment : public node_with_text
 // --------------------------------------------------------------------
 /// A node containing a XML processing instruction (like e.g. \<?php ?\>)
 
-export class processing_instruction : public node_with_text
+export class processing_instruction final : public node_with_text
 {
   public:
-	processing_instruction() {}
-
-	processing_instruction(processing_instruction &&pi) noexcept
-		: node_with_text(std::move(pi.m_text))
-		, m_target(std::move(pi.m_target))
-	{
-	}
+	processing_instruction() = default;
 
 	/// \brief constructor with parameters
 	///
 	/// This constructs a processing instruction with the specified parameters
 	/// \param target	The target, this will follow the <? characters, e.g. `php` will generate <?php ... ?>
 	/// \param text		The text inside this node, e.g. the PHP code.
-	processing_instruction(const std::string &target, const std::string &text)
+	processing_instruction(const std::string &target, std::string_view text)
 		: node_with_text(text)
 		, m_target(target)
 	{
+	}
+
+	processing_instruction(const processing_instruction &pi)
+		: node_with_text(pi)
+		, m_target(pi.m_target)
+	{
+	}
+
+	processing_instruction(processing_instruction &&pi) noexcept
+		: node_with_text(std::move(pi))
+		, m_target(std::move(pi.m_target))
+	{
+	}
+
+	processing_instruction &operator=(processing_instruction pi)
+	{
+		swap(*this, pi);
+		return *this;
+	}
+
+	friend void swap(processing_instruction &a, processing_instruction &b) noexcept
+	{
+		swap(static_cast<node_with_text&>(a), static_cast<node_with_text&>(b));
+		std::swap(a.m_target, b.m_target);
 	}
 
 	/// \brief return the qname which is the same as the target in this case
@@ -279,23 +349,23 @@ export class processing_instruction : public node_with_text
 // --------------------------------------------------------------------
 /// A node containing text.
 
-class text : public node_with_text
+export class text : public node_with_text
 {
   public:
 	text() {}
+
+	text(std::string_view text)
+		: node_with_text(text)
+	{
+	}
 
 	text(text &&t) noexcept
 		: node_with_text(std::move(t.m_text))
 	{
 	}
 
-	text(const std::string &text)
-		: node_with_text(text)
-	{
-	}
-
 	/// \brief append \a text to the stored text
-	void append(const std::string &text) { m_text.append(text); }
+	void append(std::string_view text) { m_text.append(text); }
 
 	/// \brief compare nodes for equality
 	bool equals(const node *n) const override;
@@ -312,7 +382,7 @@ class text : public node_with_text
 /// converted to text nodes but you can specify to preserve them when parsing a
 /// document.
 
-export class cdata : public text
+export class cdata final : public text
 {
   public:
 	cdata() {}
@@ -335,21 +405,19 @@ export class cdata : public text
 // --------------------------------------------------------------------
 /// An attribute is a node, has an element as parent, but is not a child of this parent (!)
 
-export class attribute : public node
+export class attribute final : public node
 {
   public:
 
 	attribute(const attribute &attr)
-		: node()
-		, m_qname(attr.m_qname)
+		: m_qname(attr.m_qname)
 		, m_value(attr.m_value)
 		, m_id(attr.m_id)
 	{
 	}
 
 	attribute(attribute &&attr) noexcept
-		: node()
-		, m_qname(std::move(attr.m_qname))
+		: m_qname(std::move(attr.m_qname))
 		, m_value(std::move(attr.m_value))
 		, m_id(attr.m_id)
 	{
@@ -362,12 +430,18 @@ export class attribute : public node
 	{
 	}
 
-	attribute &operator=(attribute &&attr) noexcept
+	attribute &operator=(attribute attr) noexcept
 	{
-		std::swap(m_qname, attr.m_qname);
-		std::swap(m_value, attr.m_value);
-		m_id = attr.m_id;
+		swap(*this, attr);
 		return *this;
+	}
+
+	friend void swap(attribute &a, attribute &b)
+	{
+		swap(static_cast<node&>(a), static_cast<node&>(b));
+		std::swap(a.m_qname, b.m_qname);
+		std::swap(a.m_value, b.m_value);
+		std::swap(a.m_id, b.m_id);
 	}
 
 	std::strong_ordering operator<=>(const attribute &a) const
@@ -410,12 +484,6 @@ export class attribute : public node
 			return name();
 		else if constexpr (N == 1)
 			return value();
-	}
-
-	void swap(attribute &a)
-	{
-		std::swap(m_qname, a.m_qname);
-		std::swap(m_value, a.m_value);
 	}
 
   protected:
@@ -471,10 +539,9 @@ class iterator_impl
 	{
 	}
 
-	iterator_impl &operator=(const iterator_impl &i)
+	iterator_impl &operator=(iterator_impl i)
 	{
-		if (this != &i)
-			m_current = i.m_current;
+		m_current = i.m_current;
 		return *this;
 	}
 
@@ -555,11 +622,6 @@ class basic_node_list
 	// 	for (; result and a != end() and b != l.end(); ++a, ++b)
 	// 		result = a->equals(b.current());
 	// 	return result and a == end() and b == l.end();
-	// }
-
-	// bool operator!=(const basic_node_list &l) const
-	// {
-	// 	return not operator==(l);
 	// }
 
 	using iterator = iterator_impl<node_type>;
@@ -730,10 +792,9 @@ class basic_node_list
 	}
 
   protected:
-	basic_node_list()
+	basic_node_list(element *e)
+		: m_element(e)
 	{
-		m_node.m_next = &m_node;
-		m_node.m_prev = &m_node;
 	}
 
 	basic_node_list(const basic_node_list &nl) = delete;
@@ -741,29 +802,33 @@ class basic_node_list
 	basic_node_list &operator=(const basic_node_list &nl) = delete;
 	basic_node_list &operator=(basic_node_list &&nl) = delete;
 
+	friend void swap(basic_node_list &a, basic_node_list &b)
+	{
+		std::swap(a.m_element, b.m_element);
+		swap(a.m_node, b.m_node);
+	}
+
 	virtual ~basic_node_list()
 	{
 		clear();
 	}
 
   protected:
-	virtual element *get_element_for_this() = 0;
-
 	// proxy methods for every insertion
 
 	iterator insert_impl(const_iterator pos, node *n)
 	{
 		assert(n != nullptr);
-		assert(n->next() == nullptr);
-		assert(n->prev() == nullptr);
+		assert(n->next() == n);
+		assert(n->prev() == n);
 
 		if (n == nullptr)
 			throw exception("Invalid pointer passed to insert");
 
-		if (n->parent() != nullptr or n->next() != nullptr or n->prev() != nullptr)
+		if (n->parent() != nullptr or n->next() != n or n->prev() != n)
 			throw exception("attempt to add a node that already has a parent or siblings");
 
-		n->parent(get_element_for_this());
+		n->parent(m_element);
 
 		auto p = &*pos;
 
@@ -780,7 +845,7 @@ class basic_node_list
 		if (pos == cend())
 			return pos;
 
-		if (pos->m_parent != get_element_for_this())
+		if (pos->m_parent != m_element)
 			throw exception("attempt to remove node whose parent is invalid");
 
 		node *n = const_cast<node_type *>((const node_type *)pos);
@@ -799,6 +864,7 @@ class basic_node_list
 		return result;
 	}
 
+	element *m_element;
 	node m_node;
 };
 
@@ -814,8 +880,22 @@ class attribute_set : public basic_node_list<attribute>
 	using const_iterator = typename node_list::const_iterator;
 	using size_type = std::size_t;
 
-	attribute_set()
+	attribute_set(element *el)
+		: basic_node_list(el)
 	{
+	}
+
+	attribute_set(element *el, const attribute_set &as);
+
+	attribute_set &operator=(attribute_set as)
+	{
+		swap(*this, as);
+		return *this;
+	}
+
+	friend void swap(attribute_set &a, attribute_set &b)
+	{
+		swap(static_cast<basic_node_list<attribute>&>(a), static_cast<basic_node_list<attribute>&>(b));
 	}
 
 	/// \brief attribute_set is a bit like a std::map and the key type is a std::string
@@ -922,20 +1002,40 @@ class element : public node, public basic_node_list<element>
 	using const_iterator = iterator_impl<const element>;
 
 	element()
+		: basic_node_list(this)
+		, m_attributes(this)
 	{
 	}
 
 	// 	/// \brief constructor taking a \a qname and a list of \a attributes
-	element(const std::string &qname /*, std::initializer_list<attribute> attributes = {}*/);
+	element(const std::string &qname , std::initializer_list<attribute> attributes = {})
+		: basic_node_list(this)
+		, m_qname(qname)
+		, m_attributes(this)
+	{
+		m_attributes.assign(attributes.begin(), attributes.end());
+	}
 
 	element(std::initializer_list<element> il);
 
 	element(const element &e);
-	element(element &&e);
-	element &operator=(const element &e);
-	element &operator=(element &&e);
+
+	element(element &&e)
+		: basic_node_list(this)
+		, m_attributes(this)
+	{
+		swap(*this, e);
+	}
+
+	element &operator=(element e)
+	{
+		swap(*this, e);
+		return *this;
+	}
 
 	~element();
+
+	friend void swap(element &a, element &b) noexcept;
 
 	using node::set_qname;
 
@@ -950,9 +1050,6 @@ class element : public node, public basic_node_list<element>
 	std::string id() const;
 
 	bool operator==(const element &e) const;
-	bool operator!=(const element &e) const;
-
-	void swap(element &e) noexcept;
 
 	// --------------------------------------------------------------------
 	// children
@@ -1063,16 +1160,11 @@ class element : public node, public basic_node_list<element>
 	// 	virtual void validate();
 
   protected:
-	element *get_element_for_this() override
-	{
-		return this;
-	}
-
 	void write(std::ostream &os, format_info fmt) const override;
 
   private:
 	std::string m_qname;
-	// attribute_set m_attributes;
+	attribute_set m_attributes;
 };
 
 // --------------------------------------------------------------------

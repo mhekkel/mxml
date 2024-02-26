@@ -26,6 +26,7 @@
 
 module;
 
+#include <iostream>
 #include <set>
 #include <stack>
 #include <string>
@@ -46,9 +47,9 @@ const std::set<std::string> kEmptyHTMLElements{
 	"area", "base", "br", "col", "embed", "hr", "img", "input", "keygen", "link", "meta", "param", "source", "track", "wbr"
 };
 
-// // --------------------------------------------------------------------
+// --------------------------------------------------------------------
 
-// void write_string(std::ostream& os, const std::string& s, bool escape_whitespace, bool escape_quot, bool trim, float version)
+// void write_string(std::ostream &os, const std::string &s, bool escape_whitespace, bool escape_quot, bool trim, float version)
 // {
 // 	bool last_is_space = false;
 
@@ -64,22 +65,60 @@ const std::set<std::string> kEmptyHTMLElements{
 
 // 		switch (c)
 // 		{
-// 			case '&':	os << "&amp;";			last_is_space = false; break;
-// 			case '<':	os << "&lt;";			last_is_space = false; break;
-// 			case '>':	os << "&gt;";			last_is_space = false; break;
-// 			case '\"':	if (escape_quot)		os << "&quot;"; else os << static_cast<char>(c); last_is_space = false; break;
-// 			case '\n':	if (escape_whitespace)	os << "&#10;"; else os << static_cast<char>(c); last_is_space = true; break;
-// 			case '\r':	if (escape_whitespace)	os << "&#13;"; else os << static_cast<char>(c); last_is_space = false; break;
-// 			case '\t':	if (escape_whitespace)	os << "&#9;"; else os << static_cast<char>(c); last_is_space = false; break;
-// 			case ' ':	if (not trim or not last_is_space) os << ' '; last_is_space = true; break;
-// 			case 0:		throw exception("Invalid null character in XML content");
-// 			default:	if (c >= 0x0A0 or (version == 1.0 ? is_valid_xml_1_0_char(c) : is_valid_xml_1_1_char(c)))
-// 							for (auto ci = sb; ci < sp; ++ci)
-// 								os << *ci;
-// 						else
-// 							os << "&#" << static_cast<int>(c) << ';';
-// 						last_is_space = false;
-// 						break;
+// 			case '&':
+// 				os << "&amp;";
+// 				last_is_space = false;
+// 				break;
+// 			case '<':
+// 				os << "&lt;";
+// 				last_is_space = false;
+// 				break;
+// 			case '>':
+// 				os << "&gt;";
+// 				last_is_space = false;
+// 				break;
+// 			case '\"':
+// 				if (escape_quot)
+// 					os << "&quot;";
+// 				else
+// 					os << static_cast<char>(c);
+// 				last_is_space = false;
+// 				break;
+// 			case '\n':
+// 				if (escape_whitespace)
+// 					os << "&#10;";
+// 				else
+// 					os << static_cast<char>(c);
+// 				last_is_space = true;
+// 				break;
+// 			case '\r':
+// 				if (escape_whitespace)
+// 					os << "&#13;";
+// 				else
+// 					os << static_cast<char>(c);
+// 				last_is_space = false;
+// 				break;
+// 			case '\t':
+// 				if (escape_whitespace)
+// 					os << "&#9;";
+// 				else
+// 					os << static_cast<char>(c);
+// 				last_is_space = false;
+// 				break;
+// 			case ' ':
+// 				if (not trim or not last_is_space)
+// 					os << ' ';
+// 				last_is_space = true;
+// 				break;
+// 			case 0: throw exception("Invalid null character in XML content");
+// 			default:
+// 				if (c >= 0x0A0 or (version == 1.0 ? is_valid_xml_1_0_char(c) : is_valid_xml_1_1_char(c)))
+// 					for (auto ci = sb; ci < sp; ++ci)
+// 						os << *ci;
+// 				else
+// 					os << "&#" << static_cast<int>(c) << ';';
+// 				last_is_space = false;
+// 				break;
 // 		}
 
 // 		sb = sp;
@@ -121,51 +160,6 @@ std::string node::lang() const
 		result = m_parent->lang();
 	return result;
 }
-
-// void node::insert_sibling(node *n, node *before)
-// {
-// 	node *p = this;
-// 	while (p->m_next != nullptr and p->m_next != before)
-// 		p = p->m_next;
-
-// 	if (p->m_next != before and before != nullptr)
-// 		throw mxml::exception("before argument in insert_sibling is not valid");
-
-// 	p->m_next = n;
-// 	n->m_prev = p;
-// 	n->m_parent = m_parent;
-// 	n->m_next = before;
-
-// 	if (before != nullptr)
-// 		before->m_prev = n;
-
-// 	// #if DEBUG
-// 	// validate();
-// 	// n->validate();
-// 	// if (before) before->validate();
-// 	// #endif
-// }
-
-// void node::remove_sibling(node *n)
-// {
-// 	// 	assert(this != n);
-// 	// 	if (this == n)
-// 	// 		throw exception("inconsistent node tree");
-
-// 	// 	node *p = this;
-// 	// 	while (p != nullptr and p->m_next != n)
-// 	// 		p = p->m_next;
-
-// 	// 	if (p != nullptr and p->m_next == n)
-// 	// 	{
-// 	// 		p->m_next = n->m_next;
-// 	// 		if (p->m_next != nullptr)
-// 	// 			p->m_next->m_prev = p;
-// 	// 		n->m_next = n->m_prev = n->m_parent = nullptr;
-// 	// 	}
-// 	// 	else
-// 	// 		throw exception("remove for a node not found in the list");
-// }
 
 std::string node::get_qname() const
 {
@@ -222,417 +216,263 @@ std::string node::prefix_tag(const std::string &tag, const std::string &uri) con
 	return prefix.second ? prefix.first + ':' + tag : tag;
 }
 
-// void node::validate()
-// {
-	// 	if (m_parent and dynamic_cast<element *>(this) != nullptr and
-	// 		(std::find_if(m_parent->m_nodes.begin(), m_parent->m_nodes.end(), [this](auto &i)
-	// 			 { return &i == this; }) == m_parent->m_nodes.end()))
-	// 		throw exception("validation error: parent does not know node");
-	// 	if (m_next and m_next->m_prev != this)
-	// 		throw exception("validation error: m_next->m_prev != this");
-	// 	if (m_prev and m_prev->m_next != this)
-	// 		throw exception("validation error: m_prev->m_next != this");
+// --------------------------------------------------------------------
+// comment
 
-	// 	node *n = this;
-	// 	while (n != nullptr and n->m_next != this)
-	// 		n = n->m_next;
-	// 	if (n == this)
-	// 		throw exception("cycle in node list");
+bool comment::equals(const node *n) const
+{
+	return dynamic_cast<const comment *>(n) != nullptr and
+	       m_text == static_cast<const comment *>(n)->m_text;
+}
 
-	// 	n = this;
-	// 	while (n != nullptr and n->m_prev != this)
-	// 		n = n->m_prev;
-	// 	if (n == this)
-	// 		throw exception("cycle in node list");
+void comment::write(std::ostream &os, format_info fmt) const
+{
+	// if (fmt.indent_width != 0)
+	// 	os << '\n' << std::string(fmt.indent_width, ' ');
 
-	// 	if (m_next)
-	// 		m_next->validate();
-// }
+	if (not fmt.suppress_comments)
+	{
+		os << "<!--";
+
+		bool lastWasHyphen = false;
+		for (char ch : m_text)
+		{
+			if (ch == '-' and lastWasHyphen)
+				os << ' ';
+
+			os << ch;
+			lastWasHyphen = ch == '-';
+
+			// if (ch == '\n')
+			// {
+			// 	for (size_t i = 0; i < indent; ++i)
+			// 		os << ' ';
+			// }
+		}
+
+		os << "-->";
+
+		if (fmt.indent_width != 0)
+			os << '\n';
+	}
+}
+
+// --------------------------------------------------------------------
+// processing_instruction
+
+bool processing_instruction::equals(const node *n) const
+{
+	return dynamic_cast<const processing_instruction *>(n) != nullptr and
+	       m_text == static_cast<const processing_instruction *>(n)->m_text;
+}
+
+void processing_instruction::write(std::ostream &os, format_info fmt) const
+{
+	if (fmt.indent)
+		os << '\n'
+		   << std::string(fmt.indent_level * fmt.indent_width, ' ');
+
+	os << "<?" << m_target << ' ' << m_text << "?>";
+
+	if (fmt.indent != 0)
+		os << '\n';
+}
+
+// --------------------------------------------------------------------
+// text
+
+bool text::equals(const node *n) const
+{
+	bool result = false;
+	// auto t = dynamic_cast<const text *>(n);
+
+	// if (t != nullptr)
+	// {
+	// 	std::string text = m_text;
+	// 	trim(text);
+
+	// 	std::string ttext = t->m_text;
+	// 	trim(ttext);
+
+	// 	result = text == ttext;
+	// }
+
+	return result;
+}
+
+bool text::is_space() const
+{
+	bool result = true;
+	for (auto ch : m_text)
+	{
+		if (not(ch == ' ' or ch == '\t' or ch == '\n' or ch == '\r'))
+		{
+			result = false;
+			break;
+		}
+	}
+	return result;
+}
+
+void text::write(std::ostream &os, format_info fmt) const
+{
+	// write_string(os, m_text, fmt.escape_white_space, fmt.escape_double_quote, false, fmt.version);
+}
+
+// --------------------------------------------------------------------
+// cdata
+
+bool cdata::equals(const node *n) const
+{
+	return dynamic_cast<const cdata *>(n) != nullptr and
+	       m_text == static_cast<const cdata *>(n)->m_text;
+}
+
+void cdata::write(std::ostream &os, format_info fmt) const
+{
+	if (fmt.indent)
+		os << '\n'
+		   << std::string(fmt.indent_level * fmt.indent_width, ' ');
+
+	os << "<![CDATA[" << m_text << "]]>";
+
+	if (fmt.indent)
+		os << '\n';
+}
+
+// --------------------------------------------------------------------
+// attribute
+
+bool attribute::equals(const node *n) const
+{
+	bool result = false;
+	const attribute *a = dynamic_cast<const attribute *>(n);
+
+	if (a != nullptr)
+	{
+		result = m_qname == a->m_qname and
+		         m_value == a->m_value;
+	}
+	return result;
+}
+
+std::string attribute::uri() const
+{
+	assert(is_namespace());
+	if (not is_namespace())
+		throw exception("Attribute is not a namespace");
+	return m_value;
+}
+
+void attribute::write(std::ostream &os, format_info fmt) const
+{
+	// if (fmt.indent_width != 0)
+	// 	os << '\n'
+	// 	   << std::string(fmt.indent_width, ' ');
+	// else
+	// 	os << ' ';
+
+	// os << m_qname << "=\"";
+
+	// write_string(os, m_value, fmt.escape_white_space, true, false, fmt.version);
+
+	// os << '"';
+}
 
 // // --------------------------------------------------------------------
-// // comment
+// // name_space
 
-// bool comment::equals(const node *n) const
-// {
-// 	return dynamic_cast<const comment *>(n) != nullptr and
-// 	       m_text == static_cast<const comment *>(n)->m_text;
-// }
-
-// node *comment::clone() const
-// {
-// 	return new comment(m_text);
-// }
-
-// node *comment::move()
-// {
-// 	return new comment(std::move(*this));
-// }
-
-// void comment::write(std::ostream &os, format_info fmt) const
-// {
-// 	// if (fmt.indent_width != 0)
-// 	// 	os << '\n' << std::string(fmt.indent_width, ' ');
-
-// 	if (not fmt.suppress_comments)
-// 	{
-// 		os << "<!--";
-
-// 		bool lastWasHyphen = false;
-// 		for (char ch : m_text)
-// 		{
-// 			if (ch == '-' and lastWasHyphen)
-// 				os << ' ';
-
-// 			os << ch;
-// 			lastWasHyphen = ch == '-';
-
-// 			// if (ch == '\n')
-// 			// {
-// 			// 	for (size_t i = 0; i < indent; ++i)
-// 			// 		os << ' ';
-// 			// }
-// 		}
-
-// 		os << "-->";
-
-// 		if (fmt.indent_width != 0)
-// 			os << '\n';
-// 	}
-// }
-
-// // --------------------------------------------------------------------
-// // processing_instruction
-
-// bool processing_instruction::equals(const node *n) const
-// {
-// 	return dynamic_cast<const processing_instruction *>(n) != nullptr and
-// 	       m_text == static_cast<const processing_instruction *>(n)->m_text;
-// }
-
-// node *processing_instruction::clone() const
-// {
-// 	return new processing_instruction(m_target, m_target);
-// }
-
-// node *processing_instruction::move()
-// {
-// 	return new processing_instruction(std::move(*this));
-// }
-
-// void processing_instruction::write(std::ostream &os, format_info fmt) const
-// {
-// 	if (fmt.indent)
-// 		os << '\n'
-// 		   << std::string(fmt.indent_level * fmt.indent_width, ' ');
-
-// 	os << "<?" << m_target << ' ' << m_text << "?>";
-
-// 	if (fmt.indent != 0)
-// 		os << '\n';
-// }
-
-// // --------------------------------------------------------------------
-// // text
-
-// bool text::equals(const node *n) const
+// bool name_space::equals(const node* n) const
 // {
 // 	bool result = false;
-// 	auto t = dynamic_cast<const text *>(n);
+// 	const name_space* ns = dynamic_cast<const name_space*>(n);
 
-// 	if (t != nullptr)
-// 	{
-// 		std::string text = m_text;
-// 		trim(text);
-
-// 		std::string ttext = t->m_text;
-// 		trim(ttext);
-
-// 		result = text == ttext;
-// 	}
+// 	if (ns != nullptr)
+// 		result = m_uri == ns->m_uri;
 
 // 	return result;
 // }
 
-// bool text::is_space() const
+// node* name_space::clone() const
 // {
-// 	bool result = true;
-// 	for (auto ch : m_text)
-// 	{
-// 		if (not(ch == ' ' or ch == '\t' or ch == '\n' or ch == '\r'))
-// 		{
-// 			result = false;
-// 			break;
-// 		}
-// 	}
-// 	return result;
+// 	return new name_space(m_prefix, m_uri);
 // }
 
-// node *text::clone() const
+// node* name_space::move()
 // {
-// 	return new text(m_text);
+// 	return new name_space(std::move(*this));
 // }
 
-// node *text::move()
-// {
-// 	return new text(std::move(*this));
-// }
-
-// void text::write(std::ostream &os, format_info fmt) const
-// {
-// 	write_string(os, m_text, fmt.escape_white_space, fmt.escape_double_quote, false, fmt.version);
-// }
-
-// // --------------------------------------------------------------------
-// // cdata
-
-// bool cdata::equals(const node *n) const
-// {
-// 	return dynamic_cast<const cdata *>(n) != nullptr and
-// 	       m_text == static_cast<const cdata *>(n)->m_text;
-// }
-
-// node *cdata::clone() const
-// {
-// 	return new cdata(m_text);
-// }
-
-// node *cdata::move()
-// {
-// 	return new cdata(std::move(*this));
-// }
-
-// void cdata::write(std::ostream &os, format_info fmt) const
-// {
-// 	if (fmt.indent)
-// 		os << '\n'
-// 		   << std::string(fmt.indent_level * fmt.indent_width, ' ');
-
-// 	os << "<![CDATA[" << m_text << "]]>";
-
-// 	if (fmt.indent)
-// 		os << '\n';
-// }
-
-// // --------------------------------------------------------------------
-// // attribute
-
-// bool attribute::equals(const node *n) const
-// {
-// 	bool result = false;
-// 	const attribute *a = dynamic_cast<const attribute *>(n);
-
-// 	if (a != nullptr)
-// 	{
-// 		result = m_qname == a->m_qname and
-// 		         m_value == a->m_value;
-// 	}
-// 	return result;
-// }
-
-// std::string attribute::uri() const
-// {
-// 	assert(is_namespace());
-// 	if (not is_namespace())
-// 		throw exception("Attribute is not a namespace");
-// 	return m_value;
-// }
-
-// node *attribute::clone() const
-// {
-// 	return new attribute(m_qname, m_value, m_id);
-// }
-
-// node *attribute::move()
-// {
-// 	return new attribute(std::move(*this));
-// }
-
-// void attribute::write(std::ostream &os, format_info fmt) const
+// void name_space::write(std::ostream& os, format_info fmt) const
 // {
 // 	if (fmt.indent_width != 0)
-// 		os << '\n'
-// 		   << std::string(fmt.indent_width, ' ');
+// 		os << '\n' << std::string(fmt.indent_width, ' ');
 // 	else
 // 		os << ' ';
 
-// 	os << m_qname << "=\"";
+// 	if (m_prefix.empty())
+// 		os << "xmlns";
+// 	else
+// 		os << "xmlns:" << m_prefix;
+// 	os << "=\"";
 
-// 	write_string(os, m_value, fmt.escape_white_space, true, false, fmt.version);
+// 	write_string(os, m_uri, fmt.escape_white_space, false, fmt.version);
 
 // 	os << '"';
 // }
 
-// // // --------------------------------------------------------------------
-// // // name_space
-
-// // bool name_space::equals(const node* n) const
-// // {
-// // 	bool result = false;
-// // 	const name_space* ns = dynamic_cast<const name_space*>(n);
-
-// // 	if (ns != nullptr)
-// // 		result = m_uri == ns->m_uri;
-
-// // 	return result;
-// // }
-
-// // node* name_space::clone() const
-// // {
-// // 	return new name_space(m_prefix, m_uri);
-// // }
-
-// // node* name_space::move()
-// // {
-// // 	return new name_space(std::move(*this));
-// // }
-
-// // void name_space::write(std::ostream& os, format_info fmt) const
-// // {
-// // 	if (fmt.indent_width != 0)
-// // 		os << '\n' << std::string(fmt.indent_width, ' ');
-// // 	else
-// // 		os << ' ';
-
-// // 	if (m_prefix.empty())
-// // 		os << "xmlns";
-// // 	else
-// // 		os << "xmlns:" << m_prefix;
-// // 	os << "=\"";
-
-// // 	write_string(os, m_uri, fmt.escape_white_space, false, fmt.version);
-
-// // 	os << '"';
-// // }
-
-// // --------------------------------------------------------------------
-// // element
-
-// element::element()
-// 	: m_nodes(*this)
-// 	, m_attributes(*this)
-// {
-// }
-
-element::element(const std::string &qname)
-	: m_qname(qname)
-// , m_attributes(*this)
-{
-}
-
-// element::element(const std::string &qname, std::initializer_list<mxml::attribute> attributes)
-// 	: m_qname(qname)
-// 	, m_nodes(*this)
-// 	, m_attributes(*this)
-// {
-// 	for (auto &a : attributes)
-// 		set_attribute(a.get_qname(), a.value());
-// }
+// --------------------------------------------------------------------
+// element
 
 // copy constructor. Copy data and children, but not parent and sibling
 element::element(const element &e)
-	: m_qname(e.m_qname)
-// , m_nodes(*this, e.m_nodes)
-// , m_attributes(*this, e.m_attributes)
+	: basic_node_list(this)
+	, m_qname(e.m_qname)
+	, m_attributes(this)
 {
 	insert(begin(), e.begin(), e.end());
-}
-
-element::element(element &&e)
-	: m_qname(std::move(e.m_qname))
-{
-	if (not e.empty())
-	{
-		m_node.m_next = std::exchange(e.m_node.m_next, &e.m_node);
-		m_node.m_next->m_prev = &m_node;
-		m_node.m_prev = std::exchange(e.m_node.m_prev, &e.m_node);
-		m_node.m_prev->m_next = &m_node;
-
-		for (auto &child : *this)
-			child.parent(this);
-	}
-}
-
-element &element::operator=(const element &e)
-{
-	if (this != &e)
-	{
-		m_qname = e.m_qname;
-		assign(e.begin(), e.end());
-		// m_attributes = e.m_attributes;
-	}
-
-	return *this;
-}
-
-element &element::operator=(element &&e)
-{
-	if (this != &e)
-	{
-		m_qname = std::move(e.m_qname);
-
-		clear();
-
-		m_node.m_next = std::exchange(e.m_node.m_next, &e.m_node);
-		m_node.m_next->m_prev = &m_node;
-		m_node.m_prev = std::exchange(e.m_node.m_prev, &e.m_node);
-		m_node.m_prev->m_next = &m_node;
-
-		for (auto &child : *this)
-			child.parent(this);
-	}
-
-	return *this;
+	m_attributes.assign(e.m_attributes.begin(), e.m_attributes.end());
 }
 
 element::~element()
 {
 }
 
-// void element::swap(element &e) noexcept
-// {
-// 	std::swap(m_qname, e.m_qname);
-// 	m_nodes.swap(e.m_nodes);
-// 	m_attributes.swap(e.m_attributes);
-// }
+void swap(element &a, element &b) noexcept
+{
+	swap(static_cast<basic_node_list<element>&>(a), static_cast<basic_node_list<element>&>(b));
+	std::swap(a.m_qname, b.m_qname);
+	swap(a.m_attributes, b.m_attributes);
+}
 
-// node *element::clone() const
-// {
-// 	return new element(*this);
-// }
+std::string element::lang() const
+{
+	std::string result;
 
-// node *element::move()
-// {
-// 	return new element(std::move(*this));
-// }
+	auto i = m_attributes.find("xml:lang");
+	if (i != m_attributes.end())
+		result = i->value();
+	else if (m_parent != nullptr)
+		result = m_parent->lang();
 
-// std::string element::lang() const
-// {
-// 	std::string result;
+	return result;
+}
 
-// 	auto i = m_attributes.find("xml:lang");
-// 	if (i != m_attributes.end())
-// 		result = i->value();
-// 	else if (m_parent != nullptr)
-// 		result = m_parent->lang();
+std::string element::id() const
+{
+	std::string result;
 
-// 	return result;
-// }
+	for (auto &a : m_attributes)
+	{
+		if (a.is_id())
+		{
+			result = a.value();
+			break;
+		}
+	}
 
-// std::string element::id() const
-// {
-// 	std::string result;
-
-// 	for (auto &a : m_attributes)
-// 	{
-// 		if (a.is_id())
-// 		{
-// 			result = a.value();
-// 			break;
-// 		}
-// 	}
-
-// 	return result;
-// }
+	return result;
+}
 
 // std::string element::get_attribute(const std::string &qname) const
 // {
