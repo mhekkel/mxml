@@ -119,7 +119,10 @@ class node
 	/// otherwise the name will be `prefix:name`
 	/// \param prefix	The namespace prefix to use
 	/// \param name		The actual name to use
-	void set_qname(const std::string &prefix, const std::string &name);
+	void set_qname(const std::string &prefix, const std::string &name)
+	{
+		set_qname(prefix.empty() ? name : prefix + ':' + name);
+	}
 
 	virtual std::string name() const;       ///< The name for the node as parsed from the qname.
 	virtual std::string get_prefix() const; ///< The prefix for the node as parsed from the qname.
@@ -303,7 +306,7 @@ export class processing_instruction final : public node_with_text
 
 	friend void swap(processing_instruction &a, processing_instruction &b) noexcept
 	{
-		swap(static_cast<node_with_text&>(a), static_cast<node_with_text&>(b));
+		swap(static_cast<node_with_text &>(a), static_cast<node_with_text &>(b));
 		std::swap(a.m_target, b.m_target);
 	}
 
@@ -385,7 +388,6 @@ export class cdata final : public text
 export class attribute final : public node
 {
   public:
-
 	attribute(const attribute &attr)
 		: m_qname(attr.m_qname)
 		, m_value(attr.m_value)
@@ -605,7 +607,6 @@ class basic_node_list
 		}
 	}
 
-
 	// bool operator==(const basic_node_list &l) const
 	// {
 	// 	bool result = true;
@@ -686,6 +687,13 @@ class basic_node_list
 		insert(begin(), first, last);
 	}
 
+	template <typename TN>
+		requires std::is_base_of_v<node_type, TN>
+	reference emplace(const_iterator p, TN &&n)
+	{
+		return *insert_impl(p, new TN(std::move(n)));
+	}
+
 	template <typename... Args>
 		requires std::is_constructible_v<node_type, Args...>
 	reference emplace(const_iterator p, Args... args)
@@ -695,14 +703,14 @@ class basic_node_list
 
 	/// \brief emplace an element at the front using arguments \a args
 	template <typename... Args>
-	element &emplace_front(Args &&...args)
+	node_type &emplace_front(Args &&...args)
 	{
 		return emplace(begin(), std::forward<Args>(args)...);
 	}
 
 	/// \brief emplace an element at the back using arguments \a args
 	template <typename... Args>
-	element &emplace_back(Args &&...args)
+	node_type &emplace_back(Args &&...args)
 	{
 		return emplace(end(), std::forward<Args>(args)...);
 	}
@@ -889,7 +897,7 @@ class attribute_set : public basic_node_list<attribute>
 
 	friend void swap(attribute_set &a, attribute_set &b)
 	{
-		swap(static_cast<basic_node_list<attribute>&>(a), static_cast<basic_node_list<attribute>&>(b));
+		swap(static_cast<basic_node_list<attribute> &>(a), static_cast<basic_node_list<attribute> &>(b));
 	}
 
 	/// \brief attribute_set is a bit like a std::map and the key type is a std::string
@@ -904,16 +912,12 @@ class attribute_set : public basic_node_list<attribute>
 	/// \brief return const_iterator to the attribute with name \a key
 	const_iterator find(const key_type &key) const
 	{
-		const node_type *result = nullptr;
-		for (auto &a : *this)
+		for (auto i = begin(); i != end(); ++i)
 		{
-			if (a.get_qname() == key)
-			{
-				result = &a;
-				break;
-			}
+			if (i->get_qname() == key)
+				return i;
 		}
-		return const_iterator(result);
+		return end();
 	}
 
 	/// \brief return iterator to the attribute with name \a key
@@ -1002,7 +1006,7 @@ class element : public node, public basic_node_list<element>
 	}
 
 	// 	/// \brief constructor taking a \a qname and a list of \a attributes
-	element(const std::string &qname , std::initializer_list<attribute> attributes = {})
+	element(const std::string &qname, std::initializer_list<attribute> attributes = {})
 		: basic_node_list(this)
 		, m_qname(qname)
 		, m_attributes(this)
@@ -1051,16 +1055,16 @@ class element : public node, public basic_node_list<element>
 	basic_node_list<node> nodes() { return basic_node_list<node>(m_node); }
 	const basic_node_list<node> nodes() const { return basic_node_list<node>(m_node); }
 
-	// 	// --------------------------------------------------------------------
-	// 	// attribute support
+	// --------------------------------------------------------------------
+	// attribute support
 
-	// 	/// \brief return the set of attributes for this element
-	// 	attribute_set &attributes() { return m_attributes; }
+	/// \brief return the set of attributes for this element
+	attribute_set &attributes() { return m_attributes; }
 
-	// 	/// \brief return the set of attributes for this element
-	// 	const attribute_set &attributes() const { return m_attributes; }
+	/// \brief return the set of attributes for this element
+	const attribute_set &attributes() const { return m_attributes; }
 
-	// 	// --------------------------------------------------------------------
+	// --------------------------------------------------------------------
 
 	/// \brief write the element to \a os
 	friend std::ostream &operator<<(std::ostream &os, const element &e);
@@ -1069,47 +1073,47 @@ class element : public node, public basic_node_list<element>
 	/// \brief will return the concatenation of str() from all child nodes
 	std::string str() const override;
 
-	// 	/// \brief return the URI of the namespace for \a prefix
-	// 	virtual std::string namespace_for_prefix(const std::string &prefix) const;
+	/// \brief return the URI of the namespace for \a prefix
+	std::string namespace_for_prefix(const std::string &prefix) const override;
 
-	// 	/// \brief return the prefix for the XML namespace with uri \a uri.
-	// 	/// \return The result is a pair of a std::string containing the actual prefix value
-	// 	/// and a boolean indicating if the namespace was found at all, needed since empty prefixes
-	// 	/// are allowed.
-	// 	virtual std::pair<std::string, bool> prefix_for_namespace(const std::string &uri) const;
+	/// \brief return the prefix for the XML namespace with uri \a uri.
+	/// \return The result is a pair of a std::string containing the actual prefix value
+	/// and a boolean indicating if the namespace was found at all, needed since empty prefixes
+	/// are allowed.
+	std::pair<std::string, bool> prefix_for_namespace(const std::string &uri) const override;
 
-	// 	/// \brief move this element and optionally everyting beneath it to the
-	// 	///        specified namespace/prefix
-	// 	///
-	// 	/// \param prefix				The new prefix name
-	// 	/// \param uri					The new namespace uri
-	// 	/// \param recursive			Apply this to the child nodes as well
-	// 	/// \param including_attributes	Move the attributes to this new namespace as well
-	// 	void move_to_name_space(const std::string &prefix, const std::string &uri,
-	// 		bool recursive, bool including_attributes);
+	/// \brief move this element and optionally everyting beneath it to the
+	///        specified namespace/prefix
+	///
+	/// \param prefix				The new prefix name
+	/// \param uri					The new namespace uri
+	/// \param recursive			Apply this to the child nodes as well
+	/// \param including_attributes	Move the attributes to this new namespace as well
+	void move_to_name_space(const std::string &prefix, const std::string &uri,
+		bool recursive, bool including_attributes);
 
-	// 	/// \brief return the concatenation of the content of all enclosed zeep::xml::text nodes
-	// 	std::string get_content() const;
+	/// \brief return the concatenation of the content of all enclosed zeep::xml::text nodes
+	std::string get_content() const;
 
-	// 	/// \brief replace all existing child text nodes with a new single text node containing \a content
-	// 	void set_content(const std::string &content);
+	/// \brief replace all existing child text nodes with a new single text node containing \a content
+	void set_content(const std::string &content);
 
-	// 	/// \brief return the value of attribute name \a qname or the empty string if not found
-	// 	std::string get_attribute(const std::string &qname) const;
+	/// \brief return the value of attribute name \a qname or the empty string if not found
+	std::string get_attribute(const std::string &qname) const;
 
-	// 	/// \brief set the value of attribute named \a qname to the value \a value
-	// 	void set_attribute(const std::string &qname, const std::string &value);
+	/// \brief set the value of attribute named \a qname to the value \a value
+	void set_attribute(const std::string &qname, const std::string &value);
 
-	// 	/// \brief The set_text method replaces any text node with the new text (call set_content)
-	// 	virtual void set_text(const std::string &s);
+	/// \brief The set_text method replaces any text node with the new text (call set_content)
+	virtual void set_text(const std::string &s);
 
-	// 	/// The add_text method checks if the last added child is a text node,
-	// 	/// and if so, it appends the string to this node's value. Otherwise,
-	// 	/// it adds a new text node child with the new text.
-	// 	void add_text(const std::string &s);
+	/// The add_text method checks if the last added child is a text node,
+	/// and if so, it appends the string to this node's value. Otherwise,
+	/// it adds a new text node child with the new text.
+	void add_text(const std::string &s);
 
-	// 	/// To combine all adjacent child text nodes into one
-	// 	void flatten_text();
+	/// To combine all adjacent child text nodes into one
+	void flatten_text();
 
 	// 	/// xpath wrappers
 	// 	/// TODO: create recursive iterator and use it as return type here
@@ -1149,9 +1153,6 @@ class element : public node, public basic_node_list<element>
 	// 	{
 	// 		return const_cast<element *>(this)->find_first(path);
 	// 	}
-
-	// 	// debug routine
-	// 	virtual void validate();
 
 	void write(std::ostream &os, format_info fmt) const override;
 
@@ -1232,22 +1233,22 @@ void fix_namespaces(element &e, element &source, element &dest);
 namespace std
 {
 
-// template <>
-// struct tuple_size<::mxml::attribute>
-// 	: public std::integral_constant<std::size_t, 2>
-// {
-// };
+template <>
+struct tuple_size<::mxml::attribute>
+	: public std::integral_constant<std::size_t, 2>
+{
+};
 
-// template <>
-// struct tuple_element<0, ::mxml::attribute>
-// {
-// 	using type = decltype(std::declval<::mxml::attribute>().name());
-// };
+template <>
+struct tuple_element<0, ::mxml::attribute>
+{
+	using type = decltype(std::declval<::mxml::attribute>().name());
+};
 
-// template <>
-// struct tuple_element<1, ::mxml::attribute>
-// {
-// 	using type = decltype(std::declval<::mxml::attribute>().value());
-// };
+template <>
+struct tuple_element<1, ::mxml::attribute>
+{
+	using type = decltype(std::declval<::mxml::attribute>().value());
+};
 
 } // namespace std

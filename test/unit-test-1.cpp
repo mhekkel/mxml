@@ -28,7 +28,6 @@ int main(int argc, char *argv[])
 	           | Opt(gTestDir, "data-dir")                 // bind variable to a new option, with a hint string
 	                 ["-D"]["--data-dir"]                  // the option names it will respond to
 	           ("The directory containing the data files"); // description string for the help output
-	        //    | Opt(cif::VERBOSE, "verbose")["-v"]["--cif-verbose"]("Flag for cif::VERBOSE");
 
 	// Now pass the new composite back to Catch2 so it uses that
 	session.cli(cli);
@@ -37,14 +36,6 @@ int main(int argc, char *argv[])
 	int returnCode = session.applyCommandLine(argc, argv);
 	if (returnCode != 0) // Indicates a command line error
 		return returnCode;
-
-	// // do this now, avoids the need for installing
-	// cif::add_file_resource("mmcif_pdbx.dic", gTestDir / ".." / "rsrc" / "mmcif_pdbx.dic");
-
-	// // initialize CCD location
-	// cif::add_file_resource("components.cif", gTestDir / ".." / "rsrc" / "ccd-subset.cif");
-
-	// cif::compound_factory::instance().push_dictionary(gTestDir / "HEM.cif");
 
 	return session.run();
 }
@@ -231,5 +222,22 @@ TEST_CASE("test_1")
 	// CHECK(n.front().name() == "c0");
 	// CHECK(n.back().name() == "c2");
 
+
+}
+
+TEST_CASE("attr-1")
+{
+	using namespace mxml;
+
+	element e("test");
+	e.set_attribute("1", "one");
+	e.set_attribute("2", "two");
+	e.set_attribute("3", "3");
+	e.set_attribute("3", "three");
+
+	std::ostringstream os;
+	os << e;
+
+	CHECK(os.str() == R"(<test 1="one" 2="two" 3="three"/>)");
 
 }

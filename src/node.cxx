@@ -27,6 +27,7 @@
 module;
 
 #include <iostream>
+#include <map>
 #include <set>
 #include <stack>
 #include <string>
@@ -500,21 +501,21 @@ std::string element::id() const
 	return result;
 }
 
-// std::string element::get_attribute(const std::string &qname) const
-// {
-// 	std::string result;
+std::string element::get_attribute(const std::string &qname) const
+{
+	std::string result;
 
-// 	auto a = m_attributes.find(qname);
-// 	if (a != m_attributes.end())
-// 		result = a->value();
+	auto a = m_attributes.find(qname);
+	if (a != m_attributes.end())
+		result = a->value();
 
-// 	return result;
-// }
+	return result;
+}
 
-// void element::set_attribute(const std::string &qname, const std::string &value)
-// {
-// 	m_attributes.emplace(qname, value);
-// }
+void element::set_attribute(const std::string &qname, const std::string &value)
+{
+	m_attributes.emplace(qname, value);
+}
 
 // bool element::equals(const node *n) const
 // {
@@ -611,84 +612,83 @@ std::string element::id() const
 // 	m_attributes.clear();
 // }
 
-// std::string element::get_content() const
-// {
-// 	std::string result;
+std::string element::get_content() const
+{
+	std::string result;
 
-// 	for (auto &n : m_nodes)
-// 	{
-// 		auto t = dynamic_cast<const text *>(&n);
-// 		if (t != nullptr)
-// 			result += t->get_text();
-// 	}
+	for (auto &n : nodes())
+	{
+		auto t = dynamic_cast<const text *>(&n);
+		if (t != nullptr)
+			result += t->get_text();
+	}
 
-// 	return result;
-// }
+	return result;
+}
 
-// void element::set_content(const std::string &s)
-// {
-// 	// remove all existing text nodes (including cdata ones)
-// 	for (auto n = m_nodes.begin(); n != m_nodes.end(); ++n)
-// 	{
-// 		if (dynamic_cast<text *>(&*n) != nullptr)
-// 			n = m_nodes.erase(n);
-// 	}
+void element::set_content(const std::string &s)
+{
+	// remove all existing text nodes (including cdata ones)
+	auto nn = nodes();
+	for (auto n = nn.begin(); n != nn.end(); ++n)
+	{
+		if (auto &t = *n; (typeid(t) == typeid(text)) or (typeid(t) == typeid(cdata)))
+			n = nn.erase(n);
+	}
 
-// 	// and add a new text node with the content
-// 	m_nodes.insert(m_nodes.end(), text(s));
-// }
+	// and add a new text node with the content
+	nn.emplace_back(text(s));
+}
 
 std::string element::str() const
 {
 	std::string result;
 
-	// 	for (auto &n : m_nodes)
-	// 		result += n.str();
+	for (auto &n : nodes())
+		result += n.str();
 
 	return result;
 }
 
-// void element::add_text(const std::string &s)
-// {
-// 	text *textNode = dynamic_cast<text *>(m_nodes.m_tail);
+void element::add_text(const std::string &s)
+{
+	auto nn = nodes();
 
-// 	if (textNode != nullptr and dynamic_cast<cdata *>(textNode) == nullptr)
-// 		textNode->append(s);
-// 	else
-// 		m_nodes.emplace_back(text(s));
-// }
+	if (auto &t = nn.back(); typeid(t) == typeid(text))
+		static_cast<text&>(nn.back()).append(s);
+	else
+		nn.emplace_back(text(s));
+}
 
-// void element::set_text(const std::string &s)
-// {
-// 	set_content(s);
-// }
+void element::set_text(const std::string &s)
+{
+	set_content(s);
+}
 
-// void element::flatten_text()
-// {
-// 	auto n = m_nodes.m_head;
-// 	while (n != m_nodes.m_tail)
-// 	{
-// 		auto tn = dynamic_cast<text *>(n);
-// 		if (tn == nullptr)
-// 		{
-// 			n = n->m_next;
-// 			continue;
-// 		}
+void element::flatten_text()
+{
+	auto nn = nodes();
+	auto n = nn.begin();
+	while (n != nn.end())
+	{
+		auto tn = dynamic_cast<text *>(&*n);
+		if (tn == nullptr)
+		{
+			n = n->m_next;
+			continue;
+		}
 
-// 		if (n->m_next == nullptr) // should never happen
-// 			break;
+		auto ntn = dynamic_cast<text *>(n->m_next);
+		if (ntn == nullptr)
+		{
+			n = n->m_next;
+			continue;
+		}
 
-// 		auto ntn = dynamic_cast<text *>(n->m_next);
-// 		if (ntn == nullptr)
-// 		{
-// 			n = n->m_next;
-// 			continue;
-// 		}
-
-// 		tn->append(ntn->get_text());
-// 		m_nodes.erase(n->m_next);
-// 	}
-// }
+		tn->append(ntn->get_text());
+		nn.erase(n->m_next);
+	}
+}
 
 void element::write(std::ostream &os, format_info fmt) const
 {
@@ -754,134 +754,134 @@ std::ostream &operator<<(std::ostream &os, const element &e)
 	return os;
 }
 
-// std::string element::namespace_for_prefix(const std::string &prefix) const
-// {
-// 	std::string result;
+std::string element::namespace_for_prefix(const std::string &prefix) const
+{
+	std::string result;
 
-// 	for (auto &a : m_attributes)
-// 	{
-// 		if (not a.is_namespace())
-// 			continue;
+	for (auto &a : m_attributes)
+	{
+		if (not a.is_namespace())
+			continue;
 
-// 		if (a.name() == "xmlns")
-// 		{
-// 			if (prefix.empty())
-// 			{
-// 				result = a.value();
-// 				break;
-// 			}
-// 			continue;
-// 		}
+		if (a.name() == "xmlns")
+		{
+			if (prefix.empty())
+			{
+				result = a.value();
+				break;
+			}
+			continue;
+		}
 
-// 		if (a.name() == prefix)
-// 		{
-// 			result = a.value();
-// 			break;
-// 		}
-// 	}
+		if (a.name() == prefix)
+		{
+			result = a.value();
+			break;
+		}
+	}
 
-// 	if (result.empty() and dynamic_cast<element *>(m_parent) != nullptr)
-// 		result = static_cast<element *>(m_parent)->namespace_for_prefix(prefix);
+	if (result.empty() and dynamic_cast<element *>(m_parent) != nullptr)
+		result = static_cast<element *>(m_parent)->namespace_for_prefix(prefix);
 
-// 	return result;
-// }
+	return result;
+}
 
-// std::pair<std::string, bool> element::prefix_for_namespace(const std::string &uri) const
-// {
-// 	std::string result;
-// 	bool found = false;
+std::pair<std::string, bool> element::prefix_for_namespace(const std::string &uri) const
+{
+	std::string result;
+	bool found = false;
 
-// 	for (auto &a : m_attributes)
-// 	{
-// 		if (not a.is_namespace())
-// 			continue;
+	for (auto &a : m_attributes)
+	{
+		if (not a.is_namespace())
+			continue;
 
-// 		if (a.value() == uri)
-// 		{
-// 			found = true;
-// 			if (a.get_qname().length() > 6)
-// 				result = a.get_qname().substr(6);
-// 			break;
-// 		}
-// 	}
+		if (a.value() == uri)
+		{
+			found = true;
+			if (a.get_qname().length() > 6)
+				result = a.get_qname().substr(6);
+			break;
+		}
+	}
 
-// 	if (not found and dynamic_cast<element *>(m_parent) != nullptr)
-// 		std::tie(result, found) = static_cast<element *>(m_parent)->prefix_for_namespace(uri);
+	if (not found and dynamic_cast<element *>(m_parent) != nullptr)
+		std::tie(result, found) = static_cast<element *>(m_parent)->prefix_for_namespace(uri);
 
-// 	return make_pair(result, found);
-// }
+	return make_pair(result, found);
+}
 
-// void element::move_to_name_space(const std::string &prefix, const std::string &uri,
-// 	bool recursive, bool including_attributes)
-// {
-// 	// first some sanity checks
-// 	auto p = prefix_for_namespace(uri);
-// 	if (p.second)
-// 	{
-// 		if (p.first != prefix)
-// 			throw exception("Invalid prefix in move_to_name_space, already known as '" + p.first + "'");
-// 	}
-// 	else
-// 	{
-// 		bool set = false;
-// 		for (auto &a : m_attributes)
-// 		{
-// 			if (not a.is_namespace())
-// 				continue;
+void element::move_to_name_space(const std::string &prefix, const std::string &uri,
+	bool recursive, bool including_attributes)
+{
+	// first some sanity checks
+	auto p = prefix_for_namespace(uri);
+	if (p.second)
+	{
+		if (p.first != prefix)
+			throw exception("Invalid prefix in move_to_name_space, already known as '" + p.first + "'");
+	}
+	else
+	{
+		bool set = false;
+		for (auto &a : m_attributes)
+		{
+			if (not a.is_namespace())
+				continue;
 
-// 			if (a.get_qname().length() > 6 and a.get_qname().substr(6) == prefix)
-// 			{
-// 				set = true;
-// 				a.value(uri);
-// 				break;
-// 			}
-// 		}
+			if (a.get_qname().length() > 6 and a.get_qname().substr(6) == prefix)
+			{
+				set = true;
+				a.set_value(uri);
+				break;
+			}
+		}
 
-// 		if (not set)
-// 			m_attributes.emplace(prefix.empty() ? "xmlns" : "xmlns:" + prefix, uri);
-// 	}
+		if (not set)
+			m_attributes.emplace(prefix.empty() ? "xmlns" : "xmlns:" + prefix, uri);
+	}
 
-// 	set_qname(prefix, name());
+	set_qname(prefix, name());
 
-// 	if (including_attributes)
-// 	{
-// 		// first process the namespace attributes...
-// 		for (auto &attr : m_attributes)
-// 		{
-// 			if (not attr.is_namespace())
-// 				continue;
+	if (including_attributes)
+	{
+		// first process the namespace attributes...
+		for (auto &attr : m_attributes)
+		{
+			if (not attr.is_namespace())
+				continue;
 
-// 			auto nsp = prefix_for_namespace(attr.uri());
-// 			if (not nsp.second)
-// 				attr.set_qname("xmlns", nsp.first);
-// 		}
+			auto nsp = prefix_for_namespace(attr.uri());
+			if (not nsp.second)
+				attr.set_qname("xmlns", nsp.first);
+		}
 
-// 		// ... and then the others, makes sure the namespaces are known
-// 		for (auto &attr : m_attributes)
-// 		{
-// 			if (attr.is_namespace())
-// 				continue;
+		// ... and then the others, makes sure the namespaces are known
+		for (auto &attr : m_attributes)
+		{
+			if (attr.is_namespace())
+				continue;
 
-// 			auto ns = attr.get_ns();
+			auto ns = attr.get_ns();
 
-// 			if (ns.empty())
-// 				attr.set_qname(prefix + ':' + attr.name());
-// 			else
-// 			{
-// 				auto nsp = prefix_for_namespace(ns);
-// 				if (not nsp.second)
-// 					throw exception("Cannot move element to new namespace, namespace not found: " + ns);
-// 				attr.set_qname(nsp.first, attr.name());
-// 			}
-// 		}
-// 	}
+			if (ns.empty())
+				attr.set_qname(prefix + ':' + attr.name());
+			else
+			{
+				auto nsp = prefix_for_namespace(ns);
+				if (not nsp.second)
+					throw exception("Cannot move element to new namespace, namespace not found: " + ns);
+				attr.set_qname(nsp.first, attr.name());
+			}
+		}
+	}
 
-// 	if (recursive)
-// 	{
-// 		for (element &e : *this)
-// 			e.move_to_name_space(prefix, uri, true, including_attributes);
-// 	}
-// }
+	if (recursive)
+	{
+		for (element &e : *this)
+			e.move_to_name_space(prefix, uri, true, including_attributes);
+	}
+}
 
 // element_set element::find(const char *path) const
 // {
@@ -895,73 +895,59 @@ std::ostream &operator<<(std::ostream &os, const element &e)
 // 	return s.empty() ? end() : iterator(*this, s.front());
 // }
 
-// void element::validate()
-// {
-// 	node::validate();
+// --------------------------------------------------------------------
 
-// 	for (auto &n : nodes())
-// 		n.validate();
+void fix_namespaces(element &e, element &source, element &dest)
+{
+	std::stack<node *> s;
 
-// 	for (auto &a : attributes())
-// 	{
-// 		if (a.parent() != this)
-// 			throw exception("validation error: attribute has incorrect parent");
-// 	}
-// }
+	s.push(&e);
 
-// // --------------------------------------------------------------------
+	std::map<std::string, std::string> mapped;
 
-// void fix_namespaces(element &e, element &source, element &dest)
-// {
-// 	std::stack<xml::node *> s;
+	while (not s.empty())
+	{
+		auto n = s.top();
+		s.pop();
 
-// 	s.push(&e);
+		auto p = n->get_prefix();
+		if (not p.empty())
+		{
+			if (mapped.count(p))
+			{
+				if (mapped[p] != p)
+					n->set_qname(mapped[p], n->name());
+			}
+			else
+			{
+				auto ns = n->namespace_for_prefix(p);
+				if (ns.empty())
+					ns = source.namespace_for_prefix(p);
 
-// 	std::map<std::string, std::string> mapped;
+				auto dp = dest.prefix_for_namespace(ns);
+				if (dp.second)
+				{
+					mapped[p] = dp.first;
+					n->set_qname(dp.first, n->name());
+				}
+				else
+				{
+					mapped[p] = p;
+					dest.attributes().emplace({ "xmlns:" + p, ns });
+				}
+			}
+		}
 
-// 	while (not s.empty())
-// 	{
-// 		auto n = s.top();
-// 		s.pop();
+		auto el = dynamic_cast<element *>(n);
+		if (el == nullptr)
+			continue;
 
-// 		auto p = n->get_prefix();
-// 		if (not p.empty())
-// 		{
-// 			if (mapped.count(p))
-// 			{
-// 				if (mapped[p] != p)
-// 					n->set_qname(mapped[p], n->name());
-// 			}
-// 			else
-// 			{
-// 				auto ns = n->namespace_for_prefix(p);
-// 				if (ns.empty())
-// 					ns = source.namespace_for_prefix(p);
+		for (auto &c : *el)
+			s.push(&c);
 
-// 				auto dp = dest.prefix_for_namespace(ns);
-// 				if (dp.second)
-// 				{
-// 					mapped[p] = dp.first;
-// 					n->set_qname(dp.first, n->name());
-// 				}
-// 				else
-// 				{
-// 					mapped[p] = p;
-// 					dest.attributes().emplace({ "xmlns:" + p, ns });
-// 				}
-// 			}
-// 		}
-
-// 		auto el = dynamic_cast<element *>(n);
-// 		if (el == nullptr)
-// 			continue;
-
-// 		for (auto &c : *el)
-// 			s.push(&c);
-
-// 		for (auto &a : el->attributes())
-// 			s.push(&a);
-// 	}
-// }
+		for (auto &a : el->attributes())
+			s.push(&a);
+	}
+}
 
 } // namespace mxml
