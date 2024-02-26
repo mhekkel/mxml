@@ -30,6 +30,7 @@ module;
 #include <set>
 #include <stack>
 #include <string>
+#include <tuple>
 #include <utility>
 
 #include <cassert>
@@ -38,7 +39,9 @@ module;
 
 module mxml;
 
+import :error;
 import :node;
+import :text;
 
 namespace mxml
 {
@@ -49,81 +52,104 @@ const std::set<std::string> kEmptyHTMLElements{
 
 // --------------------------------------------------------------------
 
-// void write_string(std::ostream &os, const std::string &s, bool escape_whitespace, bool escape_quot, bool trim, float version)
+// template<class Facet>
+// struct deletable_facet : Facet
 // {
-// 	bool last_is_space = false;
+//     template<class... Args>
+//     deletable_facet(Args&&... args) : Facet(std::forward<Args>(args)...) {}
+//     ~deletable_facet() {}
+// };
 
-// 	auto sp = s.begin();
-// 	auto se = s.end();
+void write_string(std::ostream &os, const std::string &s, bool escape_whitespace, bool escape_quot, bool trim, float version)
+{
+	bool last_is_space = false;
 
-// 	while (sp < se)
-// 	{
-// 		auto sb = sp;
+	// deletable_facet<std::codecvt<char8_t, char32_t, std::mbstate_t>> cc;
 
-// 		unicode c;
-// 		std::tie(c, sp) = get_first_char(sp, se);
+	// const char8_t *sp = reinterpret_cast<const char8_t*>(s.data());
+	// const char8_t *se = reinterpret_cast<const char8_t*>(s.data()) + s.length();
 
-// 		switch (c)
-// 		{
-// 			case '&':
-// 				os << "&amp;";
-// 				last_is_space = false;
-// 				break;
-// 			case '<':
-// 				os << "&lt;";
-// 				last_is_space = false;
-// 				break;
-// 			case '>':
-// 				os << "&gt;";
-// 				last_is_space = false;
-// 				break;
-// 			case '\"':
-// 				if (escape_quot)
-// 					os << "&quot;";
-// 				else
-// 					os << static_cast<char>(c);
-// 				last_is_space = false;
-// 				break;
-// 			case '\n':
-// 				if (escape_whitespace)
-// 					os << "&#10;";
-// 				else
-// 					os << static_cast<char>(c);
-// 				last_is_space = true;
-// 				break;
-// 			case '\r':
-// 				if (escape_whitespace)
-// 					os << "&#13;";
-// 				else
-// 					os << static_cast<char>(c);
-// 				last_is_space = false;
-// 				break;
-// 			case '\t':
-// 				if (escape_whitespace)
-// 					os << "&#9;";
-// 				else
-// 					os << static_cast<char>(c);
-// 				last_is_space = false;
-// 				break;
-// 			case ' ':
-// 				if (not trim or not last_is_space)
-// 					os << ' ';
-// 				last_is_space = true;
-// 				break;
-// 			case 0: throw exception("Invalid null character in XML content");
-// 			default:
-// 				if (c >= 0x0A0 or (version == 1.0 ? is_valid_xml_1_0_char(c) : is_valid_xml_1_1_char(c)))
-// 					for (auto ci = sb; ci < sp; ++ci)
-// 						os << *ci;
-// 				else
-// 					os << "&#" << static_cast<int>(c) << ';';
-// 				last_is_space = false;
-// 				break;
-// 		}
+	// std::mbstate_t mb{};
 
-// 		sb = sp;
-// 	}
-// }
+	// char32_t c[2];
+	// char32_t *cp;
+
+	// for (; cc.out(mb, sp, se, sp, c, &c[1], cp) == std::codecvt_base::result::ok; )
+	// {
+
+	// }
+
+	auto sp = s.begin();
+	auto se = s.end();
+
+	while (sp < se)
+	{
+		auto sb = sp;
+
+		char32_t c;
+		std::tie(c, sp) = get_first_char(sp, se);
+
+		switch (c)
+		{
+			case '&':
+				os << "&amp;";
+				last_is_space = false;
+				break;
+			case '<':
+				os << "&lt;";
+				last_is_space = false;
+				break;
+			case '>':
+				os << "&gt;";
+				last_is_space = false;
+				break;
+			case '\"':
+				if (escape_quot)
+					os << "&quot;";
+				else
+					os << static_cast<char>(c);
+				last_is_space = false;
+				break;
+			case '\n':
+				if (escape_whitespace)
+					os << "&#10;";
+				else
+					os << static_cast<char>(c);
+				last_is_space = true;
+				break;
+			case '\r':
+				if (escape_whitespace)
+					os << "&#13;";
+				else
+					os << static_cast<char>(c);
+				last_is_space = false;
+				break;
+			case '\t':
+				if (escape_whitespace)
+					os << "&#9;";
+				else
+					os << static_cast<char>(c);
+				last_is_space = false;
+				break;
+			case ' ':
+				if (not trim or not last_is_space)
+					os << ' ';
+				last_is_space = true;
+				break;
+			case 0: throw exception("Invalid null character in XML content");
+			default:
+				if (c >= 0x0A0 or (version == 1.0 ? is_valid_xml_1_0_char(c) : is_valid_xml_1_1_char(c)))
+					for (auto ci = sb; ci < sp; ++ci)
+						os << *ci;
+				else
+					os << "&#" << static_cast<int>(c) << ';';
+				last_is_space = false;
+				break;
+		}
+
+		sb = sp;
+	}
+}
 
 // --------------------------------------------------------------------
 
@@ -316,7 +342,7 @@ bool text::is_space() const
 
 void text::write(std::ostream &os, format_info fmt) const
 {
-	// write_string(os, m_text, fmt.escape_white_space, fmt.escape_double_quote, false, fmt.version);
+	write_string(os, m_text, fmt.escape_white_space, fmt.escape_double_quote, false, fmt.version);
 }
 
 // --------------------------------------------------------------------
@@ -366,17 +392,17 @@ std::string attribute::uri() const
 
 void attribute::write(std::ostream &os, format_info fmt) const
 {
-	// if (fmt.indent_width != 0)
-	// 	os << '\n'
-	// 	   << std::string(fmt.indent_width, ' ');
-	// else
-	// 	os << ' ';
+	if (fmt.indent_width != 0)
+		os << '\n'
+		   << std::string(fmt.indent_width, ' ');
+	else
+		os << ' ';
 
-	// os << m_qname << "=\"";
+	os << m_qname << "=\"";
 
-	// write_string(os, m_value, fmt.escape_white_space, true, false, fmt.version);
+	write_string(os, m_value, fmt.escape_white_space, true, false, fmt.version);
 
-	// os << '"';
+	os << '"';
 }
 
 // // --------------------------------------------------------------------
@@ -440,7 +466,7 @@ element::~element()
 
 void swap(element &a, element &b) noexcept
 {
-	swap(static_cast<basic_node_list<element>&>(a), static_cast<basic_node_list<element>&>(b));
+	swap(static_cast<basic_node_list<element> &>(a), static_cast<basic_node_list<element> &>(b));
 	std::swap(a.m_qname, b.m_qname);
 	swap(a.m_attributes, b.m_attributes);
 }
@@ -666,67 +692,67 @@ std::string element::str() const
 
 void element::write(std::ostream &os, format_info fmt) const
 {
-	// 	// if width is set, we wrap and indent the file
-	// 	size_t indentation = fmt.indent_level * fmt.indent_width;
+	// if width is set, we wrap and indent the file
+	size_t indentation = fmt.indent_level * fmt.indent_width;
 
-	// 	if (fmt.indent)
-	// 	{
-	// 		if (fmt.indent_level > 0)
-	// 			os << '\n';
-	// 		os << std::string(indentation, ' ');
-	// 	}
+	if (fmt.indent)
+	{
+		if (fmt.indent_level > 0)
+			os << '\n';
+		os << std::string(indentation, ' ');
+	}
 
-	// 	os << '<' << m_qname;
+	os << '<' << m_qname;
 
-	// 	// if the left flag is set, wrap and indent attributes as well
-	// 	auto attr_fmt = fmt;
-	// 	attr_fmt.indent_width = 0;
+	// if the left flag is set, wrap and indent attributes as well
+	auto attr_fmt = fmt;
+	attr_fmt.indent_width = 0;
 
-	// 	for (auto &attr : attributes())
-	// 	{
-	// 		attr.write(os, attr_fmt);
-	// 		if (attr_fmt.indent_width == 0 and fmt.indent_attributes)
-	// 			attr_fmt.indent_width = indentation + 1 + m_qname.length() + 1;
-	// 	}
+	for (auto &attr : m_attributes)
+	{
+		attr.write(os, attr_fmt);
+		if (attr_fmt.indent_width == 0 and fmt.indent_attributes)
+			attr_fmt.indent_width = indentation + 1 + m_qname.length() + 1;
+	}
 
-	// 	if ((fmt.html and kEmptyHTMLElements.count(m_qname)) or
-	// 		(not fmt.html and fmt.collapse_tags and nodes().empty()))
-	// 		os << "/>";
-	// 	else
-	// 	{
-	// 		os << '>';
-	// 		auto sub_fmt = fmt;
-	// 		++sub_fmt.indent_level;
+	if ((fmt.html and kEmptyHTMLElements.count(m_qname)) or
+		(not fmt.html and fmt.collapse_tags and nodes().empty()))
+		os << "/>";
+	else
+	{
+		os << '>';
+		auto sub_fmt = fmt;
+		++sub_fmt.indent_level;
 
-	// 		bool wrote_element = false;
-	// 		for (auto &n : nodes())
-	// 		{
-	// 			n.write(os, sub_fmt);
-	// 			wrote_element = dynamic_cast<const element *>(&n) != nullptr;
-	// 		}
+		bool wrote_element = false;
+		for (auto &n : nodes())
+		{
+			n.write(os, sub_fmt);
+			wrote_element = dynamic_cast<const element *>(&n) != nullptr;
+		}
 
-	// 		if (wrote_element and fmt.indent != 0)
-	// 			os << '\n'
-	// 			   << std::string(indentation, ' ');
+		if (wrote_element and fmt.indent != 0)
+			os << '\n'
+			   << std::string(indentation, ' ');
 
-	// 		os << "</" << m_qname << '>';
-	// 	}
+		os << "</" << m_qname << '>';
+	}
 }
 
-// std::ostream &operator<<(std::ostream &os, const element &e)
-// {
-// 	auto flags = os.flags({});
-// 	auto width = os.width(0);
+std::ostream &operator<<(std::ostream &os, const element &e)
+{
+	auto flags = os.flags({});
+	auto width = os.width(0);
 
-// 	format_info fmt;
-// 	fmt.indent = width > 0;
-// 	fmt.indent_width = width;
-// 	fmt.indent_attributes = flags & std::ios_base::left;
+	format_info fmt;
+	fmt.indent = width > 0;
+	fmt.indent_width = width;
+	fmt.indent_attributes = flags & std::ios_base::left;
 
-// 	e.write(os, fmt);
+	e.write(os, fmt);
 
-// 	return os;
-// }
+	return os;
+}
 
 // std::string element::namespace_for_prefix(const std::string &prefix) const
 // {

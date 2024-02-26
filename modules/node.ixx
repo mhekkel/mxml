@@ -184,8 +184,8 @@ class node
 
   protected:
 	element *m_parent = nullptr;
-	node *m_next = nullptr;
-	node *m_prev = nullptr;
+	node *m_next;
+	node *m_prev;
 };
 
 // --------------------------------------------------------------------
@@ -261,7 +261,6 @@ export class comment final : public node_with_text
 	/// \brief compare nodes for equality
 	bool equals(const node *n) const override;
 
-  protected:
 	void write(std::ostream &os, format_info fmt) const override;
 };
 
@@ -320,7 +319,6 @@ export class processing_instruction final : public node_with_text
 	/// \brief compare nodes for equality
 	bool equals(const node *n) const override;
 
-  protected:
 	void write(std::ostream &os, format_info fmt) const override;
 
   private:
@@ -354,7 +352,6 @@ export class text : public node_with_text
 	/// \brief returns true if this text contains only whitespace characters
 	bool is_space() const;
 
-  protected:
 	void write(std::ostream &os, format_info fmt) const override;
 };
 
@@ -379,7 +376,6 @@ export class cdata final : public text
 	/// \brief compare nodes for equality
 	bool equals(const node *n) const override;
 
-  protected:
 	void write(std::ostream &os, format_info fmt) const override;
 };
 
@@ -466,7 +462,6 @@ export class attribute final : public node
 			return value();
 	}
 
-  protected:
 	void write(std::ostream &os, format_info fmt) const override;
 
   private:
@@ -594,6 +589,22 @@ class basic_node_list
 	using const_reference = const value_type &;
 	using pointer = value_type *;
 	using const_pointer = const value_type *;
+
+	basic_node_list(node *n)
+		: m_node(n)
+		, m_owner(false)
+	{
+	}
+
+	virtual ~basic_node_list()
+	{
+		if (m_owner)
+		{
+			clear();
+			delete m_node;
+		}
+	}
+
 
 	// bool operator==(const basic_node_list &l) const
 	// {
@@ -774,6 +785,7 @@ class basic_node_list
   protected:
 	basic_node_list(element *e)
 		: m_node(new node)
+		, m_owner(true)
 	{
 		m_node->m_parent = e;
 	}
@@ -793,12 +805,6 @@ class basic_node_list
 
 		for (node *n = b.m_node->m_next; n != b.m_node; n = n->m_next)
 			n->parent(b.m_node->m_parent);
-	}
-
-	virtual ~basic_node_list()
-	{
-		clear();
-		delete m_node;
 	}
 
   protected:
@@ -853,6 +859,7 @@ class basic_node_list
 	}
 
 	node *m_node;
+	bool m_owner;
 };
 
 // --------------------------------------------------------------------
@@ -1041,8 +1048,8 @@ class element : public node, public basic_node_list<element>
 	// --------------------------------------------------------------------
 	// children
 
-	// 	node_list &nodes() { return m_nodes; }
-	// 	const node_list &nodes() const { return m_nodes; }
+	basic_node_list<node> nodes() { return basic_node_list<node>(m_node); }
+	const basic_node_list<node> nodes() const { return basic_node_list<node>(m_node); }
 
 	// 	// --------------------------------------------------------------------
 	// 	// attribute support
@@ -1055,8 +1062,8 @@ class element : public node, public basic_node_list<element>
 
 	// 	// --------------------------------------------------------------------
 
-	// 	/// \brief write the element to \a os
-	// 	friend std::ostream &operator<<(std::ostream &os, const element &e);
+	/// \brief write the element to \a os
+	friend std::ostream &operator<<(std::ostream &os, const element &e);
 	// 	friend class document;
 
 	/// \brief will return the concatenation of str() from all child nodes
@@ -1146,7 +1153,6 @@ class element : public node, public basic_node_list<element>
 	// 	// debug routine
 	// 	virtual void validate();
 
-  protected:
 	void write(std::ostream &os, format_info fmt) const override;
 
   private:

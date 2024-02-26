@@ -201,6 +201,11 @@ TEST_CASE("test_1")
 		for (auto &e : n)
 			CHECK(e.parent() == &n);
 
+		std::ostringstream os;
+		os << n;
+
+		CHECK(os.str() == "<test><c0/><c1/><c2/></test>");
+
 	}
 
 

@@ -14,6 +14,7 @@ target_sources(mxml
 	# ${CMAKE_CURRENT_SOURCE_DIR}/src
 	# FILES
 	src/node.cxx
+	src/text.cxx
 	PUBLIC
 	FILE_SET public_modules TYPE CXX_MODULES
 	BASE_DIRS
@@ -22,6 +23,7 @@ target_sources(mxml
 	modules/mxml.ixx
 	modules/node.ixx
 	modules/error.ixx
+	modules/text.ixx
 )
 
 target_compile_features(mxml PUBLIC cxx_std_20)
