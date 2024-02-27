@@ -83,7 +83,15 @@ document &document::operator=(document doc)
 document::document(std::string_view s)
 	: document()
 {
-	std::istringstream is(std::string{ s });
+	struct membuf : public std::streambuf
+	{
+		membuf(char *text, size_t length)
+		{
+			this->setg(text, text, text + length);
+		}
+	} buffer(const_cast<char *>(s.data()), s.length());
+
+	std::istream is(&buffer);
 	parse(is);
 }
 
@@ -93,7 +101,7 @@ document::document(std::istream &is)
 	parse(is);
 }
 
-document::document(std::istream &is, std::string_view base_dir)
+document::document(std::istream &is, const std::string &base_dir)
 	: document()
 {
 	m_validating = true;
@@ -125,7 +133,7 @@ void swap(document &a, document &b)
 	std::swap(a.m_root_size_at_first_notation, b.m_root_size_at_first_notation);
 }
 
-void document::set_base_dir(std::string_view path)
+void document::set_base_dir(const std::string &path)
 {
 	m_dtd_dir = path;
 }
@@ -173,7 +181,7 @@ bool document::is_html5() const
 
 bool document::operator==(const document &other) const
 {
-	return equals(&other);
+	return static_cast<const element &>(*this) == static_cast<const element &>(other);
 }
 
 std::ostream &operator<<(std::ostream &os, const document &doc)
@@ -266,14 +274,14 @@ void document::XmlDeclHandler(encoding_type /*encoding*/, bool standalone, float
 	m_fmt.version = version;
 }
 
-void document::StartElementHandler(std::string_view name, std::string_view uri, const parser::attr_list_type &atts)
+void document::StartElementHandler(const std::string &name, const std::string &uri, const parser::attr_list_type &atts)
 {
 	using namespace std::literals;
 
 	std::string qname{ name };
 	if (not uri.empty())
 	{
-		std::string_view prefix;
+		std::string prefix;
 		bool found;
 
 		auto i = std::find_if(m_namespaces.begin(), m_namespaces.end(),
@@ -323,7 +331,7 @@ void document::StartElementHandler(std::string_view name, std::string_view uri, 
 	m_namespaces.clear();
 }
 
-void document::EndElementHandler(std::string_view /*name*/, std::string_view /*name*/)
+void document::EndElementHandler(const std::string & /*name*/, const std::string & /*name*/)
 {
 	if (m_cdata != nullptr)
 		throw exception("CDATA section not closed");
@@ -359,7 +367,7 @@ void document::EndElementHandler(std::string_view /*name*/, std::string_view /*n
 	m_cur = m_cur->parent();
 }
 
-void document::CharacterDataHandler(std::string_view data)
+void document::CharacterDataHandler(const std::string &data)
 {
 	if (m_cdata != nullptr)
 		m_cdata->append(data);
@@ -367,12 +375,12 @@ void document::CharacterDataHandler(std::string_view data)
 		m_cur->add_text(data);
 }
 
-void document::ProcessingInstructionHandler(std::string_view target, std::string_view data)
+void document::ProcessingInstructionHandler(const std::string &target, const std::string &data)
 {
 	m_cur->nodes().emplace_back(processing_instruction(target, data));
 }
 
-void document::CommentHandler(std::string_view s)
+void document::CommentHandler(const std::string &s)
 {
 	m_cur->nodes().emplace_back(comment(s));
 }
@@ -387,23 +395,23 @@ void document::EndCdataSectionHandler()
 	m_cdata = nullptr;
 }
 
-void document::StartNamespaceDeclHandler(std::string_view prefix, std::string_view uri)
+void document::StartNamespaceDeclHandler(const std::string &prefix, const std::string &uri)
 {
 	m_namespaces.emplace_back(std::string{ prefix }, std::string{ uri });
 }
 
-void document::EndNamespaceDeclHandler(std::string_view /*prefix*/)
+void document::EndNamespaceDeclHandler(const std::string & /*prefix*/)
 {
 }
 
-void document::DoctypeDeclHandler(std::string_view root, std::string_view publicId, std::string_view uri)
+void document::DoctypeDeclHandler(const std::string &root, const std::string &publicId, const std::string &uri)
 {
 	m_doctype.m_root = root;
 	m_doctype.m_pubid = publicId;
 	m_doctype.m_dtd = uri;
 }
 
-void document::NotationDeclHandler(std::string_view name, std::string_view sysid, std::string_view pubid)
+void document::NotationDeclHandler(const std::string &name, const std::string &sysid, const std::string &pubid)
 {
 	if (m_notations.empty())
 		m_root_size_at_first_notation = nodes().size();
@@ -417,7 +425,7 @@ void document::NotationDeclHandler(std::string_view name, std::string_view sysid
 	m_notations.insert(i, n);
 }
 
-std::istream *document::external_entity_ref(std::string_view base, std::string_view pubid, std::string_view sysid)
+std::istream *document::external_entity_ref(const std::string &base, const std::string &pubid, const std::string &sysid)
 {
 	std::istream *result = nullptr;
 

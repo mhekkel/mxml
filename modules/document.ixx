@@ -95,7 +95,7 @@ export class document : public element
 
 	/// \brief Constructor that will parse the XML passed in argument \a is. This
 	/// constructor will also validate the input using DTD's found in \a base_dir
-	document(std::istream &is, std::string_view base_dir);
+	document(std::istream &is, const std::string &base_dir);
 
 	friend void swap(document &a, document &b);
 
@@ -201,7 +201,7 @@ export class document : public element
 
 	/// If you want to validate the document using DTD files stored on disk, you can specifiy this directory prior to reading
 	/// the document.
-	void set_base_dir(std::string_view path);
+	void set_base_dir(const std::string &path);
 
 	/// If you want to be able to load external documents other than trying to read them from disk
 	/// you can set a callback here.
@@ -227,19 +227,19 @@ export class document : public element
 	element::iterator insert_impl(const_iterator pos, node *n) override;
 
 	void XmlDeclHandler(encoding_type encoding, bool standalone, float version);
-	void StartElementHandler(std::string_view name, std::string_view uri, const parser::attr_list_type &atts);
-	void EndElementHandler(std::string_view name, std::string_view uri);
-	void CharacterDataHandler(std::string_view data);
-	void ProcessingInstructionHandler(std::string_view target, std::string_view data);
-	void CommentHandler(std::string_view comment);
+	void StartElementHandler(const std::string &name, const std::string &uri, const parser::attr_list_type &atts);
+	void EndElementHandler(const std::string &name, const std::string &uri);
+	void CharacterDataHandler(const std::string &data);
+	void ProcessingInstructionHandler(const std::string &target, const std::string &data);
+	void CommentHandler(const std::string &comment);
 	void StartCdataSectionHandler();
 	void EndCdataSectionHandler();
-	void StartNamespaceDeclHandler(std::string_view prefix, std::string_view uri);
-	void EndNamespaceDeclHandler(std::string_view prefix);
-	void DoctypeDeclHandler(std::string_view root, std::string_view publicId, std::string_view uri);
-	void NotationDeclHandler(std::string_view name, std::string_view sysid, std::string_view pubid);
+	void StartNamespaceDeclHandler(const std::string &prefix, const std::string &uri);
+	void EndNamespaceDeclHandler(const std::string &prefix);
+	void DoctypeDeclHandler(const std::string &root, const std::string &publicId, const std::string &uri);
+	void NotationDeclHandler(const std::string &name, const std::string &sysid, const std::string &pubid);
 
-	std::istream *external_entity_ref(std::string_view base, std::string_view pubid, std::string_view sysid);
+	std::istream *external_entity_ref(const std::string &base, const std::string &pubid, const std::string &sysid);
 	void parse(std::istream &data);
 
 	// /// \brief To read a document and process elements on the go, use this streaming input function.
@@ -252,7 +252,7 @@ export class document : public element
 	/// on sysid and base_dir. Only local files are loaded this way.
 	/// You can specify a entity loader here if you want to be able to load
 	/// DTD files from another source.
-	std::function<std::istream *(std::string_view base, std::string_view pubid, std::string_view sysid)>
+	std::function<std::istream *(const std::string &base, const std::string &pubid, const std::string &sysid)>
 		m_external_entity_ref_loader;
 
 	void write(std::ostream &os, format_info fmt) const override;

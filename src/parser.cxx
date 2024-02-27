@@ -88,7 +88,7 @@ class data_source;
 class source_exception : public exception
 {
   public:
-	source_exception(std::string_view msg)
+	source_exception(const std::string &msg)
 		: exception(msg)
 		, m_wmsg(msg)
 	{
@@ -532,7 +532,7 @@ struct parser_imp
 	void pereference();
 
 	void doctypedecl();
-	data_source *get_data_source(std::string_view pubid, std::string uri);
+	data_source *get_data_source(const std::string &pubid, std::string uri);
 	std::tuple<std::string, std::string> read_external_id();
 	void intsubset();
 	void extsubset();
@@ -555,7 +555,7 @@ struct parser_imp
 	void parse_general_entity_declaration(std::string &s);
 
 	// same goes for attribute values
-	std::string normalize_attribute_value(std::string_view s, bool isCDATA)
+	std::string normalize_attribute_value(const std::string &s, bool isCDATA)
 	{
 		push_data_source(new string_data_source(s), false);
 
@@ -697,8 +697,8 @@ struct parser_imp
 	float parse_version();
 
 	// error handling routines
-	void not_well_formed(std::string_view msg) const;
-	void not_valid(std::string_view msg) const;
+	void not_well_formed(const std::string &msg) const;
+	void not_valid(const std::string &msg) const;
 
 	// doctype support
 	const doctype::entity &get_general_entity(std::string_view name) const;
@@ -806,7 +806,7 @@ struct parser_imp
 			m_default_ns = ns;
 		}
 
-		std::string ns_for_prefix(std::string prefix)
+		std::string ns_for_prefix(const std::string &prefix)
 		{
 			std::string result;
 
@@ -822,17 +822,17 @@ struct parser_imp
 			return result;
 		}
 
-		void bind(std::string prefix, std::string_view uri)
+		void bind(const std::string &prefix, std::string_view uri)
 		{
 			m_known[prefix] = uri;
 		}
 
-		void unbind(std::string prefix)
+		void unbind(const std::string &prefix)
 		{
 			m_unbound.insert(prefix);
 		}
 
-		bool is_known_prefix(std::string prefix)
+		bool is_known_prefix(const std::string &prefix)
 		{
 			bool result = false;
 
@@ -847,7 +847,7 @@ struct parser_imp
 			return result;
 		}
 
-		bool is_known_uri(std::string uri)
+		bool is_known_uri(const std::string &uri)
 		{
 			return find_if(m_known.begin(), m_known.end(), [uri](auto k)
 					   { return k.second == uri; }) != m_known.end() or
@@ -875,7 +875,7 @@ struct parser_imp
 
 	bool is_space(std::string_view s)
 	{
-		return not s.empty() and s.find_first_not_of(" \t\r\n") == std::string::npos;
+		return not s.empty() and s.find_first_not_of(" \t\r\n") == std::string_view::npos;
 	}
 
 	bool is_referrable_char(char32_t charref)
@@ -1116,7 +1116,7 @@ void parser_imp::match(XMLToken token)
 	}
 }
 
-void parser_imp::not_well_formed(std::string_view msg) const
+void parser_imp::not_well_formed(const std::string &msg) const
 {
 	std::stringstream s;
 	if (m_source.empty())
@@ -1126,7 +1126,7 @@ void parser_imp::not_well_formed(std::string_view msg) const
 	throw not_wf_exception(s.str());
 }
 
-void parser_imp::not_valid(std::string_view msg) const
+void parser_imp::not_valid(const std::string &msg) const
 {
 	if (m_validating)
 	{
@@ -2925,7 +2925,7 @@ void parser_imp::notation_decl()
 	m_parser.notation_decl(name, sysid, pubid);
 }
 
-data_source *parser_imp::get_data_source(std::string_view pubid, std::string uri)
+data_source *parser_imp::get_data_source(const std::string &pubid, std::string uri)
 {
 	data_source *result = nullptr;
 
@@ -4097,12 +4097,6 @@ parser::parser(std::istream &data)
 {
 }
 
-parser::parser(std::string_view data)
-{
-	m_istream = new std::istringstream(std::string{ data });
-	m_impl = new parser_imp(*m_istream, *this);
-}
-
 parser::~parser()
 {
 	delete m_impl;
@@ -4120,31 +4114,31 @@ void parser::xml_decl(encoding_type encoding, bool standalone, float version)
 		xml_decl_handler(encoding, standalone, version);
 }
 
-void parser::start_element(std::string_view name, std::string_view uri, const std::list<attr> &atts)
+void parser::start_element(const std::string &name, const std::string &uri, const std::list<attr> &atts)
 {
 	if (start_element_handler)
 		start_element_handler(name, uri, atts);
 }
 
-void parser::end_element(std::string_view name, std::string_view uri)
+void parser::end_element(const std::string &name, const std::string &uri)
 {
 	if (end_element_handler)
 		end_element_handler(name, uri);
 }
 
-void parser::character_data(std::string_view data)
+void parser::character_data(const std::string &data)
 {
 	if (character_data_handler)
 		character_data_handler(data);
 }
 
-void parser::processing_instruction(std::string_view target, std::string_view data)
+void parser::processing_instruction(const std::string &target, const std::string &data)
 {
 	if (processing_instruction_handler)
 		processing_instruction_handler(target, data);
 }
 
-void parser::comment(std::string_view data)
+void parser::comment(const std::string &data)
 {
 	if (comment_handler)
 		comment_handler(data);
@@ -4162,31 +4156,31 @@ void parser::end_cdata_section()
 		end_cdata_section_handler();
 }
 
-void parser::start_namespace_decl(std::string_view prefix, std::string_view uri)
+void parser::start_namespace_decl(const std::string &prefix, const std::string &uri)
 {
 	if (start_namespace_decl_handler)
 		start_namespace_decl_handler(prefix, uri);
 }
 
-void parser::end_namespace_decl(std::string_view prefix)
+void parser::end_namespace_decl(const std::string &prefix)
 {
 	if (end_namespace_decl_handler)
 		end_namespace_decl_handler(prefix);
 }
 
-void parser::doctype_decl(std::string_view root, std::string_view publicId, std::string_view uri)
+void parser::doctype_decl(const std::string &root, const std::string &publicId, const std::string &uri)
 {
 	if (doctype_decl_handler)
 		doctype_decl_handler(root, publicId, uri);
 }
 
-void parser::notation_decl(std::string_view name, std::string_view systemId, std::string_view publicId)
+void parser::notation_decl(const std::string &name, const std::string &systemId, const std::string &publicId)
 {
 	if (notation_decl_handler)
 		notation_decl_handler(name, systemId, publicId);
 }
 
-std::istream *parser::external_entity_ref(std::string_view base, std::string_view pubid, std::string_view uri)
+std::istream *parser::external_entity_ref(const std::string &base, const std::string &pubid, const std::string &uri)
 {
 	std::istream *result = nullptr;
 	if (external_entity_ref_handler)
@@ -4194,7 +4188,7 @@ std::istream *parser::external_entity_ref(std::string_view base, std::string_vie
 	return result;
 }
 
-void parser::report_invalidation(std::string_view msg)
+void parser::report_invalidation(const std::string &msg)
 {
 	if (report_invalidation_handler)
 		report_invalidation_handler(msg);

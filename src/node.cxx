@@ -61,7 +61,7 @@ const std::set<std::string> kEmptyHTMLElements{
 //     ~deletable_facet() {}
 // };
 
-void write_string(std::ostream &os, std::string_view s, bool escape_whitespace, bool escape_quot, bool trim, float version)
+void write_string(std::ostream &os, const std::string &s, bool escape_whitespace, bool escape_quot, bool trim, float version)
 {
 	bool last_is_space = false;
 
@@ -221,7 +221,7 @@ std::string node::get_ns() const
 	return namespace_for_prefix(p);
 }
 
-std::string node::namespace_for_prefix(std::string_view prefix) const
+std::string node::namespace_for_prefix(const std::string &prefix) const
 {
 	std::string result;
 	if (m_parent != nullptr)
@@ -229,7 +229,7 @@ std::string node::namespace_for_prefix(std::string_view prefix) const
 	return result;
 }
 
-std::pair<std::string, bool> node::prefix_for_namespace(std::string_view uri) const
+std::pair<std::string, bool> node::prefix_for_namespace(const std::string &uri) const
 {
 	std::pair<std::string, bool> result{};
 	if (m_parent != nullptr)
@@ -237,20 +237,14 @@ std::pair<std::string, bool> node::prefix_for_namespace(std::string_view uri) co
 	return result;
 }
 
-std::string node::prefix_tag(std::string_view tag, std::string_view uri) const
+std::string node::prefix_tag(std::string tag, const std::string &uri) const
 {
 	auto prefix = prefix_for_namespace(uri);
-	return prefix.second ? prefix.first + ':' + std::string{ tag } : std::string{ tag };
+	return prefix.second ? prefix.first + ':' + tag : tag;
 }
 
 // --------------------------------------------------------------------
 // comment
-
-bool comment::equals(const node *n) const
-{
-	return dynamic_cast<const comment *>(n) != nullptr and
-	       m_text == static_cast<const comment *>(n)->m_text;
-}
 
 void comment::write(std::ostream &os, format_info fmt) const
 {
@@ -287,12 +281,6 @@ void comment::write(std::ostream &os, format_info fmt) const
 // --------------------------------------------------------------------
 // processing_instruction
 
-bool processing_instruction::equals(const node *n) const
-{
-	return dynamic_cast<const processing_instruction *>(n) != nullptr and
-	       m_text == static_cast<const processing_instruction *>(n)->m_text;
-}
-
 void processing_instruction::write(std::ostream &os, format_info fmt) const
 {
 	if (fmt.indent)
@@ -311,18 +299,18 @@ void processing_instruction::write(std::ostream &os, format_info fmt) const
 bool text::equals(const node *n) const
 {
 	bool result = false;
-	// auto t = dynamic_cast<const text *>(n);
+	auto t = dynamic_cast<const text *>(n);
 
-	// if (t != nullptr)
-	// {
-	// 	std::string text = m_text;
-	// 	trim(text);
+	if (t != nullptr)
+	{
+		std::string text = m_text;
+		trim(text);
 
-	// 	std::string ttext = t->m_text;
-	// 	trim(ttext);
+		std::string ttext = t->m_text;
+		trim(ttext);
 
-	// 	result = text == ttext;
-	// }
+		result = text == ttext;
+	}
 
 	return result;
 }
@@ -349,12 +337,6 @@ void text::write(std::ostream &os, format_info fmt) const
 // --------------------------------------------------------------------
 // cdata
 
-bool cdata::equals(const node *n) const
-{
-	return dynamic_cast<const cdata *>(n) != nullptr and
-	       m_text == static_cast<const cdata *>(n)->m_text;
-}
-
 void cdata::write(std::ostream &os, format_info fmt) const
 {
 	if (fmt.indent)
@@ -369,19 +351,6 @@ void cdata::write(std::ostream &os, format_info fmt) const
 
 // --------------------------------------------------------------------
 // attribute
-
-bool attribute::equals(const node *n) const
-{
-	bool result = false;
-	const attribute *a = dynamic_cast<const attribute *>(n);
-
-	if (a != nullptr)
-	{
-		result = m_qname == a->m_qname and
-		         m_value == a->m_value;
-	}
-	return result;
-}
 
 std::string attribute::uri() const
 {
@@ -405,48 +374,6 @@ void attribute::write(std::ostream &os, format_info fmt) const
 
 	os << '"';
 }
-
-// // --------------------------------------------------------------------
-// // name_space
-
-// bool name_space::equals(const node* n) const
-// {
-// 	bool result = false;
-// 	const name_space* ns = dynamic_cast<const name_space*>(n);
-
-// 	if (ns != nullptr)
-// 		result = m_uri == ns->m_uri;
-
-// 	return result;
-// }
-
-// node* name_space::clone() const
-// {
-// 	return new name_space(m_prefix, m_uri);
-// }
-
-// node* name_space::move()
-// {
-// 	return new name_space(std::move(*this));
-// }
-
-// void name_space::write(std::ostream& os, format_info fmt) const
-// {
-// 	if (fmt.indent_width != 0)
-// 		os << '\n' << std::string(fmt.indent_width, ' ');
-// 	else
-// 		os << ' ';
-
-// 	if (m_prefix.empty())
-// 		os << "xmlns";
-// 	else
-// 		os << "xmlns:" << m_prefix;
-// 	os << "=\"";
-
-// 	write_string(os, m_uri, fmt.escape_white_space, false, fmt.version);
-
-// 	os << '"';
-// }
 
 // --------------------------------------------------------------------
 // element
@@ -501,7 +428,7 @@ std::string element::id() const
 	return result;
 }
 
-std::string element::get_attribute(std::string_view qname) const
+std::string element::get_attribute(const std::string &qname) const
 {
 	std::string result;
 
@@ -512,99 +439,100 @@ std::string element::get_attribute(std::string_view qname) const
 	return result;
 }
 
-void element::set_attribute(std::string_view qname, std::string_view value)
+void element::set_attribute(const std::string &qname, const std::string &value)
 {
 	m_attributes.emplace(qname, value);
 }
 
-// bool element::equals(const node *n) const
-// {
-// 	bool result = false;
-// 	const element *e = dynamic_cast<const element *>(n);
+bool element::equals(const node *n) const
+{
+	bool result = false;
+	const element *e = dynamic_cast<const element *>(n);
 
-// 	if (e != nullptr)
-// 	{
-// 		result = name() == e->name() and get_ns() == e->get_ns();
+	if (e != nullptr)
+	{
+		result = name() == e->name() and get_ns() == e->get_ns();
 
-// 		const node *a = m_nodes.m_head;
-// 		;
-// 		const node *b = e->m_nodes.m_head;
+		auto na = nodes();
+		auto nb = e->nodes();
 
-// 		while (a != nullptr or b != nullptr)
-// 		{
-// 			if (a != nullptr and b != nullptr and a->equals(b))
-// 			{
-// 				a = a->m_next;
-// 				b = b->m_next;
-// 				continue;
-// 			}
+		auto a = na.begin();
+		auto b = nb.begin();
 
-// 			const text *t;
+		while (a != na.end() or b != nb.end())
+		{
+			if (a->equals(b))
+			{
+				++a;
+				++b;
+				continue;
+			}
 
-// 			t = dynamic_cast<const text *>(a);
-// 			if (t != nullptr and t->is_space())
-// 			{
-// 				a = a->m_next;
-// 				continue;
-// 			}
+			const text *t = dynamic_cast<const text *>((const node *)a);
 
-// 			t = dynamic_cast<const text *>(b);
-// 			if (t != nullptr and t->is_space())
-// 			{
-// 				b = b->m_next;
-// 				continue;
-// 			}
+			if (t != nullptr and t->is_space())
+			{
+				++a;
+				continue;
+			}
 
-// 			result = false;
-// 			break;
-// 		}
+			t = dynamic_cast<const text *>((const node *)b);
+			if (t != nullptr and t->is_space())
+			{
+				++b;
+				continue;
+			}
 
-// 		result = result and ((a == nullptr) == (b == nullptr));
+			result = false;
+			break;
+		}
 
-// 		if (result)
-// 		{
-// 			result = m_attributes == e->m_attributes;
-// 			if (not result)
-// 			{
-// 				std::set<attribute> as(m_attributes.begin(), m_attributes.end());
-// 				std::set<attribute> bs(e->m_attributes.begin(), e->m_attributes.end());
+		result = result and a == na.end() and b == nb.end();
 
-// 				std::set<std::string> nsa, nsb;
+		if (result)
+		{
+			result = m_attributes == e->m_attributes;
+			if (not result)
+			{
+				std::set<attribute> as(m_attributes.begin(), m_attributes.end());
+				std::set<attribute> bs(e->m_attributes.begin(), e->m_attributes.end());
 
-// 				auto ai = as.begin(), bi = bs.begin();
-// 				for (;;)
-// 				{
-// 					if (ai == as.end() and bi == bs.end())
-// 						break;
+				std::set<std::string> nsa, nsb;
 
-// 					if (ai != as.end() and ai->is_namespace())
-// 					{
-// 						nsa.insert(ai->value());
-// 						++ai;
-// 						continue;
-// 					}
+				auto ai = as.begin(), bi = bs.begin();
+				for (;;)
+				{
+					if (ai == as.end() and bi == bs.end())
+						break;
 
-// 					if (bi != bs.end() and bi->is_namespace())
-// 					{
-// 						nsb.insert(bi->value());
-// 						++bi;
-// 						continue;
-// 					}
+					if (ai != as.end() and ai->is_namespace())
+					{
+						nsa.insert(ai->value());
+						++ai;
+						continue;
+					}
 
-// 					if (ai == as.end() or bi == bs.end() or *ai++ != *bi++)
-// 					{
-// 						result = false;
-// 						break;
-// 					}
-// 				}
+					if (bi != bs.end() and bi->is_namespace())
+					{
+						nsb.insert(bi->value());
+						++bi;
+						continue;
+					}
 
-// 				result = ai == as.end() and bi == bs.end() and nsa == nsb;
-// 			}
-// 		}
-// 	}
+					if (ai == as.end() or bi == bs.end() or *ai++ != *bi++)
+					{
+						result = false;
+						break;
+					}
+				}
 
-// 	return result;
-// }
+				result = ai == as.end() and bi == bs.end() and nsa == nsb;
+			}
+		}
+	}
+
+	return result;
+}
 
 // void element::clear()
 // {
@@ -626,7 +554,7 @@ std::string element::get_content() const
 	return result;
 }
 
-void element::set_content(std::string_view s)
+void element::set_content(const std::string &s)
 {
 	// remove all existing text nodes (including cdata ones)
 	auto nn = nodes();
@@ -650,7 +578,7 @@ std::string element::str() const
 	return result;
 }
 
-void element::add_text(std::string_view s)
+void element::add_text(const std::string &s)
 {
 	auto nn = nodes();
 
@@ -660,7 +588,7 @@ void element::add_text(std::string_view s)
 		nn.emplace_back(text(s));
 }
 
-void element::set_text(std::string_view s)
+void element::set_text(const std::string &s)
 {
 	set_content(s);
 }
@@ -754,7 +682,7 @@ std::ostream &operator<<(std::ostream &os, const element &e)
 	return os;
 }
 
-std::string element::namespace_for_prefix(std::string_view prefix) const
+std::string element::namespace_for_prefix(const std::string &prefix) const
 {
 	std::string result;
 
@@ -786,7 +714,7 @@ std::string element::namespace_for_prefix(std::string_view prefix) const
 	return result;
 }
 
-std::pair<std::string, bool> element::prefix_for_namespace(std::string_view uri) const
+std::pair<std::string, bool> element::prefix_for_namespace(const std::string &uri) const
 {
 	std::string result;
 	bool found = false;
@@ -811,7 +739,7 @@ std::pair<std::string, bool> element::prefix_for_namespace(std::string_view uri)
 	return make_pair(result, found);
 }
 
-void element::move_to_name_space(std::string_view prefix, std::string_view uri,
+void element::move_to_name_space(const std::string &prefix, const std::string &uri,
 	bool recursive, bool including_attributes)
 {
 	// first some sanity checks

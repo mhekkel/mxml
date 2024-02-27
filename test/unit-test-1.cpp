@@ -289,38 +289,42 @@ TEST_CASE("xml_2")
 	CHECK(j == e.end());
 }
 
-// TEST_CASE("xml_3")
-// {
-// 	mxml::element e("test");
+TEST_CASE("xml_3")
+{
+	mxml::element e("test");
 
-// 	mxml::element a("aap");
+	mxml::element a("aap");
 
-// 	e.nodes().emplace(e.end(), a);
-// 	CHECK(a.name() == "aap");
+	e.nodes().emplace(e.end(), a);
+	CHECK(a.name() == "aap");
+	CHECK((std::ostringstream() << e).str() == R"(<test><aap/></test>)");
 
-// 	e.nodes().emplace(e.end(), std::move(a));
-// 	CHECK(a.name() == "");
+	e.nodes().emplace(e.end(), std::move(a));
+	CHECK(a.name() == "");
+	CHECK((std::ostringstream() << e).str() == R"(<test><aap/><aap/></test>)");
 
-// 	mxml::element b("noot");
-// 	mxml::node &n = b;
+	mxml::element b("noot");
+	// mxml::node &n = b;
 
-// 	e.nodes().emplace(e.end(), n);
-// 	CHECK(b.name() == "noot");
+	// e.nodes().emplace(e.end(), n);
+	CHECK(e.nodes().emplace(e.end(), b).name() == "noot");
+	CHECK((std::ostringstream() << e).str() == R"(<test><aap/><aap/><noot/></test>)");
 
-// 	const mxml::node &n2 = b;
-// 	e.nodes().emplace(e.end(), n2);
-// 	CHECK(b.name() == "noot");
+	const auto &n2 = b;
+	CHECK(e.nodes().emplace(e.end(), n2).name() == "noot");
+	CHECK((std::ostringstream() << e).str() == R"(<test><aap/><aap/><noot/><noot/></test>)");
 
-// 	// mxml::node&& n3 = std::move(b);
-// 	// e.nodes().emplace(e.end(), n3);
-// 	// CHECK(b.name() == "");
+	auto &&n3 = std::move(b);
+	CHECK(e.nodes().emplace(e.end(), std::move(n3)).name() == "noot");
+	CHECK(b.name() == "");
+	CHECK((std::ostringstream() << e).str() == R"(<test><aap/><aap/><noot/><noot/><noot/></test>)");
 
-// 	e.attributes().emplace("attr1", "value1");
+	e.attributes().emplace("attr1", "value1");
 
-// 	std::ostringstream s;
-// 	s << e;
-// 	CHECK(s.str() == R"(<test attr1="value1"><aap/><aap/><noot/><noot/></test>)");
-// }
+	std::ostringstream s;
+	s << e;
+	CHECK(s.str() == R"(<test attr1="value1"><aap/><aap/><noot/><noot/><noot/></test>)");
+}
 
 TEST_CASE("xml_attributes_1")
 {
@@ -480,8 +484,8 @@ TEST_CASE("xml_copy")
 // 	mxml::element e2("test", { { "a", "een" }, { "b", "twee" } });
 // 	for (auto &n : c2.front())
 // 		e2.emplace_back(std::move(n));
-// 	// for (auto &n : c2.front().nodes())
-// 	// 	e2.nodes().emplace_back(std::move(n));
+// 	for (auto &n : c2.front().nodes())
+// 		e2.nodes().emplace_back(std::move(n));
 
 // 	CHECK(e2 == e1);
 
@@ -505,34 +509,39 @@ TEST_CASE("xml_iterators")
 	// }
 }
 
-// TEST_CASE("xml_iterators_2")
-// {
-// 	mxml::element e("test");
-// 	for (int i = 0; i < 10; ++i)
-// 		e.emplace_back("n").set_content(std::to_string(i));
+TEST_CASE("xml_iterators_2")
+{
+	mxml::element e("test");
+	for (int i = 0; i < 10; ++i)
+		e.emplace_back("n").set_content(std::to_string(i));
 
-// 	auto bi = e.begin();
-// 	auto ei = e.end();
+	auto bi = e.begin();
+	auto ei = e.end();
 
-// 	// for (int i = 0; i < 10; ++i)
-// 	// {
-// 	// 	CHECK((bi + i)->get_content() == std::to_string(i));
-// 	// 	CHECK((ei - i - 1)->get_content() == std::to_string(9 - i));
-// 	// }
+	for (int i = 0; i < 10; ++i)
+	{
+		auto bii = bi;
+		std::advance(bii, i);
+		CHECK(bii->get_content() == std::to_string(i));
 
-// 	std::vector<mxml::node *> nodes;
-// 	for (auto &n : e.nodes())
-// 		nodes.push_back(&n);
+		auto eii = ei;
+		std::advance(eii, - i - 1);
+		CHECK(eii->get_content() == std::to_string(9 - i));
+	}
 
-// 	CHECK(nodes.size() == 10);
+	// std::vector<mxml::node *> nodes;
+	// for (auto &n : e.nodes())
+	// 	nodes.push_back(&n);
 
-// 	for (int i = 0; i < 10; ++i)
-// 	{
-// 		mxml::element *el = dynamic_cast<mxml::element *>(nodes[i]);
-// 		CHECK(el != nullptr);
-// 		CHECK(el->get_content() == std::to_string(i));
-// 	}
-// }
+	// CHECK(nodes.size() == 10);
+
+	// for (int i = 0; i < 10; ++i)
+	// {
+	// 	mxml::element *el = dynamic_cast<mxml::element *>(nodes[i]);
+	// 	CHECK(el != nullptr);
+	// 	CHECK(el->get_content() == std::to_string(i));
+	// }
+}
 
 TEST_CASE("xml_attributes")
 {
@@ -814,15 +823,15 @@ TEST_CASE("xml_namespaces_3")
 	CHECK(ay->get_ns() == "http://a.com/");
 }
 
-// TEST_CASE("security_test_1")
-// {
-// 	using namespace mxml::literals;
+TEST_CASE("security_test_1")
+{
+	using namespace mxml::literals;
 
-// 	mxml::element n("test");
-// 	n.set_attribute("a", "a\xf6\"b");
-// 	std::stringstream ss;
-// 	CHECK_THROW(ss << n, mxml::exception);
-// }
+	mxml::element n("test");
+	n.set_attribute("a", "a\xf6\"b");
+	std::stringstream ss;
+	CHECK_THROWS_AS((ss << n), mxml::exception);
+}
 
 // TEST_CASE("named_char_1")
 // {
