@@ -1255,6 +1255,29 @@ class element : public node, public basic_node_list<element>
 // --------------------------------------------------------------------
 
 template <typename T>
+void basic_node_list<T>::assign(const basic_node_list &nl)
+{
+	for (auto &n : nl)
+		insert(end(), new node_type(n));
+}
+
+template <>
+void basic_node_list<node>::assign(const basic_node_list &nl)
+{
+	// now, this is ugly, isn't it?
+
+	for (auto &n : nl)
+	{
+		if (typeid(n) == typeid(comment))
+			insert(end(), new comment(static_cast<comment &>(n)));
+
+	}
+	
+}
+
+// --------------------------------------------------------------------
+
+template <typename T>
 iterator_impl<T>::iterator_impl(node *current)
 	: m_current(current)
 {

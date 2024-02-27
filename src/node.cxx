@@ -53,32 +53,50 @@ const std::set<std::string> kEmptyHTMLElements{
 
 // --------------------------------------------------------------------
 
-// template<class Facet>
-// struct deletable_facet : Facet
-// {
-//     template<class... Args>
-//     deletable_facet(Args&&... args) : Facet(std::forward<Args>(args)...) {}
-//     ~deletable_facet() {}
-// };
+template <class Facet>
+struct deletable_facet : Facet
+{
+	template <class... Args>
+	deletable_facet(Args &&...args)
+		: Facet(std::forward<Args>(args)...)
+	{
+	}
+	~deletable_facet() {}
+};
 
 void write_string(std::ostream &os, const std::string &s, bool escape_whitespace, bool escape_quot, bool trim, float version)
 {
 	bool last_is_space = false;
 
-	// deletable_facet<std::codecvt<char8_t, char32_t, std::mbstate_t>> cc;
+	{
+		deletable_facet<std::codecvt<char32_t, char8_t, std::mbstate_t>> cc;
 
-	// const char8_t *sp = reinterpret_cast<const char8_t*>(s.data());
-	// const char8_t *se = reinterpret_cast<const char8_t*>(s.data()) + s.length();
+		const char8_t *sp = reinterpret_cast<const char8_t *>(s.data());
+		const char8_t *se = reinterpret_cast<const char8_t *>(s.data()) + s.length();
 
-	// std::mbstate_t mb{};
+		std::mbstate_t mb{};
 
-	// char32_t c[2];
-	// char32_t *cp;
+		char32_t c[1];
+		char32_t *cp;
 
-	// for (; cc.out(mb, sp, se, sp, c, &c[1], cp) == std::codecvt_base::result::ok; )
-	// {
+		while (sp != se)
+		{
+			auto r = cc.in(mb, sp, se, sp, c, c + 1, cp);
 
-	// }
+			if (r != std::codecvt_base::result::ok and r != std::codecvt_base::partial)
+				break;
+
+			std::cout << std::hex << (int)c[0] << '\n';
+			while (r == std::codecvt_base::partial)
+			{
+				r = cc.in(mb, sp, se, sp, c, c + 1, cp);
+				if (r == std::codecvt_base::partial or r == std::codecvt_base::ok)
+					std::cout << std::hex << (int)c[0] << '\n';
+				else
+					break;
+			}
+		}
+	}
 
 	auto sp = s.begin();
 	auto se = s.end();
@@ -87,8 +105,7 @@ void write_string(std::ostream &os, const std::string &s, bool escape_whitespace
 	{
 		auto sb = sp;
 
-		char32_t c;
-		std::tie(c, sp) = get_first_char(sp, se);
+		char32_t c = get_first_char(sp, se);
 
 		switch (c)
 		{
@@ -384,7 +401,7 @@ element::element(const element &e)
 	, m_qname(e.m_qname)
 	, m_attributes(this)
 {
-	insert(begin(), e.begin(), e.end());
+	nodes().assign(e.nodes());
 	m_attributes.assign(e.m_attributes.begin(), e.m_attributes.end());
 }
 
@@ -583,7 +600,7 @@ void element::add_text(const std::string &s)
 	auto nn = nodes();
 
 	if (auto &t = nn.back(); typeid(t) == typeid(text))
-		static_cast<text&>(nn.back()).append(s);
+		static_cast<text &>(nn.back()).append(s);
 	else
 		nn.emplace_back(text(s));
 }
@@ -766,7 +783,7 @@ void element::move_to_name_space(const std::string &prefix, const std::string &u
 		}
 
 		if (not set)
-			m_attributes.emplace(prefix.empty() ? "xmlns" : "xmlns:" + std::string { prefix }, uri);
+			m_attributes.emplace(prefix.empty() ? "xmlns" : "xmlns:" + std::string{ prefix }, uri);
 	}
 
 	set_qname(prefix, name());

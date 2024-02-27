@@ -461,25 +461,27 @@ TEST_CASE("xml_copy")
 	CHECK(c == c2);
 }
 
-// TEST_CASE("xml_copy2")
-// {
-// 	mxml::element e("test", { { "a", "een" }, { "b", "twee" } });
-// 	e.emplace_back("x1");
-// 	e.nodes().emplace_back(mxml::comment("bla"));
-// 	e.emplace_back("x2");
+TEST_CASE("xml_copy2")
+{
+	mxml::element e("test", { { "a", "een" }, { "b", "twee" } });
+	e.emplace_back("x1");
+	e.nodes().emplace_back(mxml::comment("bla"));
+	e.emplace_back("x2");
 
-// 	auto e1 = e;
+	CHECK((std::ostringstream() << e).str() == R"(<test a="een" b="twee"><x1/><!--bla--><x2/></test>)");
 
-// 	mxml::element c1("test");
-// 	c1.emplace_back(std::move(e));
+	auto e1 = e;
 
-// 	auto c2 = c1;
+	mxml::element c1("test");
+	c1.emplace_back(std::move(e));
 
-// 	mxml::element c3("test");
-// 	for (auto &n : c1)
-// 		c3.emplace_back(std::move(n));
+	auto c2 = c1;
 
-// 	CHECK(c2 == c3);
+	mxml::element c3("test");
+	for (auto &n : c1)
+		c3.emplace_back(std::move(n));
+
+	CHECK(c2 == c3);
 
 // 	mxml::element e2("test", { { "a", "een" }, { "b", "twee" } });
 // 	for (auto &n : c2.front())
@@ -491,7 +493,7 @@ TEST_CASE("xml_copy")
 
 // 	// e1.validate();
 // 	// e2.validate();
-// }
+}
 
 TEST_CASE("xml_iterators")
 {

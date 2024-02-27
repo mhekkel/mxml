@@ -29,7 +29,6 @@ module;
 /// \file
 /// various definitions of data types and routines used to work with Unicode encoded text
 
-#include <codecvt>
 #include <cstdint>
 #include <locale>
 #include <vector>
@@ -75,15 +74,6 @@ constexpr bool is_single_byte_encoding(encoding_type enc)
 template <encoding_type enc>
 constexpr bool is_single_byte_encoding_v = is_single_byte_encoding(enc);
 
-// /// Convert a string from UCS4 to UTF-8
-// std::string wstring_to_string(const std::wstring& s);
-
-// /// manipulate UTF-8 encoded strings
-// void append(std::string& s, char32_t ch);
-// char32_t pop_last_char(std::string& s);
-// template<typename Iter>
-// std::tuple<char32_t,Iter> get_first_char(Iter ptr, Iter end);
-
 /// \brief our own implementation of iequals: compares \a a with \a b case-insensitive
 ///
 /// This is a limited use function, works only reliably with ASCII. But that's OK.
@@ -96,8 +86,6 @@ bool iequals(const std::string& a, const std::string& b)
 
 	return equal;
 }
-
-// inlines
 
 /// \brief Append a single unicode character to an utf-8 string
 void append(std::string& s, char32_t uc)
@@ -173,37 +161,9 @@ char32_t pop_last_char(std::string& s)
 	return result;
 }
 
-template <encoding_type E>
-struct uc_iterator;
-
-template <encoding_type E>
-	requires is_single_byte_encoding_v<E>
-struct uc_iterator<E>
-{
-	uc_iterator(std::string_view s)
-	{
-
-	}
-
-	char32_t operator++()
-	{
-		
-	}
-
-
-};
-
-
-
-// I used to have this comment here:
-//
-//    this code only works if the input is valid utf-8
-//
-// That was a bad idea....
-//
 /// \brief return the first unicode and the advanced pointer from a string
 template<typename Iter>
-std::tuple<char32_t,Iter> get_first_char(Iter ptr, Iter end)
+char32_t get_first_char(Iter &ptr, Iter end)
 {
 	char32_t result = static_cast<unsigned char>(*ptr);
 	++ptr;
@@ -253,55 +213,8 @@ std::tuple<char32_t,Iter> get_first_char(Iter ptr, Iter end)
 		}
 	}
 
-	return std::make_tuple(result, ptr);
+	return result;
 }
-
-// // --------------------------------------------------------------------
-
-// /**
-//  * @brief Return a std::wstring for the UTF-8 encoded std::string @a s.
-//  * @note This simplistic code assumes all unicode characters will fit in a wchar_t
-//  * 
-//  * @param s The input string
-//  * @return std::wstring The recoded output string
-//  */
-// std::wstring convert_s2w(std::string_view s)
-// {
-// 	auto b = s.begin();
-// 	auto e = s.end();
-
-// 	std::wstring result;
-
-// 	while (b != e)
-// 	{
-// 		const auto &[uc, i] = get_first_char(b, e);
-// 		if (not uc)
-// 			break;
-		
-// 		result += static_cast<wchar_t>(uc);
-// 		b = i;
-// 	}
-
-// 	return result;
-// }
-
-// /**
-//  * @brief Return a std::string encoded in UTF-8 for the input std::wstring @a s.
-//  * @note This simplistic code assumes input contains only UCS-2 characters which are deprecated, I know.
-//  * This means UTF-16 surrogates are ruined.
-//  * 
-//  * @param s The input string
-//  * @return std::string The recoded output string
-//  */
-// std::string convert_w2s(std::wstring_view s)
-// {
-// 	std::string result;
-
-// 	for (char32_t ch : s)
-// 		append(result, ch);
-
-// 	return result;
-// }
 
 // --------------------------------------------------------------------
 

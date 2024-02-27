@@ -446,7 +446,7 @@ class string_data_source : public data_source
 		char32_t result = 0;
 
 		if (m_ptr != m_data.end())
-			std::tie(result, m_ptr) = get_first_char(m_ptr, m_data.end());
+			result = get_first_char(m_ptr, m_data.end());
 
 		if (result == '\n')
 			++m_line_nr;
@@ -3179,8 +3179,7 @@ void parser_imp::parse_general_entity_declaration(std::string &s)
 
 	while (sp < se)
 	{
-		char32_t c;
-		std::tie(c, sp) = get_first_char(sp, se);
+		char32_t c = get_first_char(sp, se);
 
 		switch (state)
 		{
