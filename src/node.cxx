@@ -53,50 +53,9 @@ const std::set<std::string> kEmptyHTMLElements{
 
 // --------------------------------------------------------------------
 
-template <class Facet>
-struct deletable_facet : Facet
-{
-	template <class... Args>
-	deletable_facet(Args &&...args)
-		: Facet(std::forward<Args>(args)...)
-	{
-	}
-	~deletable_facet() {}
-};
-
 void write_string(std::ostream &os, const std::string &s, bool escape_whitespace, bool escape_quot, bool trim, float version)
 {
 	bool last_is_space = false;
-
-	{
-		deletable_facet<std::codecvt<char32_t, char8_t, std::mbstate_t>> cc;
-
-		const char8_t *sp = reinterpret_cast<const char8_t *>(s.data());
-		const char8_t *se = reinterpret_cast<const char8_t *>(s.data()) + s.length();
-
-		std::mbstate_t mb{};
-
-		char32_t c[1];
-		char32_t *cp;
-
-		while (sp != se)
-		{
-			auto r = cc.in(mb, sp, se, sp, c, c + 1, cp);
-
-			if (r != std::codecvt_base::result::ok and r != std::codecvt_base::partial)
-				break;
-
-			std::cout << std::hex << (int)c[0] << '\n';
-			while (r == std::codecvt_base::partial)
-			{
-				r = cc.in(mb, sp, se, sp, c, c + 1, cp);
-				if (r == std::codecvt_base::partial or r == std::codecvt_base::ok)
-					std::cout << std::hex << (int)c[0] << '\n';
-				else
-					break;
-			}
-		}
-	}
 
 	auto sp = s.begin();
 	auto se = s.end();
@@ -401,7 +360,8 @@ element::element(const element &e)
 	, m_qname(e.m_qname)
 	, m_attributes(this)
 {
-	nodes().assign(e.nodes());
+	auto en = e.nodes();
+	nodes().assign(en.begin(), en.end());
 	m_attributes.assign(e.m_attributes.begin(), e.m_attributes.end());
 }
 

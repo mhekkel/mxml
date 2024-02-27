@@ -392,6 +392,11 @@ export class cdata final : public text
   public:
 	cdata() = default;
 
+	cdata(const cdata &cd)
+		: text(cd)
+	{
+	}
+
 	cdata(cdata &&cd) noexcept
 		: text(std::move(cd))
 	{
@@ -461,7 +466,7 @@ export class attribute final : public node
 	{
 		if (auto cmp = m_qname <=> a.m_qname; cmp != 0)
 			return cmp;
-		if  (auto cmp = m_id <=> a.m_id; cmp != 0)
+		if (auto cmp = m_id <=> a.m_id; cmp != 0)
 			return cmp;
 		return m_value <=> a.m_value;
 	}
@@ -684,15 +689,16 @@ class basic_node_list
 	size_t size() const { return std::distance(begin(), end()); }
 
 	/// \brief insert a copy of \a e
-	iterator insert(const_iterator pos, const node_type &e)
-	{
-		return insert_impl(pos, new node_type(e));
-	}
+	iterator insert(const_iterator pos, const node_type &e);
 
 	/// \brief insert a copy of \a e at position \a pos, moving its data
-	iterator insert(const_iterator pos, node_type &&e)
+	iterator insert(const_iterator pos, node_type &&e);
+
+	template <typename... Args>
+		requires (not std::is_same_v<node_type, node>)
+	iterator insert(const_iterator p, Args &&...args)
 	{
-		return insert_impl(pos, new node_type(std::move(e)));
+		return insert_impl(p, new node_type(std::forward<Args>(args)...));
 	}
 
 	iterator insert(const_iterator pos, size_t count, const node_type &n)
@@ -735,14 +741,14 @@ class basic_node_list
 
 	reference emplace(const_iterator p, node_type &&n)
 	{
-		return *insert_impl(p, new node_type(std::move(n)));
+		return *insert(p, std::move(n));
 	}
 
 	template <typename... Args>
-		requires std::is_constructible_v<node_type, Args...>
-	reference emplace(const_iterator p, Args... args)
+	// requires std::is_constructible_v<node_type, Args...>
+	reference emplace(const_iterator p, Args &&...args)
 	{
-		return *insert_impl(p, new node_type(args...));
+		return *insert(p, std::forward<Args>(args)...);
 	}
 
 	/// \brief emplace an element at the front using arguments \a args
@@ -1017,12 +1023,11 @@ class attribute_set : public basic_node_list<attribute>
 // comments and processing instructions.
 
 template <typename T>
-concept ElementChildNode = (
-	std::is_same_v<T, text> or
-	std::is_same_v<T, comment> or
-	std::is_same_v<T, processing_instruction> or
-	std::is_same_v<T, element> or
-	std::is_same_v<T, cdata>);
+concept ElementChildNode = (std::is_same_v<T, text> or
+							std::is_same_v<T, comment> or
+							std::is_same_v<T, processing_instruction> or
+							std::is_same_v<T, element> or
+							std::is_same_v<T, cdata>);
 
 class node_list : public basic_node_list<node>
 {
@@ -1255,24 +1260,54 @@ class element : public node, public basic_node_list<element>
 // --------------------------------------------------------------------
 
 template <typename T>
-void basic_node_list<T>::assign(const basic_node_list &nl)
+auto basic_node_list<T>::insert(const_iterator pos, const node_type &e) -> iterator
 {
-	for (auto &n : nl)
-		insert(end(), new node_type(n));
+	return insert_impl(pos, new node_type(e));
+}
+
+template <typename T>
+auto basic_node_list<T>::insert(const_iterator pos, node_type &&e) -> iterator
+{
+	return insert_impl(pos, new node_type(std::move(e)));
 }
 
 template <>
-void basic_node_list<node>::assign(const basic_node_list &nl)
+auto basic_node_list<node>::insert(const_iterator pos, const node_type &n) -> iterator
+{
+	if (typeid(n) == typeid(element))
+		return insert_impl(pos, new element(static_cast<const element &>(n)));
+	else if (typeid(n) == typeid(attribute))
+		return insert_impl(pos, new attribute(static_cast<const attribute &>(n)));
+	else if (typeid(n) == typeid(text))
+		return insert_impl(pos, new text(static_cast<const text &>(n)));
+	else if (typeid(n) == typeid(cdata))
+		return insert_impl(pos, new cdata(static_cast<const cdata &>(n)));
+	else if (typeid(n) == typeid(comment))
+		return insert_impl(pos, new comment(static_cast<const comment &>(n)));
+	else if (typeid(n) == typeid(processing_instruction))
+		return insert_impl(pos, new processing_instruction(static_cast<const processing_instruction &>(n)));
+
+	throw exception("internal error");
+}
+
+template <>
+auto basic_node_list<node>::insert(const_iterator pos, node_type &&n) -> iterator
 {
 	// now, this is ugly, isn't it?
+	if (typeid(n) == typeid(element))
+		return insert_impl(pos, new element(std::move(static_cast<element &&>(n))));
+	else if (typeid(n) == typeid(attribute))
+		return insert_impl(pos, new attribute(std::move(static_cast<attribute &&>(n))));
+	else if (typeid(n) == typeid(text))
+		return insert_impl(pos, new text(std::move(static_cast<text &&>(n))));
+	else if (typeid(n) == typeid(cdata))
+		return insert_impl(pos, new cdata(std::move(static_cast<cdata &&>(n))));
+	else if (typeid(n) == typeid(comment))
+		return insert_impl(pos, new comment(std::move(static_cast<comment &&>(n))));
+	else if (typeid(n) == typeid(processing_instruction))
+		return insert_impl(pos, new processing_instruction(std::move(static_cast<processing_instruction &&>(n))));
 
-	for (auto &n : nl)
-	{
-		if (typeid(n) == typeid(comment))
-			insert(end(), new comment(static_cast<comment &>(n)));
-
-	}
-	
+	throw exception("internal error");
 }
 
 // --------------------------------------------------------------------
