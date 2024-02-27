@@ -61,7 +61,7 @@ const std::set<std::string> kEmptyHTMLElements{
 //     ~deletable_facet() {}
 // };
 
-void write_string(std::ostream &os, const std::string &s, bool escape_whitespace, bool escape_quot, bool trim, float version)
+void write_string(std::ostream &os, std::string_view s, bool escape_whitespace, bool escape_quot, bool trim, float version)
 {
 	bool last_is_space = false;
 
@@ -221,7 +221,7 @@ std::string node::get_ns() const
 	return namespace_for_prefix(p);
 }
 
-std::string node::namespace_for_prefix(const std::string &prefix) const
+std::string node::namespace_for_prefix(std::string_view prefix) const
 {
 	std::string result;
 	if (m_parent != nullptr)
@@ -229,7 +229,7 @@ std::string node::namespace_for_prefix(const std::string &prefix) const
 	return result;
 }
 
-std::pair<std::string, bool> node::prefix_for_namespace(const std::string &uri) const
+std::pair<std::string, bool> node::prefix_for_namespace(std::string_view uri) const
 {
 	std::pair<std::string, bool> result{};
 	if (m_parent != nullptr)
@@ -237,10 +237,10 @@ std::pair<std::string, bool> node::prefix_for_namespace(const std::string &uri) 
 	return result;
 }
 
-std::string node::prefix_tag(const std::string &tag, const std::string &uri) const
+std::string node::prefix_tag(std::string_view tag, std::string_view uri) const
 {
 	auto prefix = prefix_for_namespace(uri);
-	return prefix.second ? prefix.first + ':' + tag : tag;
+	return prefix.second ? prefix.first + ':' + std::string{ tag } : std::string{ tag };
 }
 
 // --------------------------------------------------------------------
@@ -501,7 +501,7 @@ std::string element::id() const
 	return result;
 }
 
-std::string element::get_attribute(const std::string &qname) const
+std::string element::get_attribute(std::string_view qname) const
 {
 	std::string result;
 
@@ -512,7 +512,7 @@ std::string element::get_attribute(const std::string &qname) const
 	return result;
 }
 
-void element::set_attribute(const std::string &qname, const std::string &value)
+void element::set_attribute(std::string_view qname, std::string_view value)
 {
 	m_attributes.emplace(qname, value);
 }
@@ -626,7 +626,7 @@ std::string element::get_content() const
 	return result;
 }
 
-void element::set_content(const std::string &s)
+void element::set_content(std::string_view s)
 {
 	// remove all existing text nodes (including cdata ones)
 	auto nn = nodes();
@@ -650,7 +650,7 @@ std::string element::str() const
 	return result;
 }
 
-void element::add_text(const std::string &s)
+void element::add_text(std::string_view s)
 {
 	auto nn = nodes();
 
@@ -660,7 +660,7 @@ void element::add_text(const std::string &s)
 		nn.emplace_back(text(s));
 }
 
-void element::set_text(const std::string &s)
+void element::set_text(std::string_view s)
 {
 	set_content(s);
 }
@@ -754,7 +754,7 @@ std::ostream &operator<<(std::ostream &os, const element &e)
 	return os;
 }
 
-std::string element::namespace_for_prefix(const std::string &prefix) const
+std::string element::namespace_for_prefix(std::string_view prefix) const
 {
 	std::string result;
 
@@ -786,7 +786,7 @@ std::string element::namespace_for_prefix(const std::string &prefix) const
 	return result;
 }
 
-std::pair<std::string, bool> element::prefix_for_namespace(const std::string &uri) const
+std::pair<std::string, bool> element::prefix_for_namespace(std::string_view uri) const
 {
 	std::string result;
 	bool found = false;
@@ -811,7 +811,7 @@ std::pair<std::string, bool> element::prefix_for_namespace(const std::string &ur
 	return make_pair(result, found);
 }
 
-void element::move_to_name_space(const std::string &prefix, const std::string &uri,
+void element::move_to_name_space(std::string_view prefix, std::string_view uri,
 	bool recursive, bool including_attributes)
 {
 	// first some sanity checks
@@ -838,7 +838,7 @@ void element::move_to_name_space(const std::string &prefix, const std::string &u
 		}
 
 		if (not set)
-			m_attributes.emplace(prefix.empty() ? "xmlns" : "xmlns:" + prefix, uri);
+			m_attributes.emplace(prefix.empty() ? "xmlns" : "xmlns:" + std::string { prefix }, uri);
 	}
 
 	set_qname(prefix, name());
@@ -865,7 +865,7 @@ void element::move_to_name_space(const std::string &prefix, const std::string &u
 			auto ns = attr.get_ns();
 
 			if (ns.empty())
-				attr.set_qname(prefix + ':' + attr.name());
+				attr.set_qname(prefix, attr.name());
 			else
 			{
 				auto nsp = prefix_for_namespace(ns);

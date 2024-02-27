@@ -35,7 +35,7 @@ namespace mxml
 {
 
 /// \brief base class of the exceptions thrown by libzeep
-class exception : public std::exception
+export class exception : public std::exception
 {
   public:
 	/// \brief Create an exception with the message in \a message

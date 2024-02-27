@@ -113,15 +113,15 @@ class node
 	///
 	/// To reduce storage requirements, names are stored in nodes as qnames, if at all.
 	virtual std::string get_qname() const;
-	virtual void set_qname(const std::string &qn) {}
+	virtual void set_qname(std::string_view qn) {}
 
 	/// \brief set the qname with two parameters, if \a prefix is empty the qname will be simply \a name
 	/// otherwise the name will be `prefix:name`
 	/// \param prefix	The namespace prefix to use
 	/// \param name		The actual name to use
-	void set_qname(const std::string &prefix, const std::string &name)
+	void set_qname(std::string_view prefix, std::string_view name)
 	{
-		set_qname(prefix.empty() ? name : prefix + ':' + name);
+		set_qname(prefix.empty() ? name : std::string{ prefix } + ':' + std::string{ name });
 	}
 
 	virtual std::string name() const;       ///< The name for the node as parsed from the qname.
@@ -129,13 +129,13 @@ class node
 	virtual std::string get_ns() const;     ///< Returns the namespace URI for the node, if it can be resolved.
 
 	/// Return the namespace URI for a prefix
-	virtual std::string namespace_for_prefix(const std::string &prefix) const;
+	virtual std::string namespace_for_prefix(std::string_view prefix) const;
 
 	/// Return the prefix for a namespace URI
-	virtual std::pair<std::string, bool> prefix_for_namespace(const std::string &uri) const;
+	virtual std::pair<std::string, bool> prefix_for_namespace(std::string_view uri) const;
 
 	/// Prefix the \a tag with the namespace prefix for \a uri
-	virtual std::string prefix_tag(const std::string &tag, const std::string &uri) const;
+	virtual std::string prefix_tag(std::string_view tag, std::string_view uri) const;
 
 	/// return all content concatenated, including that of children.
 	virtual std::string str() const { return {}; }
@@ -280,7 +280,7 @@ export class processing_instruction final : public node_with_text
 	/// This constructs a processing instruction with the specified parameters
 	/// \param target	The target, this will follow the <? characters, e.g. `php` will generate <?php ... ?>
 	/// \param text		The text inside this node, e.g. the PHP code.
-	processing_instruction(const std::string &target, std::string_view text)
+	processing_instruction(std::string_view target, std::string_view text)
 		: node_with_text(text)
 		, m_target(target)
 	{
@@ -317,7 +317,7 @@ export class processing_instruction final : public node_with_text
 	std::string get_target() const { return m_target; }
 
 	/// \brief set the target
-	void set_target(const std::string &target) { m_target = target; }
+	void set_target(std::string_view target) { m_target = target; }
 
 	/// \brief compare nodes for equality
 	bool equals(const node *n) const override;
@@ -371,7 +371,7 @@ export class cdata final : public text
 		: text(std::move(cd))
 	{
 	}
-	cdata(const std::string &s)
+	cdata(std::string_view s)
 		: text(s)
 	{
 	}
@@ -402,7 +402,7 @@ export class attribute final : public node
 	{
 	}
 
-	attribute(const std::string &qname, const std::string &value, bool id = false)
+	attribute(std::string_view qname, std::string_view value, bool id = false)
 		: m_qname(qname)
 		, m_value(value)
 		, m_id(id)
@@ -430,7 +430,7 @@ export class attribute final : public node
 	}
 
 	std::string get_qname() const override { return m_qname; }
-	void set_qname(const std::string &qn) override { m_qname = qn; }
+	void set_qname(std::string_view qn) override { m_qname = qn; }
 
 	using node::set_qname;
 
@@ -441,7 +441,7 @@ export class attribute final : public node
 	}
 
 	std::string value() const { return m_value; }
-	void set_value(const std::string &v) { m_value = v; }
+	void set_value(std::string_view v) { m_value = v; }
 
 	/// \brief same as value, but checks to see if this really is a namespace attribute
 	std::string uri() const;
@@ -688,10 +688,10 @@ class basic_node_list
 	}
 
 	template <typename TN>
-		requires std::is_base_of_v<node_type, TN>
+		requires std::is_base_of_v<node_type, std::remove_cvref_t<TN>>
 	reference emplace(const_iterator p, TN &&n)
 	{
-		return *insert_impl(p, new TN(std::move(n)));
+		return *insert_impl(p, new node_type(std::move(n)));
 	}
 
 	template <typename... Args>
@@ -744,7 +744,7 @@ class basic_node_list
 	/// \brief erase the last node
 	void pop_back()
 	{
-		erase(end() - 1);
+		erase(std::prev(end()));
 	}
 
 	/// \brief move the node_type \a e to the front of this node_type.
@@ -818,7 +818,7 @@ class basic_node_list
   protected:
 	// proxy methods for every insertion
 
-	iterator insert_impl(const_iterator pos, node *n)
+	virtual iterator insert_impl(const_iterator pos, node *n)
 	{
 		assert(n != nullptr);
 		assert(n->next() == n);
@@ -900,17 +900,14 @@ class attribute_set : public basic_node_list<attribute>
 		swap(static_cast<basic_node_list<attribute> &>(a), static_cast<basic_node_list<attribute> &>(b));
 	}
 
-	/// \brief attribute_set is a bit like a std::map and the key type is a std::string
-	using key_type = std::string;
-
 	/// \brief return true if the attribute with name \a key is defined
-	bool contains(const key_type &key) const
+	bool contains(std::string_view key) const
 	{
 		return find(key) != end();
 	}
 
 	/// \brief return const_iterator to the attribute with name \a key
-	const_iterator find(const key_type &key) const
+	const_iterator find(std::string_view key) const
 	{
 		for (auto i = begin(); i != end(); ++i)
 		{
@@ -921,7 +918,7 @@ class attribute_set : public basic_node_list<attribute>
 	}
 
 	/// \brief return iterator to the attribute with name \a key
-	iterator find(const key_type &key)
+	iterator find(std::string_view key)
 	{
 		return const_cast<const attribute_set &>(*this).find(key);
 	}
@@ -939,10 +936,10 @@ class attribute_set : public basic_node_list<attribute>
 	/// and a boolean indicating if this attribute was inserted instead of replaced.
 	std::pair<iterator, bool> emplace(node_type &&a)
 	{
-		key_type key = a.get_qname();
 		bool inserted = false;
 
-		auto i = find(key);
+		auto i = find(a.get_qname());
+
 		if (i != node_list::end())
 			*i = std::move(a); // move assign value of a
 		else
@@ -957,7 +954,7 @@ class attribute_set : public basic_node_list<attribute>
 	using node_list::erase;
 
 	/// \brief remove attribute with name \a key
-	size_type erase(const key_type key)
+	size_type erase(std::string_view key)
 	{
 		size_type result = 0;
 		auto i = find(key);
@@ -1006,7 +1003,7 @@ class element : public node, public basic_node_list<element>
 	}
 
 	// 	/// \brief constructor taking a \a qname and a list of \a attributes
-	element(const std::string &qname, std::initializer_list<attribute> attributes = {})
+	element(std::string_view qname, std::initializer_list<attribute> attributes = {})
 		: basic_node_list(this)
 		, m_qname(qname)
 		, m_attributes(this)
@@ -1038,7 +1035,7 @@ class element : public node, public basic_node_list<element>
 	using node::set_qname;
 
 	std::string get_qname() const override { return m_qname; }
-	void set_qname(const std::string &qn) override { m_qname = qn; }
+	void set_qname(std::string_view qn) override { m_qname = qn; }
 
 	/// content of a xml:lang attribute of this element, or its nearest ancestor
 	std::string lang() const override;
@@ -1074,13 +1071,13 @@ class element : public node, public basic_node_list<element>
 	std::string str() const override;
 
 	/// \brief return the URI of the namespace for \a prefix
-	std::string namespace_for_prefix(const std::string &prefix) const override;
+	std::string namespace_for_prefix(std::string_view prefix) const override;
 
 	/// \brief return the prefix for the XML namespace with uri \a uri.
 	/// \return The result is a pair of a std::string containing the actual prefix value
 	/// and a boolean indicating if the namespace was found at all, needed since empty prefixes
 	/// are allowed.
-	std::pair<std::string, bool> prefix_for_namespace(const std::string &uri) const override;
+	std::pair<std::string, bool> prefix_for_namespace(std::string_view uri) const override;
 
 	/// \brief move this element and optionally everyting beneath it to the
 	///        specified namespace/prefix
@@ -1089,28 +1086,28 @@ class element : public node, public basic_node_list<element>
 	/// \param uri					The new namespace uri
 	/// \param recursive			Apply this to the child nodes as well
 	/// \param including_attributes	Move the attributes to this new namespace as well
-	void move_to_name_space(const std::string &prefix, const std::string &uri,
+	void move_to_name_space(std::string_view prefix, std::string_view uri,
 		bool recursive, bool including_attributes);
 
 	/// \brief return the concatenation of the content of all enclosed zeep::xml::text nodes
 	std::string get_content() const;
 
 	/// \brief replace all existing child text nodes with a new single text node containing \a content
-	void set_content(const std::string &content);
+	void set_content(std::string_view content);
 
 	/// \brief return the value of attribute name \a qname or the empty string if not found
-	std::string get_attribute(const std::string &qname) const;
+	std::string get_attribute(std::string_view qname) const;
 
 	/// \brief set the value of attribute named \a qname to the value \a value
-	void set_attribute(const std::string &qname, const std::string &value);
+	void set_attribute(std::string_view qname, std::string_view value);
 
 	/// \brief The set_text method replaces any text node with the new text (call set_content)
-	virtual void set_text(const std::string &s);
+	virtual void set_text(std::string_view s);
 
 	/// The add_text method checks if the last added child is a text node,
 	/// and if so, it appends the string to this node's value. Otherwise,
 	/// it adds a new text node child with the new text.
-	void add_text(const std::string &s);
+	void add_text(std::string_view s);
 
 	/// To combine all adjacent child text nodes into one
 	void flatten_text();
@@ -1123,15 +1120,15 @@ class element : public node, public basic_node_list<element>
 	// 	/// If you need to find other classes than xml::element, of if your XPath
 	// 	/// contains variables, you should create a zeep::xml::xpath object and use
 	// 	/// its evaluate method.
-	// 	element_set find(const std::string &path) const { return find(path.c_str()); }
+	// 	element_set find(std::string_view path) const { return find(path.c_str()); }
 
 	// 	/// \brief return the first element that matches XPath \a path.
 	// 	///
 	// 	/// If you need to find other classes than xml::element, of if your XPath
 	// 	/// contains variables, you should create a zeep::xml::xpath object and use
 	// 	/// its evaluate method.
-	// 	iterator find_first(const std::string &path) { return find_first(path.c_str()); }
-	// 	const_iterator find_first(const std::string &path) const
+	// 	iterator find_first(std::string_view path) { return find_first(path.c_str()); }
+	// 	const_iterator find_first(std::string_view path) const
 	// 	{
 	// 		return const_cast<element *>(this)->find_first(path);
 	// 	}

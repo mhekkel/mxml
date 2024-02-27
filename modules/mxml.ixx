@@ -28,6 +28,7 @@ module;
 
 export module mxml;
 
+export import :document;
 export import :node;
 export import :error;
 export import :text;

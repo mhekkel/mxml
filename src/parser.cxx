@@ -26,18 +26,24 @@
 
 module;
 
+#include <algorithm>
 #include <array>
+#include <list>
 #include <map>
 #include <memory>
+#include <set>
 #include <sstream>
 #include <stack>
+#include <vector>
+
+#include <cassert>
 
 module mxml;
 
-// import :doctype;
+import :doctype;
 // import :error;
 // import :node;
-// import :text;
+import :text;
 import :parser;
 
 namespace mxml
@@ -116,7 +122,7 @@ class data_source
 	virtual char32_t get_next_char() = 0;
 
 	void base(std::string_view dir) { m_base = dir; }
-	std::string_view base() const { return m_base; }
+	const std::string &base() const { return m_base; }
 
 	encoding_type encoding() const { return m_encoding; }
 	virtual void encoding(encoding_type enc) { m_encoding = enc; }
@@ -471,7 +477,7 @@ class parameter_entity_data_source : public string_data_source
 {
   public:
 	parameter_entity_data_source(std::string_view data, std::string_view base_dir)
-		: string_data_source(std::string{" "} + data + " ")
+		: string_data_source(" " + std::string{ data } + " ")
 	{
 		base(base_dir);
 	}
@@ -800,7 +806,7 @@ struct parser_imp
 			m_default_ns = ns;
 		}
 
-		std::string ns_for_prefix(std::string_view prefix)
+		std::string ns_for_prefix(std::string prefix)
 		{
 			std::string result;
 
@@ -816,17 +822,17 @@ struct parser_imp
 			return result;
 		}
 
-		void bind(std::string_view prefix, std::string_view uri)
+		void bind(std::string prefix, std::string_view uri)
 		{
 			m_known[prefix] = uri;
 		}
 
-		void unbind(std::string_view prefix)
+		void unbind(std::string prefix)
 		{
 			m_unbound.insert(prefix);
 		}
 
-		bool is_known_prefix(std::string_view prefix)
+		bool is_known_prefix(std::string prefix)
 		{
 			bool result = false;
 
@@ -841,7 +847,7 @@ struct parser_imp
 			return result;
 		}
 
-		bool is_known_uri(std::string_view uri)
+		bool is_known_uri(std::string uri)
 		{
 			return find_if(m_known.begin(), m_known.end(), [uri](auto k)
 					   { return k.second == uri; }) != m_known.end() or
@@ -1000,16 +1006,16 @@ const doctype::entity &parser_imp::get_general_entity(std::string_view name) con
 	{
 		if (m_is_html5)
 		{
-			auto c = get_named_character(name.c_str());
+			auto c = doctype::get_named_character(name);
 			if (c != nullptr)
 				return *c;
 		}
 
-		not_well_formed("undefined entity reference '" + name + "'");
+		not_well_formed("undefined entity reference '" + std::string{ name } + "'");
 	}
 
 	if ((*e)->is_external() and m_standalone)
-		not_valid("Document cannot be standalone since entity " + name + " is defined externally");
+		not_valid("Document cannot be standalone since entity " + std::string{ name } + " is defined externally");
 
 	return **e;
 }
@@ -2037,7 +2043,7 @@ void parser_imp::doctypedecl()
 			if (attr->get_type() != doctype::AttributeType::Notation)
 				continue;
 
-			for (std::string_view n : attr->get_enums())
+			for (auto &n : attr->get_enums())
 			{
 				if (m_notations.count(n) == 0)
 					not_valid("Undefined NOTATION '" + n + "'");
@@ -2314,7 +2320,7 @@ void parser_imp::element_decl()
 	s(true);
 
 	std::string name = m_token;
-	if (starts_with(name, "xmlns:"))
+	if (name.starts_with("xmlns:"))
 		not_well_formed("Element names should not start with xmlns:");
 
 	auto e = std::find_if(m_doctype.begin(), m_doctype.end(),
@@ -2553,7 +2559,7 @@ void parser_imp::parameter_entity_decl()
 
 	if (m_validating_ns and name.find(':') != std::string::npos)
 		not_well_formed("Entity names should not contain a colon");
-	if (starts_with(name, "xmlns:"))
+	if (name.starts_with("xmlns:"))
 		not_well_formed("Entity names should not start with xmlns:");
 
 	s(true);
@@ -2597,7 +2603,7 @@ void parser_imp::general_entity_decl()
 
 	if (m_validating_ns and name.find(':') != std::string::npos)
 		not_well_formed("Entity names should not contain a colon");
-	if (starts_with(name, "xmlns:"))
+	if (name.starts_with("xmlns:"))
 		not_well_formed("Entity names should not start with xmlns:");
 
 	std::string value, ndata;
@@ -3524,7 +3530,7 @@ void parser_imp::element(doctype::validator &valid)
 
 	doctype::validator sub_valid(dte);
 
-	std::list<detail::attr> attrs;
+	std::list<attr> attrs;
 
 	ns_state ns(this);
 	std::set<std::string> seen;
@@ -3569,7 +3575,7 @@ void parser_imp::element(doctype::validator &valid)
 		}
 
 		// had a crash suddenly here deep down in starts_with...
-		if (attr_name == "xmlns" or attr_name.compare(0, 6, "xmlns:", 6) == 0) // namespace support
+		if (attr_name == "xmlns" or attr_name.starts_with("xmlns:")) // namespace support
 		{
 			if (not((m_version > 1.0f and attr_value.empty()) or is_valid_url(attr_value)))
 				not_well_formed("Not a valid namespace URI: " + attr_value);
@@ -3677,10 +3683,10 @@ void parser_imp::element(doctype::validator &valid)
 				}
 			}
 
-			detail::attr attr;
-			attr.m_name = attr_name;
-			attr.m_value = attr_value;
-			attr.m_id = id;
+			attr a;
+			a.m_name = attr_name;
+			a.m_value = attr_value;
+			a.m_id = id;
 
 			if (m_ns != nullptr and dta == nullptr)
 			{
@@ -3698,13 +3704,13 @@ void parser_imp::element(doctype::validator &valid)
 						if (nsv.empty())
 							not_well_formed("Unbound attribute prefix");
 
-						attr.m_ns = nsv;
-						attr.m_name = attr_name.substr(d + 1);
+						a.m_ns = nsv;
+						a.m_name = attr_name.substr(d + 1);
 					}
 				}
 			}
 
-			attrs.push_back(attr);
+			attrs.push_back(a);
 		}
 	}
 
@@ -3727,7 +3733,7 @@ void parser_imp::element(doctype::validator &valid)
 		{
 			std::string attr_name = dta->name();
 
-			std::list<detail::attr>::iterator attr = find_if(attrs.begin(), attrs.end(),
+			std::list<attr>::iterator ai = find_if(attrs.begin(), attrs.end(),
 				[attr_name](auto &a)
 				{ return a.m_name == attr_name; });
 
@@ -3738,15 +3744,15 @@ void parser_imp::element(doctype::validator &valid)
 
 			if (defType == doctype::AttributeDefault::Required)
 			{
-				if (attr == attrs.end())
+				if (ai == attrs.end())
 					not_valid("missing #REQUIRED attribute '" + attr_name + "' for element '" + name + "'");
 			}
-			else if (not defValue.empty() and attr == attrs.end())
+			else if (not defValue.empty() and ai == attrs.end())
 			{
 				if (m_validating and m_standalone and dta->is_external())
 					not_valid("default value for attribute defined in external declaration which is not allowed in a standalone document");
 
-				detail::attr def_attr;
+				attr def_attr;
 				def_attr.m_name = attr_name;
 				def_attr.m_value = normalize_attribute_value(defValue, dta->get_type() == doctype::AttributeType::CDATA);
 				def_attr.m_id = false;
@@ -4093,7 +4099,7 @@ parser::parser(std::istream &data)
 
 parser::parser(std::string_view data)
 {
-	m_istream = new std::istringstream(data);
+	m_istream = new std::istringstream(std::string{ data });
 	m_impl = new parser_imp(*m_istream, *this);
 }
 
@@ -4114,7 +4120,7 @@ void parser::xml_decl(encoding_type encoding, bool standalone, float version)
 		xml_decl_handler(encoding, standalone, version);
 }
 
-void parser::start_element(std::string_view name, std::string_view uri, const std::list<detail::attr> &atts)
+void parser::start_element(std::string_view name, std::string_view uri, const std::list<attr> &atts)
 {
 	if (start_element_handler)
 		start_element_handler(name, uri, atts);
