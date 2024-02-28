@@ -482,28 +482,21 @@ inline void iterate_children(context_node *context, node_set &s, bool deep, PRED
 template <typename PREDICATE>
 void iterate_ancestor(context_node *e, node_set &s, PREDICATE pred)
 {
-	for (;;)
+	auto n = dynamic_cast<node *>(e)->parent();
+	while (n != nullptr and n->type() != node_type::document)
 	{
-		auto n = dynamic_cast<node *>(e);
-		if (n == nullptr)
-			break;
-
-		e = dynamic_cast<context_node *>(n->parent());
-
-		if (e == nullptr)
-			break;
-
 		if (pred(n))
 			s.push_back(n);
+		n = n->parent();
 	}
 }
 
 template <typename PREDICATE>
 void iterate_preceding(node *n, node_set &s, bool sibling, PREDICATE pred, bool elementsOnly)
 {
-	while (n != nullptr)
+	while (n != nullptr and n->type() != node_type::document)
 	{
-		if (n->prev() == nullptr)
+		if (n->prev()->type() == node_type::header)
 		{
 			if (sibling)
 				break;
@@ -529,9 +522,9 @@ void iterate_preceding(node *n, node_set &s, bool sibling, PREDICATE pred, bool 
 template <typename PREDICATE>
 void iterate_following(node *n, node_set &s, bool sibling, PREDICATE pred, bool elementsOnly)
 {
-	while (n != nullptr)
+	while (n != nullptr and n->type() != node_type::document)
 	{
-		if (n->next() == nullptr)
+		if (n->next()->type() == node_type::header)
 		{
 			if (sibling)
 				break;
@@ -871,7 +864,7 @@ bool node_type_expression<node>::test(const node *n)
 template <>
 bool node_type_expression<text>::test(const node *n)
 {
-	return typeid(*n) == typeid(text) or typeid(*n) == typeid(cdata);
+	return n->type() == node_type::text or n->type() == node_type::cdata;
 }
 
 template <typename T>
