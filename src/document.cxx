@@ -55,6 +55,7 @@ document::document()
 	, m_version(1.0f)
 	, m_standalone(false)
 {
+	set_header_from(m_nodes);
 }
 
 document::document(const document &doc)
@@ -68,6 +69,7 @@ document::document(const document &doc)
 	, m_standalone(doc.m_standalone)
 	, m_fmt(doc.m_fmt)
 {
+	set_header_from(m_nodes);
 }
 
 document::document(std::string_view s)
@@ -491,12 +493,12 @@ std::string document::str() const
 
 element_set document::find(std::string_view path) const
 {
-	return xpath(path).evaluate<element>(*child());
+	return xpath(path).evaluate<element>(*this);
 }
 
 element *document::find_first(std::string_view path)
 {
-	element_set s = xpath(path).evaluate<element>(*child());
+	element_set s = xpath(path).evaluate<element>(*this);
 	return s.empty() ? nullptr : s.front();
 }
 

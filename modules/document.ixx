@@ -74,7 +74,7 @@ struct doc_type
 /// A document has one zeep::xml::root_node element. This root element
 /// can have only one zeep::xml::element child node.
 
-export class document : public node
+export class document final : public node, public node_list<element>
 {
   public:
 	node_type type() const override { return node_type::document; }

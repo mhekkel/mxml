@@ -27,8 +27,8 @@
 module;
 
 #include <algorithm>
-#include <iostream>
 #include <functional>
+#include <iostream>
 #include <list>
 #include <map>
 #include <memory>
@@ -432,8 +432,10 @@ std::ostream &operator<<(std::ostream &lhs, object &rhs)
 // --------------------------------------------------------------------
 // visiting (or better, collecting) other nodes in the hierarchy is done here.
 
+using context_node = node_list<element>;
+
 template <typename PREDICATE>
-void iterate_child_elements(element *context, node_set &s, bool deep, PREDICATE pred)
+void iterate_child_elements(context_node *context, node_set &s, bool deep, PREDICATE pred)
 {
 	for (element &child : *context)
 	{
@@ -449,9 +451,9 @@ void iterate_child_elements(element *context, node_set &s, bool deep, PREDICATE 
 }
 
 template <typename PREDICATE>
-void iterate_child_nodes(element *context, node_set &s, bool deep, PREDICATE pred)
+void iterate_child_nodes(context_node *context, node_set &s, bool deep, PREDICATE pred)
 {
-	for (node &child : context->nodes())
+	for (node &child : node_list<>(*context))
 	{
 		if (find(s.begin(), s.end(), &child) != s.end())
 			continue;
@@ -461,7 +463,7 @@ void iterate_child_nodes(element *context, node_set &s, bool deep, PREDICATE pre
 
 		if (deep)
 		{
-			element *child_element = dynamic_cast<element *>(&child);
+			context_node *child_element = dynamic_cast<context_node *>(&child);
 			if (child_element != nullptr)
 				iterate_child_nodes(child_element, s, true, pred);
 		}
@@ -469,7 +471,7 @@ void iterate_child_nodes(element *context, node_set &s, bool deep, PREDICATE pre
 }
 
 template <typename PREDICATE>
-inline void iterate_children(element *context, node_set &s, bool deep, PREDICATE pred, bool elementsOnly)
+inline void iterate_children(context_node *context, node_set &s, bool deep, PREDICATE pred, bool elementsOnly)
 {
 	if (elementsOnly)
 		iterate_child_elements(context, s, deep, pred);
@@ -478,17 +480,21 @@ inline void iterate_children(element *context, node_set &s, bool deep, PREDICATE
 }
 
 template <typename PREDICATE>
-void iterate_ancestor(element *e, node_set &s, PREDICATE pred)
+void iterate_ancestor(context_node *e, node_set &s, PREDICATE pred)
 {
 	for (;;)
 	{
-		e = dynamic_cast<element *>(e->parent());
+		auto n = dynamic_cast<node *>(e);
+		if (n == nullptr)
+			break;
+
+		e = dynamic_cast<context_node *>(n->parent());
 
 		if (e == nullptr)
 			break;
 
-		if (pred(e))
-			s.push_back(e);
+		if (pred(n))
+			s.push_back(n);
 	}
 }
 
@@ -508,12 +514,12 @@ void iterate_preceding(node *n, node_set &s, bool sibling, PREDICATE pred, bool 
 
 		n = n->prev();
 
-		element *e = dynamic_cast<element *>(n);
+		context_node *e = dynamic_cast<context_node *>(n);
 		if (e == nullptr)
 			continue;
 
-		if (pred(e))
-			s.push_back(e);
+		if (pred(n))
+			s.push_back(n);
 
 		if (sibling == false)
 			iterate_children(e, s, true, pred, elementsOnly);
@@ -536,12 +542,12 @@ void iterate_following(node *n, node_set &s, bool sibling, PREDICATE pred, bool 
 
 		n = n->next();
 
-		element *e = dynamic_cast<element *>(n);
+		context_node *e = dynamic_cast<context_node *>(n);
 		if (e == nullptr)
 			continue;
 
-		if (pred(e))
-			s.push_back(e);
+		if (pred(n))
+			s.push_back(n);
 
 		if (sibling == false)
 			iterate_children(e, s, true, pred, elementsOnly);
@@ -549,25 +555,33 @@ void iterate_following(node *n, node_set &s, bool sibling, PREDICATE pred, bool 
 }
 
 template <typename PREDICATE>
-void iterate_attributes(element *e, node_set &s, PREDICATE pred)
+void iterate_attributes(context_node *e, node_set &s, PREDICATE pred)
 {
-	for (auto &a : e->attributes())
+	auto el = dynamic_cast<element *>(e);
+	if (el != nullptr)
 	{
-		if (pred(&a))
-			s.push_back(&a);
+		for (auto &a : el->attributes())
+		{
+			if (pred(&a))
+				s.push_back(&a);
+		}
 	}
 }
 
 template <typename PREDICATE>
-void iterate_namespaces(element *e, node_set &s, PREDICATE pred)
+void iterate_namespaces(context_node *e, node_set &s, PREDICATE pred)
 {
-	for (auto &a : e->attributes())
+	auto el = dynamic_cast<element *>(e);
+	if (el != nullptr)
 	{
-		if (not a.is_namespace())
-			continue;
+		for (auto &a : el->attributes())
+		{
+			if (not a.is_namespace())
+				continue;
 
-		if (pred(&a))
-			s.push_back(&a);
+			if (pred(&a))
+				s.push_back(&a);
+		}
 	}
 }
 
@@ -705,33 +719,32 @@ object step_expression::evaluate(expression_context &context, T pred, bool eleme
 {
 	node_set result;
 
-	element *context_element = dynamic_cast<element *>(context.m_node);
+	context_node *context_element = dynamic_cast<context_node *>(context.m_node);
 	if (context_element != nullptr)
 	{
 		switch (m_axis)
 		{
 			case AxisType::Parent:
-				if (context_element->parent() != nullptr)
-				{
-					element *e = static_cast<element *>(context_element->parent());
-					if (pred(e))
-						result.push_back(context_element->parent());
-				}
+			{
+				auto p = context.m_node->parent();
+				if (p != nullptr and pred(p))
+					result.push_back(p);
 				break;
+			}
 
 			case AxisType::Ancestor:
 				iterate_ancestor(context_element, result, pred);
 				break;
 
 			case AxisType::AncestorOrSelf:
-				if (pred(context_element))
-					result.push_back(context_element);
+				if (pred(context.m_node))
+					result.push_back(context.m_node);
 				iterate_ancestor(context_element, result, pred);
 				break;
 
 			case AxisType::Self:
-				if (pred(context_element))
-					result.push_back(context_element);
+				if (pred(context.m_node))
+					result.push_back(context.m_node);
 				break;
 
 			case AxisType::Child:
@@ -743,35 +756,35 @@ object step_expression::evaluate(expression_context &context, T pred, bool eleme
 				break;
 
 			case AxisType::DescendantOrSelf:
-				if (pred(context_element))
-					result.push_back(context_element);
+				if (pred(context.m_node))
+					result.push_back(context.m_node);
 				iterate_children(context_element, result, true, pred, elementsOnly);
 				break;
 
 			case AxisType::Following:
-				iterate_following(context_element, result, false, pred, elementsOnly);
+				iterate_following(context.m_node, result, false, pred, elementsOnly);
 				break;
 
 			case AxisType::FollowingSibling:
-				iterate_following(context_element, result, true, pred, elementsOnly);
+				iterate_following(context.m_node, result, true, pred, elementsOnly);
 				break;
 
 			case AxisType::Preceding:
-				iterate_preceding(context_element, result, false, pred, elementsOnly);
+				iterate_preceding(context.m_node, result, false, pred, elementsOnly);
 				break;
 
 			case AxisType::PrecedingSibling:
-				iterate_preceding(context_element, result, true, pred, elementsOnly);
+				iterate_preceding(context.m_node, result, true, pred, elementsOnly);
 				break;
 
 			case AxisType::Attribute:
-				if (dynamic_cast<element *>(context_element) != nullptr)
-					iterate_attributes(static_cast<element *>(context_element), result, pred);
+				if (auto c = dynamic_cast<context_node *>(context_element); c != nullptr)
+					iterate_attributes(c, result, pred);
 				break;
 
 			case AxisType::Namespace:
-				if (dynamic_cast<element *>(context_element) != nullptr)
-					iterate_namespaces(static_cast<element *>(context_element), result, pred);
+				if (auto c = dynamic_cast<context_node *>(context_element); c != nullptr)
+					iterate_namespaces(c, result, pred);
 				break;
 
 			case AxisType::AxisTypeCount:;
@@ -844,10 +857,22 @@ class node_type_expression : public step_expression
 	// virtual void		print(int level) { indent(level); std::cout << "node type step " << boost::core::demangle(typeid(T).name()) << '\n'; }
 
   private:
-	static bool test(const node *n) { return dynamic_cast<const T *>(n) != nullptr; }
+	static bool test(const node *n) { return typeid(*n) == typeid(T); }
 
 	std::function<bool(const node *)> m_test;
 };
+
+template <>
+bool node_type_expression<node>::test(const node *n)
+{
+	return true;
+}
+
+template <>
+bool node_type_expression<text>::test(const node *n)
+{
+	return typeid(*n) == typeid(text) or typeid(*n) == typeid(cdata);
+}
 
 template <typename T>
 object node_type_expression<T>::evaluate(expression_context &context)
