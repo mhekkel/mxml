@@ -165,25 +165,25 @@ TEST_CASE("test_1")
 
 	SECTION("emplace")
 	{
-		auto &t = n.emplace(n.end(), "c1");
+		auto t = n.emplace(n.end(), "c1");
 
-		CHECK(t.name() == "c1");
+		CHECK(t->name() == "c1");
 		CHECK(n.size() == 1);
 		CHECK(n.front().name() == "c1");
 		for (auto &e : n)
 			CHECK(e.parent() == &n);
 
-		auto &t2 = n.emplace_back("c2");
+		auto t2 = n.emplace_back("c2");
 
-		CHECK(t2.name() == "c2");
+		CHECK(t2->name() == "c2");
 		CHECK(n.size() == 2);
 		CHECK(n.front().name() == "c1");
 		CHECK(n.back().name() == "c2");
 		for (auto &e : n)
 			CHECK(e.parent() == &n);
 
-		auto &t3 = n.emplace_front("c0");
-		CHECK(t3.name() == "c0");
+		auto t3 = n.emplace_front("c0");
+		CHECK(t3->name() == "c0");
 		CHECK(n.size() == 3);
 		CHECK(n.front().name() == "c0");
 		CHECK(n.back().name() == "c2");
@@ -307,15 +307,15 @@ TEST_CASE("xml_3")
 	// mxml::node &n = b;
 
 	// e.nodes().emplace(e.end(), n);
-	CHECK(e.nodes().emplace(e.end(), b).name() == "noot");
+	CHECK(e.nodes().emplace(e.end(), b)->name() == "noot");
 	CHECK((std::ostringstream() << e).str() == R"(<test><aap/><aap/><noot/></test>)");
 
 	const auto &n2 = b;
-	CHECK(e.nodes().emplace(e.end(), n2).name() == "noot");
+	CHECK(e.nodes().emplace(e.end(), n2)->name() == "noot");
 	CHECK((std::ostringstream() << e).str() == R"(<test><aap/><aap/><noot/><noot/></test>)");
 
 	auto &&n3 = std::move(b);
-	CHECK(e.nodes().emplace(e.end(), std::move(n3)).name() == "noot");
+	CHECK(e.nodes().emplace(e.end(), std::move(n3))->name() == "noot");
 	CHECK(b.name() == "");
 	CHECK((std::ostringstream() << e).str() == R"(<test><aap/><aap/><noot/><noot/><noot/></test>)");
 
@@ -396,8 +396,8 @@ TEST_CASE("xml_container_and_iterators")
 	e.insert(e.begin(), std::move(n));
 	e.back().set_content("aap ");
 
-	e.emplace_back("b").set_content("noot ");
-	e.emplace_back("c").set_content("mies");
+	e.emplace_back("b")->set_content("noot ");
+	e.emplace_back("c")->set_content("mies");
 
 	CHECK(e.size() == 3);
 	CHECK(not e.empty());
@@ -499,7 +499,7 @@ TEST_CASE("xml_iterators")
 {
 	mxml::element e("test");
 	for (int i = 0; i < 10; ++i)
-		e.emplace_back("n").set_content(std::to_string(i));
+		e.emplace_back("n")->set_content(std::to_string(i));
 
 	auto bi = e.begin();
 	auto ei = e.end();
@@ -515,7 +515,7 @@ TEST_CASE("xml_iterators_2")
 {
 	mxml::element e("test");
 	for (int i = 0; i < 10; ++i)
-		e.emplace_back("n").set_content(std::to_string(i));
+		e.emplace_back("n")->set_content(std::to_string(i));
 
 	auto bi = e.begin();
 	auto ei = e.end();
@@ -610,73 +610,73 @@ TEST_CASE("xml_doc")
 	CHECK(l4.get_qname() == "l4");
 	CHECK(l4.empty());
 
-	// auto i = l3.find_first("./l4");
-	// CHECK(i != l3.end());
-	// l3.erase(i);
+	auto i = l3.find_first("./l4");
+	REQUIRE(i != nullptr);
+	l3.erase(i);
 
-	// CHECK(l3.empty());
+	CHECK(l3.empty());
 
-	// i = l1.find_first(".//l3");
-	// CHECK(i != l1.end());
+	i = l1.find_first(".//l3");
+	CHECK(i != nullptr);
 
-	// CHECK_THROW(l1.erase(i), mxml::exception);
+	CHECK_THROWS_AS(l1.erase(i), mxml::exception);
 
-	// l1.erase(l1.begin());
+	l1.erase(l1.begin());
 
-	// CHECK(l1.empty());
+	CHECK(l1.empty());
 }
 
-// TEST_CASE("xml_doc2")
-// {
-// 	mxml::document doc;
-// 	doc.emplace_back("first", { { "a1", "v1" } });
-// 	CHECK_THROW(doc.emplace_back("second"), mxml::exception);
-// }
+TEST_CASE("xml_doc2")
+{
+	mxml::document doc;
+	doc.emplace("first");
+	CHECK_THROWS_AS(doc.emplace("second"), mxml::exception);
+}
 
-// TEST_CASE("xml_xpath")
-// {
-// 	using namespace mxml::literals;
-// 	auto doc = R"(<test><a/><a/><a/></test>)"_xml;
+TEST_CASE("xml_xpath")
+{
+	using namespace mxml::literals;
+	auto doc = R"(<test><a/><a/><a/></test>)"_xml;
 
-// 	auto r = doc.find("//a");
-// 	CHECK(r.size() == 3);
-// 	CHECK(r.front()->get_qname() == "a");
-// }
+	auto r = doc.find("//a");
+	REQUIRE(r.size() == 3);
+	CHECK(r.front()->get_qname() == "a");
+}
 
-// TEST_CASE("xml_xpath_2")
-// {
-// 	using namespace mxml::literals;
-// 	auto doc = R"(
-// <test>
-// 	<b/>
-// 	<b>
-// 		<c>
-// 			<a>x</a>
-// 		</c>
-// 	</b>
-// 	<b>
-// 		<c>
-// 			<a>
-// 				<![CDATA[x]]>
-// 			</a>
-// 		</c>
-// 	</b>
-// 	<b>
-// 		<c z='z'>
-// 			<a>y</a>
-// 		</c>
-// 	</b>
-// </test>
-// )"_xml;
+TEST_CASE("xml_xpath_2")
+{
+	using namespace mxml::literals;
+	auto doc = R"(
+<test>
+	<b/>
+	<b>
+		<c>
+			<a>x</a>
+		</c>
+	</b>
+	<b>
+		<c>
+			<a>
+				<![CDATA[x]]>
+			</a>
+		</c>
+	</b>
+	<b>
+		<c z='z'>
+			<a>y</a>
+		</c>
+	</b>
+</test>
+)"_xml;
 
-// 	auto r = doc.find("//b[c/a[contains(text(),'x')]]");
-// 	CHECK(r.size() == 2);
-// 	CHECK(r.front()->get_qname() == "b");
+	auto r = doc.find("//b[c/a[contains(text(),'x')]]");
+	REQUIRE(r.size() == 2);
+	CHECK(r.front()->get_qname() == "b");
 
-// 	auto r2 = doc.find("//b/c[@z='z']/a[text()='y']");
-// 	CHECK(r2.size() == 1);
-// 	CHECK(r2.front()->get_qname() == "a");
-// }
+	auto r2 = doc.find("//b/c[@z='z']/a[text()='y']");
+	REQUIRE(r2.size() == 1);
+	CHECK(r2.front()->get_qname() == "a");
+}
 
 TEST_CASE("xml_namespaces")
 {
@@ -775,11 +775,11 @@ TEST_CASE("xml_namespaces_2")
 	CHECK(ay->value() == "2");
 	CHECK(ay->get_ns() == "http://www.hekkelman.com/libzeep");
 
-	// mxml::element data2("data", { { "xmlns", "http://www.hekkelman.com/libzeep" } });
-	// auto &x2 = data2.emplace_back("x", { { "a", "1" } });
-	// x2.emplace_back("y", { { "a", "2" } });
+	mxml::element data2("data", { { "xmlns", "http://www.hekkelman.com/libzeep" } });
+	auto x2 = data2.emplace_back("x", std::initializer_list<mxml::attribute>{ { "a", "1" } });
+	x2->emplace_back("y", std::initializer_list<mxml::attribute>{ { "a", "2" } });
 
-	// CHECK(data == data2);
+	CHECK(data == data2);
 }
 
 TEST_CASE("xml_namespaces_3")

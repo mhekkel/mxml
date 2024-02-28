@@ -58,6 +58,9 @@ export class cdata;
 export class processing_instruction;
 export class document;
 
+using node_set = std::list<node *>;
+using element_set = std::list<element *>;
+
 template <typename T>
 concept NodeType = std::is_base_of_v<mxml::node, T>;
 
@@ -167,15 +170,15 @@ class node
 	virtual node *root();             ///< The root node for this node
 	virtual const node *root() const; ///< The root node for this node
 
-	void parent(node *p) { m_parent = p; }
+	void parent(node *p) noexcept { m_parent = p; }
 	node *parent() { return m_parent; }             ///< The parent node for this node
 	const node *parent() const { return m_parent; } ///< The parent node for this node
 
-	void next(const node *n) { m_next = const_cast<node *>(n); }
+	void next(const node *n) noexcept { m_next = const_cast<node *>(n); }
 	node *next() { return m_next; }             ///< The next sibling
 	const node *next() const { return m_next; } ///< The next sibling
 
-	void prev(const node *n) { m_prev = const_cast<node *>(n); }
+	void prev(const node *n) noexcept { m_prev = const_cast<node *>(n); }
 	node *prev() { return m_prev; }             ///< The previous sibling
 	const node *prev() const { return m_prev; } ///< The previous sibling
 
@@ -202,7 +205,6 @@ class node
 	node(node &&n) = delete;
 	node &operator=(const node &n) = delete;
 	node &operator=(node &&n) = delete;
-
 
   protected:
 	node *m_parent = nullptr;
@@ -302,7 +304,7 @@ class basic_node_list
 	basic_node_list &operator=(const basic_node_list &nl) = delete;
 	basic_node_list &operator=(basic_node_list &&nl) = delete;
 
-	friend void swap(basic_node_list &a, basic_node_list &b)
+	friend void swap(basic_node_list &a, basic_node_list &b) noexcept
 	{
 		std::swap(a.m_node, b.m_node);
 		std::swap(a.m_node->m_parent, b.m_node->m_parent);
@@ -557,7 +559,7 @@ class node_list : public basic_node_list
 	}
 
 	template <typename... Args>
-		requires(not std::is_same_v<value_type, node>)
+		requires std::is_same_v<value_type, attribute> or std::is_same_v<value_type, element>
 	iterator insert(const_iterator p, Args &&...args)
 	{
 		return insert_impl(p, new value_type(std::forward<Args>(args)...));
@@ -601,28 +603,25 @@ class node_list : public basic_node_list
 		insert(begin(), first, last);
 	}
 
-	reference emplace(const_iterator p, value_type &&n)
-	{
-		return *insert(p, std::move(n));
-	}
-
 	template <typename... Args>
-	// requires std::is_constructible_v<value_type, Args...>
-	reference emplace(const_iterator p, Args &&...args)
+		requires std::is_same_v<value_type, attribute> or std::is_same_v<value_type, element> or std::is_base_of_v<node, std::remove_cvref_t<Args>...>
+	iterator emplace(const_iterator p, Args &&...args)
 	{
-		return *insert(p, std::forward<Args>(args)...);
+		return insert(p, std::forward<Args>(args)...);
 	}
 
 	/// \brief emplace an element at the front using arguments \a args
 	template <typename... Args>
-	value_type &emplace_front(Args &&...args)
+		requires std::is_same_v<value_type, attribute> or std::is_same_v<value_type, element> or std::is_base_of_v<node, std::remove_cvref_t<Args>...>
+	iterator emplace_front(Args &&...args)
 	{
 		return emplace(begin(), std::forward<Args>(args)...);
 	}
 
 	/// \brief emplace an element at the back using arguments \a args
 	template <typename... Args>
-	value_type &emplace_back(Args &&...args)
+		requires std::is_same_v<value_type, attribute> or std::is_same_v<value_type, element> or std::is_base_of_v<node, std::remove_cvref_t<Args>...>
+	iterator emplace_back(Args &&...args)
 	{
 		return emplace(end(), std::forward<Args>(args)...);
 	}
@@ -703,12 +702,11 @@ class node_list : public basic_node_list
 	}
 
   protected:
-
 	// For node_list<element> only
 	node_list();
 };
 
-template<>
+template <>
 node_list<element>::node_list()
 {
 }
@@ -1074,13 +1072,13 @@ class attribute_set : public node_list<attribute>
 
 	attribute_set(element *el, const attribute_set &as);
 
-	attribute_set &operator=(attribute_set as)
+	attribute_set &operator=(attribute_set as) noexcept
 	{
 		swap(*this, as);
 		return *this;
 	}
 
-	friend void swap(attribute_set &a, attribute_set &b)
+	friend void swap(attribute_set &a, attribute_set &b) noexcept
 	{
 		swap(static_cast<node_list<attribute> &>(a), static_cast<node_list<attribute> &>(b));
 	}
@@ -1200,7 +1198,7 @@ class element final : public node, public node_list<element>
 		swap(*this, e);
 	}
 
-	element &operator=(element e)
+	element &operator=(element e) noexcept
 	{
 		swap(*this, e);
 		return *this;
@@ -1302,44 +1300,26 @@ class element final : public node, public node_list<element>
 	/// To combine all adjacent child text nodes into one
 	void flatten_text();
 
-	// 	/// xpath wrappers
-	// 	/// TODO: create recursive iterator and use it as return type here
+	/// xpath wrappers
+	/// TODO: create recursive iterator and use it as return type here
 
-	// 	/// \brief return the elements that match XPath \a path.
-	// 	///
-	// 	/// If you need to find other classes than xml::element, of if your XPath
-	// 	/// contains variables, you should create a zeep::xml::xpath object and use
-	// 	/// its evaluate method.
-	// 	element_set find(const std::string &path) const { return find(path.c_str()); }
+	/// \brief return the elements that match XPath \a path.
+	///
+	/// If you need to find other classes than xml::element, of if your XPath
+	/// contains variables, you should create a zeep::xml::xpath object and use
+	/// its evaluate method.
+	element_set find(std::string_view path) const;
 
-	// 	/// \brief return the first element that matches XPath \a path.
-	// 	///
-	// 	/// If you need to find other classes than xml::element, of if your XPath
-	// 	/// contains variables, you should create a zeep::xml::xpath object and use
-	// 	/// its evaluate method.
-	// 	iterator find_first(const std::string &path) { return find_first(path.c_str()); }
-	// 	const_iterator find_first(const std::string &path) const
-	// 	{
-	// 		return const_cast<element *>(this)->find_first(path);
-	// 	}
-
-	// 	/// \brief return the elements that match XPath \a path.
-	// 	///
-	// 	/// If you need to find other classes than xml::element, of if your XPath
-	// 	/// contains variables, you should create a zeep::xml::xpath object and use
-	// 	/// its evaluate method.
-	// 	element_set find(const char *path) const;
-
-	// 	/// \brief return the first element that matches XPath \a path.
-	// 	///
-	// 	/// If you need to find other classes than xml::element, of if your XPath
-	// 	/// contains variables, you should create a zeep::xml::xpath object and use
-	// 	/// its evaluate method.
-	// 	iterator find_first(const char *path);
-	// 	const_iterator find_first(const char *path) const
-	// 	{
-	// 		return const_cast<element *>(this)->find_first(path);
-	// 	}
+	/// \brief return the first element that matches XPath \a path.
+	///
+	/// If you need to find other classes than xml::element, of if your XPath
+	/// contains variables, you should create a zeep::xml::xpath object and use
+	/// its evaluate method.
+	element *find_first(std::string_view path);
+	const element *find_first(std::string_view path) const
+	{
+		return const_cast<element *>(this)->find_first(path);
+	}
 
 	void write(std::ostream &os, format_info fmt) const override;
 
@@ -1386,35 +1366,35 @@ auto node_list<node>::insert(const_iterator pos, value_type &&e) -> iterator
 	switch (e.type())
 	{
 		case node_type::element:
-			return insert_impl(pos, new element(std::move(static_cast<element &&>(e))));
+			return insert_impl(pos, new element(static_cast<element &&>(e)));
 			break;
 		case node_type::text:
-			return insert_impl(pos, new text(std::move(static_cast<text &&>(e))));
+			return insert_impl(pos, new text(static_cast<text &&>(e)));
 			break;
 		case node_type::attribute:
-			return insert_impl(pos, new attribute(std::move(static_cast<attribute &&>(e))));
+			return insert_impl(pos, new attribute(static_cast<attribute &&>(e)));
 			break;
 		case node_type::comment:
-			return insert_impl(pos, new comment(std::move(static_cast<comment &&>(e))));
+			return insert_impl(pos, new comment(static_cast<comment &&>(e)));
 			break;
 		case node_type::cdata:
-			return insert_impl(pos, new cdata(std::move(static_cast<cdata &&>(e))));
+			return insert_impl(pos, new cdata(static_cast<cdata &&>(e)));
 			break;
 		case node_type::processing_instruction:
-			return insert_impl(pos, new processing_instruction(std::move(static_cast<processing_instruction &&>(e))));
+			return insert_impl(pos, new processing_instruction(static_cast<processing_instruction &&>(e)));
 			break;
 		default:
 			throw exception("internal error");
 	}
 }
 
-/// \brief insert a copy of \a e at position \a pos, moving its data
-template <>
-auto node_list<element>::insert(const_iterator pos, value_type &&e) -> iterator
-{
-	assert(e.type() == node_type::element);
-	return insert_impl(pos, new element(std::move(e)));
-}
+// /// \brief insert a copy of \a e at position \a pos, moving its data
+// template <>
+// auto node_list<element>::insert(const_iterator pos, value_type &&e) -> iterator
+// {
+// 	assert(e.type() == node_type::element);
+// 	return insert_impl(pos, new element(std::move(e)));
+// }
 
 // --------------------------------------------------------------------
 

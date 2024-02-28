@@ -15,6 +15,7 @@ target_sources(mxml
 	src/node.cxx
 	src/parser.cxx
 	src/text.cxx
+	src/xpath.cxx
 	PUBLIC
 	FILE_SET public_modules TYPE CXX_MODULES
 	BASE_DIRS
@@ -27,6 +28,7 @@ target_sources(mxml
 	modules/node.ixx
 	modules/parser.ixx
 	modules/text.ixx
+	modules/xpath.ixx
 )
 
 target_compile_features(mxml PUBLIC cxx_std_20)

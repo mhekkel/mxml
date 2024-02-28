@@ -86,10 +86,18 @@ export class document : public node
 	document(const document &doc);
 
 	/// \brief Move constructor
-	document(document &&other);
+	document(document &&other) noexcept
+		: document()
+	{
+		swap(*this, other);
+	}
 
 	/// \brief operator=
-	document &operator=(document doc);
+	document &operator=(document doc) noexcept
+	{
+		swap(*this, doc);
+		return *this;
+	}
 
 	/// \brief Constructor that will parse the XML passed in argument using default settings \a s
 	document(std::string_view s);
@@ -103,7 +111,7 @@ export class document : public node
 
 	~document() = default;
 
-	friend void swap(document &a, document &b);
+	friend void swap(document &a, document &b) noexcept;
 
 	/// options for parsing
 	/// validating uses a DTD if it is defined
@@ -233,11 +241,34 @@ export class document : public node
 
 	bool empty() const { return node_list<element>(m_nodes).empty(); }
 
-	element &emplace(element e)
+	template <typename ...Args>
+		requires std::is_constructible_v<element, Args...>
+	auto emplace(Args &&... args)
 	{
 		if (not empty())
 			throw exception("Only one child element is allowed in a document");
-		return static_cast<element &>(m_nodes.emplace_back(std::move(e)));
+		return node_list<element>(m_nodes).emplace_back(std::forward<Args>(args)...);
+	}
+
+	/// xpath wrappers
+	/// TODO: create recursive iterator and use it as return type here
+
+	/// \brief return the elements that match XPath \a path.
+	///
+	/// If you need to find other classes than xml::element, of if your XPath
+	/// contains variables, you should create a zeep::xml::xpath object and use
+	/// its evaluate method.
+	element_set find(std::string_view path) const;
+
+	/// \brief return the first element that matches XPath \a path.
+	///
+	/// If you need to find other classes than xml::element, of if your XPath
+	/// contains variables, you should create a zeep::xml::xpath object and use
+	/// its evaluate method.
+	element *find_first(std::string_view path);
+	const element *find_first(std::string_view path) const
+	{
+		return const_cast<document *>(this)->find_first(path);
 	}
 
   protected:

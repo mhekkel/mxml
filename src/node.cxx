@@ -766,17 +766,17 @@ void element::move_to_name_space(const std::string &prefix, const std::string &u
 	}
 }
 
-// element_set element::find(const char *path) const
-// {
-// 	return xpath(path).evaluate<element>(*this);
-// }
+element_set element::find(std::string_view path) const
+{
+	return xpath(path).evaluate<element>(*this);
+}
 
-// element::iterator element::find_first(const char *path)
-// {
-// 	element_set s = xpath(path).evaluate<element>(*this);
+element *element::find_first(std::string_view path)
+{
+	element_set s = xpath(path).evaluate<element>(*this);
 
-// 	return s.empty() ? end() : iterator(*this, s.front());
-// }
+	return s.empty() ? nullptr : s.front();
+}
 
 // --------------------------------------------------------------------
 

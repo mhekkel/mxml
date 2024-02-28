@@ -70,18 +70,6 @@ document::document(const document &doc)
 {
 }
 
-document::document(document &&doc)
-	: m_nodes(this)
-{
-	swap(*this, doc);
-}
-
-document &document::operator=(document doc)
-{
-	swap(*this, doc);
-	return *this;
-}
-
 document::document(std::string_view s)
 	: document()
 {
@@ -111,7 +99,7 @@ document::document(std::istream &is, const std::string &base_dir)
 	parse(is);
 }
 
-void swap(document &a, document &b)
+void swap(document &a, document &b) noexcept
 {
 	swap(a.m_nodes, b.m_nodes);
 
@@ -306,9 +294,9 @@ void document::StartElementHandler(const std::string &name, const std::string &u
 	}
 
 	if (m_cur == this)
-		m_cur = &emplace(element(qname));
+		m_cur = static_cast<element *>((node *)emplace(element(qname)));
 	else
-		m_cur = &static_cast<element *>(m_cur)->emplace_back(qname);
+		m_cur = static_cast<element *>(m_cur)->emplace_back(qname);
 
 	for (const auto &[prefix, uri] : m_namespaces)
 	{
@@ -398,7 +386,7 @@ void document::CommentHandler(const std::string &s)
 
 void document::StartCdataSectionHandler()
 {
-	m_cdata = static_cast<cdata *>(&static_cast<element *>(m_cur)->nodes().emplace_back(cdata()));
+	m_cdata = static_cast<cdata *>((node *)static_cast<element *>(m_cur)->nodes().emplace_back(cdata()));
 }
 
 void document::EndCdataSectionHandler()
@@ -498,6 +486,18 @@ std::string document::str() const
 		return child()->str();
 	else
 		return {};
+}
+
+
+element_set document::find(std::string_view path) const
+{
+	return xpath(path).evaluate<element>(*child());
+}
+
+element *document::find_first(std::string_view path)
+{
+	element_set s = xpath(path).evaluate<element>(*child());
+	return s.empty() ? nullptr : s.front();
 }
 
 namespace literals
