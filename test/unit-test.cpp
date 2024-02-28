@@ -483,13 +483,13 @@ TEST_CASE("xml_copy2")
 
 	CHECK(c2 == c3);
 
-// 	mxml::element e2("test", { { "a", "een" }, { "b", "twee" } });
-// 	for (auto &n : c2.front())
-// 		e2.emplace_back(std::move(n));
-// 	for (auto &n : c2.front().nodes())
-// 		e2.nodes().emplace_back(std::move(n));
+	mxml::element e2("test", { { "a", "een" }, { "b", "twee" } });
+	for (auto &n : c2.front())
+		e2.emplace_back(std::move(n));
+	for (auto &n : c2.front().nodes())
+		e2.nodes().emplace_back(n);
 
-// 	CHECK(e2 == e1);
+	CHECK(e2 == e1);
 
 // 	// e1.validate();
 // 	// e2.validate();
@@ -860,7 +860,7 @@ TEST_CASE("named_char_2")
 
 	auto b = R"(<test xmlns:m="http://www.hekkelman.com">⊇</test>)"_xml;
 
-	CHECK((a == b) == true);
+	CHECK(a == b);
 	if (not(a == b))
 		std::cout << std::setw(2) << a << '\n'
 				  << b << '\n';

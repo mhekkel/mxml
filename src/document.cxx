@@ -184,6 +184,7 @@ std::ostream &operator<<(std::ostream &os, const document &doc)
 	{
 		fmt.indent_width = os.width();
 		fmt.indent = true;
+		os.width(0);
 	}
 
 	doc.write(os, fmt);

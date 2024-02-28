@@ -582,7 +582,8 @@ void element::write(std::ostream &os, format_info fmt) const
 	{
 		if (fmt.indent_level > 0)
 			os << '\n';
-		os << std::string(indentation, ' ');
+		if (indentation > 0)
+			os << std::string(indentation, ' ');
 	}
 
 	os << '<' << m_qname;

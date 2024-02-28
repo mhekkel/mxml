@@ -22,23 +22,24 @@ target_sources(mxml
 	${CMAKE_CURRENT_SOURCE_DIR}/modules
 	FILES
 	modules/mxml.ixx
-	modules/doctype.ixx
-	modules/document.ixx
-	modules/error.ixx
-	modules/node.ixx
-	modules/parser.ixx
-	modules/text.ixx
-	modules/xpath.ixx
+	modules/mxml/doctype.ixx
+	modules/mxml/document.ixx
+	modules/mxml/error.ixx
+	modules/mxml/node.ixx
+	modules/mxml/parser.ixx
+	modules/mxml/text.ixx
+	modules/mxml/xpath.ixx
 )
 
 target_compile_features(mxml PUBLIC cxx_std_20)
 
 install(TARGETS mxml
-	EXPORT CXXModules
+	EXPORT mxml
+	CXX_MODULES_BMI DESTINATION "lib/cxx/bmi"
 	FILE_SET public_modules DESTINATION "lib/cxx/miu")
 
-install(EXPORT CXXModules
-	NAMESPACE CXXModules::
+install(EXPORT mxml
+	NAMESPACE mxml::
 	DESTINATION "lib/cmake/mxml"
 	FILE "mxml-targets.cmake")
 
