@@ -55,7 +55,7 @@ struct attr
 ///
 /// The what() member of the exception object will contain an explanation.
 
-class invalid_exception : public exception
+export class invalid_exception : public exception
 {
   public:
 	invalid_exception(const std::string &msg)
@@ -71,7 +71,7 @@ class invalid_exception : public exception
 ///
 /// The what() member of the exception object will contain an explanation.
 
-class not_wf_exception : public exception
+export class not_wf_exception : public exception
 {
   public:
 	not_wf_exception(const std::string &msg)
@@ -81,7 +81,7 @@ class not_wf_exception : public exception
 	~not_wf_exception() noexcept {}
 };
 
-/// zeep::xml::parser is a SAX parser. After construction, you should assign
+/// mxml::parser is a SAX parser. After construction, you should assign
 /// call back handlers for the SAX events and then call parse().
 
 class parser

@@ -1,3 +1,5 @@
 .vscode/
 build/
 src/revision.hpp
+test/XML-Test-Suite/
+

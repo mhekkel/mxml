@@ -380,7 +380,7 @@ void document::ProcessingInstructionHandler(const std::string &target, const std
 
 void document::CommentHandler(const std::string &s)
 {
-	if  (m_cur == this)
+	if (m_cur == this)
 		m_nodes.emplace_back(comment(s));
 	else
 		static_cast<element *>(m_cur)->nodes().emplace_back(comment(s));
@@ -489,7 +489,6 @@ std::string document::str() const
 	else
 		return {};
 }
-
 
 element_set document::find(std::string_view path) const
 {

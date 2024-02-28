@@ -865,3 +865,10 @@ TEST_CASE("named_char_2")
 		std::cout << std::setw(2) << a << '\n'
 				  << b << '\n';
 }
+
+TEST_CASE("doc-test-1")
+{
+	mxml::document doc;
+	doc.nodes().emplace_back(mxml::comment("test"));
+	CHECK(doc.empty());
+}

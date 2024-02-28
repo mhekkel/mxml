@@ -247,7 +247,7 @@ std::string to_hex(uint32_t i)
 // --------------------------------------------------------------------
 
 /// \brief A simple implementation of trim, removing white space from start and end of \a s
-void trim(std::string& s)
+export void trim(std::string& s)
 {
 	std::string::iterator b = s.begin();
 	while (b != s.end() and *b > 0 and std::isspace(*b))

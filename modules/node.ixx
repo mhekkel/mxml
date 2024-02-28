@@ -47,8 +47,7 @@ namespace mxml
 
 // forward declarations
 
-class node;
-
+export class node;
 export class element;
 export class text;
 export class attribute;
@@ -187,7 +186,7 @@ class node
 
 	/// \brief low level routine for writing out XML
 	///
-	/// This method is usually called by operator<<(std::ostream&, zeep::xml::document&)
+	/// This method is usually called by operator<<(std::ostream&, mxml::document&)
 	virtual void write(std::ostream &os, format_info fmt) const = 0;
 
   protected:
@@ -389,7 +388,7 @@ class iterator_impl
 	iterator_impl(const node *current)
 		: m_current(const_cast<node *>(current))
 	{
-		if constexpr (std::is_same_v<value_type, element>)
+		if constexpr (std::is_same_v<std::remove_cv_t<value_type>, element>)
 		{
 			while (m_current->type() != node_type::element and m_current->type() != node_type::header)
 				m_current = m_current->next();
@@ -404,6 +403,11 @@ class iterator_impl
 	iterator_impl(const iterator_impl<T2> &i)
 		: m_current(const_cast<node *>(i.m_current))
 	{
+		if constexpr (std::is_same_v<std::remove_cv_t<value_type>, element>)
+		{
+			while (m_current->type() != node_type::element and m_current->type() != node_type::header)
+				m_current = m_current->next();
+		}
 	}
 
 	template <typename Iterator>
@@ -412,6 +416,11 @@ class iterator_impl
 	iterator_impl(const Iterator &i)
 		: m_current(i.m_current)
 	{
+		if constexpr (std::is_same_v<std::remove_cv_t<value_type>, element>)
+		{
+			while (m_current->type() != node_type::element and m_current->type() != node_type::header)
+				m_current = m_current->next();
+		}
 	}
 
 	iterator_impl &operator=(iterator_impl i)
@@ -434,7 +443,7 @@ class iterator_impl
 	iterator_impl &operator++()
 	{
 		m_current = m_current->next();
-		if constexpr (std::is_same_v<value_type, element>)
+		if constexpr (std::is_same_v<std::remove_cv_t<value_type>, element>)
 		{
 			while (m_current->type() != node_type::element and m_current->type() != node_type::header)
 				m_current = m_current->next();
@@ -453,7 +462,7 @@ class iterator_impl
 	iterator_impl &operator--()
 	{
 		m_current = m_current->prev();
-		if constexpr (std::is_same_v<value_type, element>)
+		if constexpr (std::is_same_v<std::remove_cv_t<value_type>, element>)
 		{
 			while (m_current->type() != node_type::element and m_current->type() != node_type::header)
 				m_current = m_current->prev();
@@ -1153,7 +1162,7 @@ class attribute_set : public node_list<attribute>
 // --------------------------------------------------------------------
 /// \brief the element class modelling a XML element
 ///
-/// element is the most important zeep::xml::node object. It encapsulates a
+/// element is the most important mxml::node object. It encapsulates a
 /// XML element as found in the XML document. It has a qname, can have children,
 /// attributes and a namespace.
 
@@ -1277,7 +1286,7 @@ class element final : public node, public node_list<element>
 	void move_to_name_space(const std::string &prefix, const std::string &uri,
 		bool recursive, bool including_attributes);
 
-	/// \brief return the concatenation of the content of all enclosed zeep::xml::text nodes
+	/// \brief return the concatenation of the content of all enclosed mxml::text nodes
 	std::string get_content() const;
 
 	/// \brief replace all existing child text nodes with a new single text node containing \a content
@@ -1306,14 +1315,14 @@ class element final : public node, public node_list<element>
 	/// \brief return the elements that match XPath \a path.
 	///
 	/// If you need to find other classes than xml::element, of if your XPath
-	/// contains variables, you should create a zeep::xml::xpath object and use
+	/// contains variables, you should create a mxml::xpath object and use
 	/// its evaluate method.
 	element_set find(std::string_view path) const;
 
 	/// \brief return the first element that matches XPath \a path.
 	///
 	/// If you need to find other classes than xml::element, of if your XPath
-	/// contains variables, you should create a zeep::xml::xpath object and use
+	/// contains variables, you should create a mxml::xpath object and use
 	/// its evaluate method.
 	element *find_first(std::string_view path);
 	const element *find_first(std::string_view path) const

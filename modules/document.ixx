@@ -27,7 +27,7 @@
 module;
 
 /// \file
-/// definition of the zeep::xml::document class
+/// definition of the mxml::document class
 
 #include <functional>
 #include <list>
@@ -53,7 +53,7 @@ struct doc_type
 	std::string m_dtd;
 };
 
-/// zeep::xml::document is the class that contains a parsed XML file.
+/// mxml::document is the class that contains a parsed XML file.
 /// You can create an empty document and add nodes to it, or you can
 /// create it by specifying a string containing XML or an std::istream
 /// to parse.
@@ -62,7 +62,7 @@ struct doc_type
 /// ios::binary. Otherwise, the detection of text encoding might go wrong
 /// or the content can become corrupted.
 ///
-/// Default is to parse CDATA sections into zeep::xml::text nodes. If you
+/// Default is to parse CDATA sections into mxml::text nodes. If you
 /// want to preserve CDATA sections in the DOM tree, you have to call
 /// set_preserve_cdata before reading the file.
 ///
@@ -71,8 +71,8 @@ struct doc_type
 /// set_validating explicitly. The DTD's will be loaded from the base dir
 /// specified, but you can change this by assigning a external_entity_ref_handler.
 ///
-/// A document has one zeep::xml::root_node element. This root element
-/// can have only one zeep::xml::element child node.
+/// A document has one mxml::root_node element. This root element
+/// can have only one mxml::element child node.
 
 export class document final : public node, public node_list<element>
 {
@@ -237,6 +237,9 @@ export class document final : public node, public node_list<element>
 	element *child() { return &node_list<element>(m_nodes).front(); }
 	const element *child() const { return &node_list<element>(m_nodes).front(); }
 
+	node_list<> &nodes() { return m_nodes; }
+	const node_list<> &nodes() const { return m_nodes; }
+
 	std::string str() const override;
 
 	bool empty() const { return node_list<element>(m_nodes).empty(); }
@@ -256,14 +259,14 @@ export class document final : public node, public node_list<element>
 	/// \brief return the elements that match XPath \a path.
 	///
 	/// If you need to find other classes than xml::element, of if your XPath
-	/// contains variables, you should create a zeep::xml::xpath object and use
+	/// contains variables, you should create a mxml::xpath object and use
 	/// its evaluate method.
 	element_set find(std::string_view path) const;
 
 	/// \brief return the first element that matches XPath \a path.
 	///
 	/// If you need to find other classes than xml::element, of if your XPath
-	/// contains variables, you should create a zeep::xml::xpath object and use
+	/// contains variables, you should create a mxml::xpath object and use
 	/// its evaluate method.
 	element *find_first(std::string_view path);
 	const element *find_first(std::string_view path) const

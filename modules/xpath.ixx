@@ -27,7 +27,7 @@
 module;
 
 /// \file
-/// definition of the zeep::xml::xpath class, implementing a XPath 1.0 compatible search facility
+/// definition of the mxml::xpath class, implementing a XPath 1.0 compatible search facility
 
 #include <list>
 #include <string>
@@ -83,7 +83,7 @@ export class xpath
 
 	virtual ~xpath();
 
-	/// evaluate returns a node_set. If you're only interested in zeep::xml::element
+	/// evaluate returns a node_set. If you're only interested in mxml::element
 	/// results, you should call the evaluate<element>() instantiation.
 	template <typename T>
 	std::list<T *> evaluate(const node &root) const
