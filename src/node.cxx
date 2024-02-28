@@ -134,17 +134,17 @@ node::~node()
 {
 }
 
-element *node::root()
+node *node::root()
 {
-	element *result = nullptr;
+	node *result = nullptr;
 	if (m_parent != nullptr)
 		result = m_parent->root();
 	return result;
 }
 
-const element *node::root() const
+const node *node::root() const
 {
-	const element *result = nullptr;
+	const node *result = nullptr;
 	if (m_parent != nullptr)
 		result = m_parent->root();
 	return result;
@@ -354,28 +354,6 @@ void attribute::write(std::ostream &os, format_info fmt) const
 // --------------------------------------------------------------------
 // element
 
-// copy constructor. Copy data and children, but not parent and sibling
-element::element(const element &e)
-	: basic_node_list(this)
-	, m_qname(e.m_qname)
-	, m_attributes(this)
-{
-	auto en = e.nodes();
-	nodes().assign(en.begin(), en.end());
-	m_attributes.assign(e.m_attributes.begin(), e.m_attributes.end());
-}
-
-element::~element()
-{
-}
-
-void swap(element &a, element &b) noexcept
-{
-	swap(static_cast<basic_node_list<element> &>(a), static_cast<basic_node_list<element> &>(b));
-	std::swap(a.m_qname, b.m_qname);
-	swap(a.m_attributes, b.m_attributes);
-}
-
 std::string element::lang() const
 {
 	std::string result;
@@ -430,8 +408,8 @@ bool element::equals(const node *n) const
 	{
 		result = name() == e->name() and get_ns() == e->get_ns();
 
-		auto na = nodes();
-		auto nb = e->nodes();
+		auto &na = m_nodes;
+		auto &nb = e->m_nodes;
 
 		auto a = na.begin();
 		auto b = nb.begin();
@@ -783,7 +761,7 @@ void element::move_to_name_space(const std::string &prefix, const std::string &u
 
 	if (recursive)
 	{
-		for (element &e : *this)
+		for (element &e : children())
 			e.move_to_name_space(prefix, uri, true, including_attributes);
 	}
 }
@@ -847,7 +825,7 @@ void fix_namespaces(element &e, element &source, element &dest)
 		if (el == nullptr)
 			continue;
 
-		for (auto &c : *el)
+		for (auto &c : el->children())
 			s.push(&c);
 
 		for (auto &a : el->attributes())

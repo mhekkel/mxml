@@ -47,7 +47,8 @@ namespace mxml
 // --------------------------------------------------------------------
 
 document::document()
-	: m_validating(false)
+	: m_nodes(this)
+	, m_validating(false)
 	, m_preserve_cdata(false)
 	, m_has_xml_decl(false)
 	, m_encoding(encoding_type::UTF8)
@@ -57,7 +58,7 @@ document::document()
 }
 
 document::document(const document &doc)
-	: element(doc)
+	: m_nodes(this)
 	, m_doctype(doc.m_doctype)
 	, m_validating(doc.m_validating)
 	, m_preserve_cdata(doc.m_preserve_cdata)
@@ -70,6 +71,7 @@ document::document(const document &doc)
 }
 
 document::document(document &&doc)
+	: m_nodes(this)
 {
 	swap(*this, doc);
 }
@@ -111,7 +113,7 @@ document::document(std::istream &is, const std::string &base_dir)
 
 void swap(document &a, document &b)
 {
-	swap(static_cast<element &>(a), static_cast<element &>(b));
+	swap(a.m_nodes, b.m_nodes);
 
 	std::swap(a.m_dtd_dir, b.m_dtd_dir);
 	std::swap(a.m_doctype, b.m_doctype);
@@ -160,19 +162,19 @@ void document::set_version(float v)
 
 // --------------------------------------------------------------------
 
-element::iterator document::insert_impl(const_iterator pos, node *n)
-{
-	if (not empty())
-		throw exception("Cannot add a node to a non-empty document");
-	return element::insert_impl(pos, n);
-}
+// element::iterator document::insert_impl(const_iterator pos, node *n)
+// {
+// 	if (not empty())
+// 		throw exception("Cannot add a node to a non-empty document");
+// 	return element::insert_impl(pos, n);
+// }
 
 // --------------------------------------------------------------------
 
 bool document::is_html5() const
 {
 	return m_doctype.m_root == "html" and
-	       front().name() == "html" and
+	       (not m_nodes.empty() and m_nodes.front().name() == "html") and
 	       m_doctype.m_pubid == "" and
 	       m_doctype.m_dtd == "about:legacy-compat";
 }
@@ -181,7 +183,7 @@ bool document::is_html5() const
 
 bool document::operator==(const document &other) const
 {
-	return static_cast<const element &>(*this) == static_cast<const element &>(other);
+	return m_nodes == other.m_nodes;
 }
 
 std::ostream &operator<<(std::ostream &os, const document &doc)
@@ -225,7 +227,7 @@ void document::write(std::ostream &os, format_info fmt) const
 
 	if (not m_notations.empty() or m_write_doctype)
 	{
-		os << "<!DOCTYPE " << (empty() ? "" : front().get_qname());
+		os << "<!DOCTYPE " << (empty() ? "" : child()->get_qname());
 		if (m_write_doctype and not m_doctype.m_dtd.empty())
 		{
 			if (m_doctype.m_pubid.empty())
@@ -258,7 +260,7 @@ void document::write(std::ostream &os, format_info fmt) const
 		os << ">\n";
 	}
 
-	for (auto &n : nodes())
+	for (auto &n : m_nodes)
 		n.write(os, fmt);
 }
 
@@ -303,14 +305,17 @@ void document::StartElementHandler(const std::string &name, const std::string &u
 			qname = std::string{ prefix } + ':' + std::string{ name };
 	}
 
-	m_cur = &m_cur->emplace_back(qname);
+	if (m_cur == this)
+		m_cur = &emplace(element(qname));
+	else
+		m_cur = &static_cast<element *>(m_cur)->children().emplace_back(qname);
 
 	for (const auto &[prefix, uri] : m_namespaces)
 	{
 		if (prefix.empty())
-			m_cur->attributes().emplace("xmlns", uri);
+			static_cast<element *>(m_cur)->attributes().emplace("xmlns", uri);
 		else
-			m_cur->attributes().emplace("xmlns:"s + prefix, uri);
+			static_cast<element *>(m_cur)->attributes().emplace("xmlns:"s + prefix, uri);
 	}
 
 	for (const parser::attr_type &a : atts)
@@ -325,7 +330,7 @@ void document::StartElementHandler(const std::string &name, const std::string &u
 			qname = p.first.empty() ? a.m_name : p.first + ':' + a.m_name;
 		}
 
-		m_cur->attributes().emplace(qname, a.m_value, a.m_id);
+		static_cast<element *>(m_cur)->attributes().emplace(qname, a.m_value, a.m_id);
 	}
 
 	m_namespaces.clear();
@@ -371,23 +376,29 @@ void document::CharacterDataHandler(const std::string &data)
 {
 	if (m_cdata != nullptr)
 		m_cdata->append(data);
-	else
-		m_cur->add_text(data);
+	else if (m_cur != this)
+		static_cast<element *>(m_cur)->add_text(data);
 }
 
 void document::ProcessingInstructionHandler(const std::string &target, const std::string &data)
 {
-	m_cur->nodes().emplace_back(processing_instruction(target, data));
+	if (m_cur == this)
+		m_nodes.emplace_back(processing_instruction(target, data));
+	else
+		static_cast<element *>(m_cur)->nodes().emplace_back(processing_instruction(target, data));
 }
 
 void document::CommentHandler(const std::string &s)
 {
-	m_cur->nodes().emplace_back(comment(s));
+	if  (m_cur == this)
+		m_nodes.emplace_back(comment(s));
+	else
+		static_cast<element *>(m_cur)->nodes().emplace_back(comment(s));
 }
 
 void document::StartCdataSectionHandler()
 {
-	m_cdata = static_cast<cdata *>(&m_cur->nodes().emplace_back(cdata()));
+	m_cdata = static_cast<cdata *>(&static_cast<element *>(m_cur)->nodes().emplace_back(cdata()));
 }
 
 void document::EndCdataSectionHandler()
@@ -414,7 +425,7 @@ void document::DoctypeDeclHandler(const std::string &root, const std::string &pu
 void document::NotationDeclHandler(const std::string &name, const std::string &sysid, const std::string &pubid)
 {
 	if (m_notations.empty())
-		m_root_size_at_first_notation = nodes().size();
+		m_root_size_at_first_notation = m_nodes.size();
 
 	notation n = { std::string{ name }, std::string{ sysid }, std::string{ pubid } };
 

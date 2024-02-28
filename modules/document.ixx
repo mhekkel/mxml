@@ -31,11 +31,13 @@ module;
 
 #include <functional>
 #include <list>
+#include <memory>
 #include <string>
 
 export module mxml:document;
 
 import :doctype;
+import :error;
 import :node;
 import :parser;
 import :text;
@@ -72,9 +74,11 @@ struct doc_type
 /// A document has one zeep::xml::root_node element. This root element
 /// can have only one zeep::xml::element child node.
 
-export class document : public element
+export class document : public node
 {
   public:
+	node_type type() const override { return node_type::document; }
+
 	/// \brief Constructor for an empty document.
 	document();
 
@@ -217,15 +221,24 @@ export class document : public element
 	float get_version() const; ///< XML version, should be either 1.0 or 1.1
 	void set_version(float v); ///< XML version, should be either 1.0 or 1.1
 
-	element *root() override { return this; }
-	const element *root() const override { return this; }
+	node *root() override { return this; }
+	const node *root() const override { return this; }
 
-	node *child() { return empty() ? nullptr : &front(); }
-	const node *child() const { return empty() ? nullptr : &front(); }
+	node *child() { return &node_list<element>(m_nodes).front(); }
+	const node *child() const { return &node_list<element>(m_nodes).front(); }
+
+	std::string str() const override;
+
+	bool empty() const { return node_list<element>(m_nodes).empty(); }
+
+	element &emplace(element e)
+	{
+		if (not empty())
+			throw exception("Only one child element is allowed in a document");
+		return static_cast<element &>(m_nodes.emplace_back(std::move(e)));
+	}
 
   protected:
-	element::iterator insert_impl(const_iterator pos, node *n) override;
-
 	void XmlDeclHandler(encoding_type encoding, bool standalone, float version);
 	void StartElementHandler(const std::string &name, const std::string &uri, const parser::attr_list_type &atts);
 	void EndElementHandler(const std::string &name, const std::string &uri);
@@ -281,7 +294,8 @@ export class document : public element
 		std::string m_pubid;
 	};
 
-	element *m_cur = nullptr; // construction
+	node_list<> m_nodes;
+	node *m_cur = nullptr; // construction
 	cdata *m_cdata = nullptr; // only defined in a CDATA section
 	std::vector<std::pair<std::string, std::string>> m_namespaces;
 	std::list<notation> m_notations;
