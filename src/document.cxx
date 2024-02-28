@@ -308,7 +308,7 @@ void document::StartElementHandler(const std::string &name, const std::string &u
 	if (m_cur == this)
 		m_cur = &emplace(element(qname));
 	else
-		m_cur = &static_cast<element *>(m_cur)->children().emplace_back(qname);
+		m_cur = &static_cast<element *>(m_cur)->emplace_back(qname);
 
 	for (const auto &[prefix, uri] : m_namespaces)
 	{
@@ -490,6 +490,14 @@ void document::parse(std::istream &is)
 	p.parse(m_validating, m_validating_ns);
 
 	assert(m_cur == this);
+}
+
+std::string document::str() const
+{
+	if (child())
+		return child()->str();
+	else
+		return {};
 }
 
 namespace literals

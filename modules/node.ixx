@@ -229,6 +229,12 @@ class basic_node_list
 	bool m_owner;
 
   protected:
+	basic_node_list()
+		: m_node(nullptr)
+		, m_owner(false)
+	{
+	}
+
 	basic_node_list(node *e)
 		: m_node(new node_list_header)
 		, m_owner(true)
@@ -241,6 +247,12 @@ class basic_node_list
 		: m_node(const_cast<node_list_header *>(nl.m_node))
 		, m_owner(false)
 	{
+	}
+
+	void set_header_from(const basic_node_list &nl)
+	{
+		m_node = const_cast<node_list_header *>(nl.m_node);
+		m_owner = false;
 	}
 
   public:
@@ -533,10 +545,16 @@ class node_list : public basic_node_list
 	explicit operator bool() const { return not empty(); }
 
 	/// \brief insert a copy of \a e
-	iterator insert(const_iterator pos, const value_type &e);
+	iterator insert(const_iterator pos, const value_type &e)
+	{
+		return insert_impl(pos, new value_type(e));
+	}
 
 	/// \brief insert a copy of \a e at position \a pos, moving its data
-	iterator insert(const_iterator pos, value_type &&e);
+	iterator insert(const_iterator pos, value_type &&e)
+	{
+		return insert_impl(pos, new value_type(std::move(e)));
+	}
 
 	template <typename... Args>
 		requires(not std::is_same_v<value_type, node>)
@@ -683,7 +701,17 @@ class node_list : public basic_node_list
 
 		m_node->m_next = m_node->m_prev = m_node;
 	}
+
+  protected:
+
+	// For node_list<element> only
+	node_list();
 };
+
+template<>
+node_list<element>::node_list()
+{
+}
 
 // --------------------------------------------------------------------
 // internal node base class for storing text
@@ -779,7 +807,7 @@ class comment final : public node_with_text
 class processing_instruction final : public node_with_text
 {
   public:
-	node_type type() const override { return node_type::comment; }
+	node_type type() const override { return node_type::processing_instruction; }
 
 	processing_instruction() = default;
 
@@ -845,7 +873,7 @@ class processing_instruction final : public node_with_text
 class text final : public node_with_text
 {
   public:
-	node_type type() const override { return node_type::comment; }
+	node_type type() const override { return node_type::text; }
 
 	text() {}
 
@@ -890,7 +918,7 @@ class text final : public node_with_text
 class cdata final : public node_with_text
 {
   public:
-	node_type type() const override { return node_type::comment; }
+	node_type type() const override { return node_type::cdata; }
 
 	cdata() = default;
 
@@ -1131,7 +1159,7 @@ class attribute_set : public node_list<attribute>
 /// XML element as found in the XML document. It has a qname, can have children,
 /// attributes and a namespace.
 
-class element final : public node
+class element final : public node, public node_list<element>
 {
   public:
 	node_type type() const override { return node_type::element; }
@@ -1140,6 +1168,7 @@ class element final : public node
 		: m_nodes(this)
 		, m_attributes(this)
 	{
+		set_header_from(m_nodes);
 	}
 
 	// 	/// \brief constructor taking a \a qname and a list of \a attributes
@@ -1148,6 +1177,7 @@ class element final : public node
 		, m_nodes(this)
 		, m_attributes(this)
 	{
+		set_header_from(m_nodes);
 		m_attributes.assign(attributes.begin(), attributes.end());
 	}
 
@@ -1158,6 +1188,7 @@ class element final : public node
 		, m_nodes(this)
 		, m_attributes(this)
 	{
+		set_header_from(m_nodes);
 		m_nodes.assign(e.m_nodes.begin(), e.m_nodes.end());
 		m_attributes.assign(e.m_attributes.begin(), e.m_attributes.end());
 	}
@@ -1179,6 +1210,10 @@ class element final : public node
 	{
 		std::swap(a.m_qname, b.m_qname);
 		swap(a.m_nodes, b.m_nodes);
+
+		a.set_header_from(a.m_nodes);
+		b.set_header_from(b.m_nodes);
+
 		swap(a.m_attributes, b.m_attributes);
 	}
 
@@ -1206,9 +1241,6 @@ class element final : public node
 
 	node_list<> &nodes() { return m_nodes; }
 	const node_list<> &nodes() const { return m_nodes; }
-
-	auto children() { return node_list<element>(m_nodes); }
-	auto children() const { return node_list<element>(m_nodes); }
 
 	// --------------------------------------------------------------------
 	// attribute support
@@ -1374,28 +1406,6 @@ auto node_list<node>::insert(const_iterator pos, value_type &&e) -> iterator
 		default:
 			throw exception("internal error");
 	}
-}
-
-template <>
-auto node_list<attribute>::insert(const_iterator pos, const value_type &e) -> iterator
-{
-	assert(e.type() == node_type::attribute);
-	return insert_impl(pos, new attribute(e));
-}
-
-/// \brief insert a copy of \a e at position \a pos, moving its data
-template <>
-auto node_list<attribute>::insert(const_iterator pos, value_type &&e) -> iterator
-{
-	assert(e.type() == node_type::attribute);
-	return insert_impl(pos, new attribute(std::move(e)));
-}
-
-template <>
-auto node_list<element>::insert(const_iterator pos, const value_type &e) -> iterator
-{
-	assert(e.type() == node_type::element);
-	return insert_impl(pos, new element(e));
 }
 
 /// \brief insert a copy of \a e at position \a pos, moving its data

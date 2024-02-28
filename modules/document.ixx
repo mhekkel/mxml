@@ -101,6 +101,8 @@ export class document : public node
 	/// constructor will also validate the input using DTD's found in \a base_dir
 	document(std::istream &is, const std::string &base_dir);
 
+	~document() = default;
+
 	friend void swap(document &a, document &b);
 
 	/// options for parsing
@@ -224,8 +226,8 @@ export class document : public node
 	node *root() override { return this; }
 	const node *root() const override { return this; }
 
-	node *child() { return &node_list<element>(m_nodes).front(); }
-	const node *child() const { return &node_list<element>(m_nodes).front(); }
+	element *child() { return &node_list<element>(m_nodes).front(); }
+	const element *child() const { return &node_list<element>(m_nodes).front(); }
 
 	std::string str() const override;
 

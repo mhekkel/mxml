@@ -761,7 +761,7 @@ void element::move_to_name_space(const std::string &prefix, const std::string &u
 
 	if (recursive)
 	{
-		for (element &e : children())
+		for (element &e : *this)
 			e.move_to_name_space(prefix, uri, true, including_attributes);
 	}
 }
@@ -825,7 +825,7 @@ void fix_namespaces(element &e, element &source, element &dest)
 		if (el == nullptr)
 			continue;
 
-		for (auto &c : el->children())
+		for (auto &c : *el)
 			s.push(&c);
 
 		for (auto &a : el->attributes())
