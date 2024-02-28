@@ -575,7 +575,7 @@ struct parser_imp
 	void collapse_spaces(std::string &s);
 
 	// The scanner is next. We recognize the following tokens:
-	enum XMLToken
+	enum class XMLToken
 	{
 		Undef,
 
@@ -1218,7 +1218,6 @@ parser_imp::XMLToken parser_imp::get_next_token()
 					case ']': token = XMLToken::CloseBracket; break;
 					case '(': token = XMLToken::OpenParenthesis; break;
 					case ')': token = XMLToken::CloseParenthesis; break;
-					// case '%': token = XMLToken::Percent; break;
 					case '+': token = XMLToken::Plus; break;
 					case '|': token = XMLToken::Pipe; break;
 					case '*': token = XMLToken::Asterisk; break;
@@ -1391,11 +1390,6 @@ parser_imp::XMLToken parser_imp::get_next_token()
 				not_well_formed("state should never be reached");
 		}
 	}
-
-	// #if DEBUG
-	//	if (VERBOSE)
-	//  std::cout << "token: " << describe_token(token) << " (" << m_token << ")\n";
-	// #endif
 
 	return token;
 }
@@ -1685,11 +1679,6 @@ parser_imp::XMLToken parser_imp::get_next_content()
 				not_well_formed("state reached that should not be reachable");
 		}
 	}
-
-	// #if DEBUG
-	//	if (VERBOSE)
-	//  std::cout << "content: " << describe_token(token) << " (" << m_token << ")\n";
-	// #endif
 
 	return token;
 }

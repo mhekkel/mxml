@@ -17,40 +17,38 @@
 
 import mxml;
 
-using namespace std;
-
 namespace fs = std::filesystem;
 
 int VERBOSE;
 int TRACE;
 int error_tests, should_have_failed, total_tests, wrong_exception, skipped_tests;
 
-bool run_valid_test(istream &is, fs::path &outfile)
+bool run_valid_test(std::istream &is, fs::path &outfile)
 {
 	bool result = true;
 
 	mxml::document indoc;
 	is >> indoc;
 
-	stringstream s;
+	std::stringstream s;
 	indoc.set_collapse_empty_tags(false);
 	indoc.set_suppress_comments(true);
 	indoc.set_escape_white_space(true);
 	indoc.set_wrap_prolog(false);
 	s << indoc;
 
-	string s1 = s.str();
+	std::string s1 = s.str();
 	mxml::trim(s1);
 
 	if (TRACE)
-		cout << s1 << endl;
+		std::cout << s1 << '\n';
 
 	if (fs::is_directory(outfile))
 		;
 	else if (fs::exists(outfile))
 	{
-		std::ifstream out(outfile, ios::binary);
-		string s2, line;
+		std::ifstream out(outfile, std::ios::binary);
+		std::string s2, line;
 		while (not out.eof())
 		{
 			getline(out, line);
@@ -60,28 +58,28 @@ bool run_valid_test(istream &is, fs::path &outfile)
 
 		if (s1 != s2)
 		{
-			stringstream ss;
-			ss << "output differs: " << endl
-			   << endl
-			   << s1 << endl
-			   << endl
-			   << s2 << endl
-			   << endl;
+			std::stringstream ss;
+			ss << "output differs: \n"
+			   << '\n'
+			   << s1 << '\n'
+			   << '\n'
+			   << s2 << '\n'
+			   << '\n';
 
 			throw mxml::exception(ss.str());
 		}
 	}
 	else
-		cout << "skipped output compare for " << outfile << endl;
+		std::cout << "skipped output compare for " << outfile << '\n';
 
 	return result;
 }
 
 void dump(mxml::element &e, int level = 0)
 {
-	cout << level << "> " << e.get_qname() << endl;
+	std::cout << level << "> " << e.get_qname() << '\n';
 	for (auto &[name, ign] : e.attributes())
-		cout << level << " (a)> " << name << endl;
+		std::cout << level << " (a)> " << name << '\n';
 	for (auto &c : e)
 		dump(c, level + 1);
 }
@@ -97,25 +95,25 @@ bool run_test(const mxml::element &test, fs::path base_dir)
 
 	if (not fs::exists(input))
 	{
-		cout << "test file " << input << " does not exist" << endl;
+		std::cout << "test file " << input << " does not exist\n";
 		return false;
 	}
 
 	// if (test.attr("SECTIONS") == "B.")
 	// {
 	// 	if (VERBOSE)
-	// 		cout << "skipping unicode character validation tests" << endl;
+	// 		cout << "skipping unicode character validation tests\n";
 	// 	++skipped_tests;
 	// 	return true;
 	// }
 
 	fs::current_path(input.parent_path());
 
-	std::ifstream is(input, ios::binary);
+	std::ifstream is(input, std::ios::binary);
 	if (not is.is_open())
 		throw mxml::exception("test file not open");
 
-	string error;
+	std::string error;
 
 	try
 	{
@@ -140,28 +138,28 @@ bool run_test(const mxml::element &test, fs::path base_dir)
 				if (test.get_attribute("TYPE") != "not-wf")
 				{
 					++wrong_exception;
-					throw mxml::exception(string("Wrong exception (should have been invalid):\n\t") + e.what());
+					throw mxml::exception(std::string("Wrong exception (should have been invalid):\n\t") + e.what());
 				}
 
 				failed = true;
 				if (VERBOSE > 1)
-					cout << e.what() << endl;
+					std::cout << e.what() << '\n';
 			}
 			catch (mxml::invalid_exception &e)
 			{
 				if (test.get_attribute("TYPE") != "invalid")
 				{
 					++wrong_exception;
-					throw mxml::exception(string("Wrong exception (should have been not-wf):\n\t") + e.what());
+					throw mxml::exception(std::string("Wrong exception (should have been not-wf):\n\t") + e.what());
 				}
 
 				failed = true;
 				if (VERBOSE > 1)
-					cout << e.what() << endl;
+					std::cout << e.what() << '\n';
 			}
 			catch (std::exception &e)
 			{
-				throw mxml::exception(string("Wrong exception:\n\t") + e.what());
+				throw mxml::exception(std::string("Wrong exception:\n\t") + e.what());
 			}
 
 			if (VERBOSE and not failed)
@@ -180,7 +178,7 @@ bool run_test(const mxml::element &test, fs::path base_dir)
 			catch (std::exception &e)
 			{
 				if (VERBOSE > 1)
-					cout << e.what() << endl;
+					std::cout << e.what() << '\n';
 
 				failed = true;
 			}
@@ -204,18 +202,18 @@ bool run_test(const mxml::element &test, fs::path base_dir)
 
 	if ((result == false and VERBOSE == 1) or (VERBOSE > 1))
 	{
-		cout << "-----------------------------------------------" << endl
-			 << "ID:             " << test.get_attribute("ID") << endl
-			 << "FILE:           " << /*fs::system_complete*/ (input) << endl
-			 << "TYPE:           " << test.get_attribute("TYPE") << endl
-			 << "SECTION:        " << test.get_attribute("SECTIONS") << endl
-			 << "EDITION:        " << test.get_attribute("EDITION") << endl
-			 << "RECOMMENDATION: " << test.get_attribute("RECOMMENDATION") << endl;
+		std::cout << "-----------------------------------------------\n"
+			 << "ID:             " << test.get_attribute("ID") << '\n'
+			 << "FILE:           " << /*fs::system_complete*/ (input) << '\n'
+			 << "TYPE:           " << test.get_attribute("TYPE") << '\n'
+			 << "SECTION:        " << test.get_attribute("SECTIONS") << '\n'
+			 << "EDITION:        " << test.get_attribute("EDITION") << '\n'
+			 << "RECOMMENDATION: " << test.get_attribute("RECOMMENDATION") << '\n';
 
-		istringstream s(test.get_content());
+		std::istringstream s(test.get_content());
 		for (;;)
 		{
-			string line;
+			std::string line;
 			getline(s, line);
 
 			mxml::trim(line);
@@ -227,17 +225,17 @@ bool run_test(const mxml::element &test, fs::path base_dir)
 				continue;
 			}
 
-			cout << "DESCR:          " << line << endl;
+			std::cout << "DESCR:          " << line << '\n';
 		}
 
-		cout << endl;
+		std::cout << '\n';
 
 		if (result == false)
 		{
-			istringstream iss(error);
+			std::istringstream iss(error);
 			for (;;)
 			{
-				string line;
+				std::string line;
 				getline(iss, line);
 
 				mxml::trim(line);
@@ -245,23 +243,23 @@ bool run_test(const mxml::element &test, fs::path base_dir)
 				if (line.empty() and iss.eof())
 					break;
 
-				cout << "  " << line << endl;
+				std::cout << "  " << line << '\n';
 			}
 
-			cout << endl;
+			std::cout << '\n';
 
-			//			cout << "exception: " << error << endl;
+			//			cout << "exception: " << error << '\n';
 		}
 	}
 
 	return result;
 }
 
-void run_test_case(const mxml::element &testcase, const string &id, const set<string> &skip,
-	const string &type, int edition, fs::path base_dir, vector<string> &failed_ids)
+void run_test_case(const mxml::element &testcase, const std::string &id, const std::set<std::string> &skip,
+	const std::string &type, int edition, fs::path base_dir, std::vector<std::string> &failed_ids)
 {
 	if (VERBOSE > 1 and id.empty())
-		cout << "Running testcase " << testcase.get_attribute("PROFILE") << endl;
+		std::cout << "Running testcase " << testcase.get_attribute("PROFILE") << '\n';
 
 	if (not testcase.get_attribute("xml:base").empty())
 	{
@@ -271,13 +269,13 @@ void run_test_case(const mxml::element &testcase, const string &id, const set<st
 			fs::current_path(base_dir);
 	}
 
-	string path;
+	std::string path;
 	if (id.empty())
 		path = ".//TEST";
 	else
-		path = string(".//TEST[@ID='") + id + "']";
+		path = std::string(".//TEST[@ID='") + id + "']";
 
-	regex ws_re(" "); // whitespace
+	std::regex ws_re(" "); // whitespace
 
 	for (const mxml::element *n : mxml::xpath(path).evaluate<mxml::element>(testcase))
 	{
@@ -296,9 +294,9 @@ void run_test_case(const mxml::element &testcase, const string &id, const set<st
 			auto es = n->get_attribute("EDITION");
 			if (not es.empty())
 			{
-				auto b = sregex_token_iterator(es.begin(), es.end(), ws_re, -1);
-				auto e = sregex_token_iterator();
-				auto ei = find_if(b, e, [edition](const string &e)
+				auto b = std::sregex_token_iterator(es.begin(), es.end(), ws_re, -1);
+				auto e = std::sregex_token_iterator();
+				auto ei = find_if(b, e, [edition](const std::string &e)
 					{ return stoi(e) == edition; });
 
 				if (ei == e)
@@ -314,10 +312,10 @@ void run_test_case(const mxml::element &testcase, const string &id, const set<st
 	}
 }
 
-void test_testcases(const fs::path &testFile, const string &id, const set<string> &skip,
-	const string &type, int edition, vector<string> &failed_ids)
+void test_testcases(const fs::path &testFile, const std::string &id, const std::set<std::string> &skip,
+	const std::string &type, int edition, std::vector<std::string> &failed_ids)
 {
-	std::ifstream file(testFile, ios::binary);
+	std::ifstream file(testFile, std::ios::binary);
 
 	int saved_verbose = VERBOSE;
 	VERBOSE = 0;
@@ -351,16 +349,16 @@ int main(int argc, char *argv[])
 		"usage: parser-test [options]",
 		mcfp::make_option("help,h", "produce help message"),
 		mcfp::make_option("verbose,v", "verbose output"),
-		mcfp::make_option<string>("id", "ID for the test to run from the test suite"),
-		mcfp::make_option<vector<string>>("skip", "Skip this test, can be specified multiple times"),
-		mcfp::make_option<vector<string>>("questionable", "Questionable tests, do not consider failure of these to be an error"),
+		mcfp::make_option<std::string>("id", "ID for the test to run from the test suite"),
+		mcfp::make_option<std::vector<std::string>>("skip", "Skip this test, can be specified multiple times"),
+		mcfp::make_option<std::vector<std::string>>("questionable", "Questionable tests, do not consider failure of these to be an error"),
 		mcfp::make_option<int>("edition", "XML 1.0 specification edition to test, default is 5, 0 which means run all tests"),
 		mcfp::make_option("trace", "Trace productions in parser"),
-		mcfp::make_option<string>("type", "Type of test to run (valid|not-wf|invalid|error)"),
-		mcfp::make_option<string>("single", "Test a single XML file"),
-		mcfp::make_option<string>("dump", "Dump the structure of a single XML file"),
+		mcfp::make_option<std::string>("type", "Type of test to run (valid|not-wf|invalid|error)"),
+		mcfp::make_option<std::string>("single", "Test a single XML file"),
+		mcfp::make_option<std::string>("dump", "Dump the structure of a single XML file"),
 		mcfp::make_option("print-ids", "Print the ID's of failed tests"),
-		mcfp::make_option<string>("conf", "Configuration file"));
+		mcfp::make_option<std::string>("conf", "Configuration file"));
 
 	std::error_code ec;
 	config.parse(argc, argv, ec);
@@ -372,7 +370,7 @@ int main(int argc, char *argv[])
 
 	if (config.count("help"))
 	{
-		cout << config << endl;
+		std::cout << config << '\n';
 		return 1;
 	}
 
@@ -385,9 +383,9 @@ int main(int argc, char *argv[])
 	{
 		if (config.count("single"))
 		{
-			fs::path path(config.get<string>("single"));
+			fs::path path(config.get("single"));
 
-			std::ifstream file(path, ios::binary);
+			std::ifstream file(path, std::ios::binary);
 			if (not file.is_open())
 				throw mxml::exception("could not open file");
 
@@ -398,9 +396,9 @@ int main(int argc, char *argv[])
 		}
 		else if (config.count("dump"))
 		{
-			fs::path path(config.get<string>("dump"));
+			fs::path path(config.get("dump"));
 
-			std::ifstream file(path, ios::binary);
+			std::ifstream file(path, std::ios::binary);
 			if (not file.is_open())
 				throw mxml::exception("could not open file");
 
@@ -420,38 +418,38 @@ int main(int argc, char *argv[])
 			if (not fs::exists(xmlconfFile))
 				throw std::runtime_error("Config file not found: " + xmlconfFile.string());
 
-			string id;
+			std::string id;
 			if (config.has("id"))
-				id = config.get<string>("id");
+				id = config.get("id");
 
-			vector<string> skip;
+			std::vector<std::string> skip;
 			if (config.has("skip"))
-				skip = config.get<vector<string>>("skip");
+				skip = config.get<std::vector<std::string>>("skip");
 
-			string type;
+			std::string type;
 			if (config.count("type"))
-				type = config.get<string>("type");
+				type = config.get("type");
 
 			int edition = 5;
 			if (config.count("edition"))
 				edition = config.get<int>("edition");
 
-			vector<string> failed_ids;
+			std::vector<std::string> failed_ids;
 
 			test_testcases(xmlconfFile, id, { skip.begin(), skip.end() }, type, edition, failed_ids);
 
-			cout << endl
-				 << "summary: " << endl
-				 << "  ran " << total_tests - skipped_tests << " out of " << total_tests << " tests" << endl
-				 << "  " << error_tests << " threw an exception" << endl
-				 << "  " << wrong_exception << " wrong exception" << endl
-				 << "  " << should_have_failed << " should have failed but didn't" << endl;
+			std::cout << '\n'
+				 << "summary: \n"
+				 << "  ran " << total_tests - skipped_tests << " out of " << total_tests << " tests\n"
+				 << "  " << error_tests << " threw an exception\n"
+				 << "  " << wrong_exception << " wrong exception\n"
+				 << "  " << should_have_failed << " should have failed but didn't\n";
 
-			vector<string> questionable;
+			std::vector<std::string> questionable;
 			if (config.count("questionable"))
-				questionable = config.get<vector<string>>("questionable");
+				questionable = config.get<std::vector<std::string>>("questionable");
 
-			set<string> erronous;
+			std::set<std::string> erronous;
 			for (auto fid : failed_ids)
 			{
 				if (std::find(questionable.begin(), questionable.end(), fid) == questionable.end())
@@ -463,33 +461,28 @@ int main(int argc, char *argv[])
 
 			if (config.count("print-ids") and not failed_ids.empty())
 			{
-				cout << endl;
+				std::cout << '\n';
 				if (erronous.empty())
-					cout << "All the failed tests were questionable" << endl;
+					std::cout << "All the failed tests were questionable\n";
 				else
 				{
-					cout << endl
-						 << "ID's for the failed, non-questionable tests: " << endl;
+					std::cout << '\n'
+						 << "ID's for the failed, non-questionable tests: \n";
 
-					copy(erronous.begin(), erronous.end(), ostream_iterator<string>(cout, "\n"));
+					copy(erronous.begin(), erronous.end(), std::ostream_iterator<std::string>(std::cout, "\n"));
 
-					cout << endl;
+					std::cout << '\n';
 				}
 			}
 		}
 	}
 	catch (std::exception &e)
 	{
-		cout << e.what() << endl;
+		std::cout << e.what() << '\n';
 		return 1;
 	}
 
 	fs::current_path(savedwd);
-
-	// #if defined(_WIN32)
-	// 	cout << "press any key to continue...";
-	// 	char ch = _getch();
-	// #endif
 
 	return result;
 }
