@@ -484,15 +484,10 @@ TEST_CASE("xml_copy2")
 	CHECK(c2 == c3);
 
 	mxml::element e2("test", { { "a", "een" }, { "b", "twee" } });
-	for (auto &n : c2.front())
-		e2.emplace_back(std::move(n));
 	for (auto &n : c2.front().nodes())
 		e2.nodes().emplace_back(n);
 
 	CHECK(e2 == e1);
-
-// 	// e1.validate();
-// 	// e2.validate();
 }
 
 TEST_CASE("xml_iterators")
@@ -504,11 +499,17 @@ TEST_CASE("xml_iterators")
 	auto bi = e.begin();
 	auto ei = e.end();
 
-	// for (int i = 0; i < 10; ++i)
-	// {
-	// 	CHECK((bi + i)->get_content() == std::to_string(i));
-	// 	CHECK((ei - i - 1)->get_content() == std::to_string(9 - i));
-	// }
+	for (int i = 0; i < 10; ++i)
+	{
+		auto i1 = bi;
+		std::advance(i1, i);
+
+		CHECK(i1->get_content() == std::to_string(i));
+
+		auto i2 = ei;
+		std::advance(i2, -i - 1);
+		CHECK(i2->get_content() == std::to_string(9 - i));
+	}
 }
 
 TEST_CASE("xml_iterators_2")

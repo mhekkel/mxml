@@ -27,6 +27,7 @@
 module;
 
 #include <algorithm>
+#include <charconv>
 #include <functional>
 #include <iostream>
 #include <list>
@@ -329,8 +330,19 @@ double object::as<double>() const
 	switch (m_type)
 	{
 		case object_type::number: result = m_number; break;
-		case object_type::node_set: result = stod(m_node_set.front()->str()); break;
-		case object_type::string: result = stod(m_string); break;
+		case object_type::node_set:
+		{
+			auto s = m_node_set.front()->str();
+			if (auto r = std::from_chars(s.data(), s.data() + s.size(), result); r.ec != std::errc{})
+				result = std::nan("1");
+			break;
+		}
+		case object_type::string:
+		{
+			if (auto r = std::from_chars(m_string.data(), m_string.data() + m_string.size(), result); r.ec != std::errc{})
+				result = std::nan("1");
+			break;
+		}
 		case object_type::boolean: result = m_boolean; break;
 		default: result = 0; break;
 	}

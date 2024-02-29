@@ -221,51 +221,98 @@ std::string node::prefix_tag(std::string tag, const std::string &uri) const
 
 // --------------------------------------------------------------------
 
+bool basic_node_list::operator==(const basic_node_list &b) const
+{
+	bool result = true;
+	auto na = m_node->m_next, nb = b.m_node->m_next;
+	for (; result and na != m_node and nb != b.m_node; na = na->m_next, nb = nb->m_next)
+		result = na->equals(nb);
+	return result and na == m_node and nb == b.m_node;
+}
+
 void basic_node_list::clear()
 {
 	// avoid deep recursion and stack overflows
 
 	std::stack<basic_node_list *> stack;
-	std::stack<element *> s2;
 
 	stack.push(this);
 
 	while (not stack.empty())
 	{
 		auto nl = stack.top();
-		stack.pop();
 
 		for (auto n = nl->m_node->m_next; n != nl->m_node; n = n->m_next)
 		{
 			if (n->type() != node_type::element)
 				continue;
-			
+
 			auto e = static_cast<element *>(n);
-			s2.push(e);
+			if (e->empty())
+				continue;
+
 			stack.push(e);
+			break;
 		}
+
+		if (stack.top() != nl)
+			continue;
+
+		// nothing was added, we can safely delete nl
+		stack.pop();
+
+		for (auto n = nl->m_node->m_next; n != nl->m_node;)
+		{
+			auto t = n->m_next;
+			delete n;
+			n = t;
+		}
+
+		nl->m_node->m_next = nl->m_node->m_prev = nl->m_node;
 	}
+}
 
-	while (not s2.empty())
-	{
-		auto e = s2.top();
-		s2.pop();
+node *basic_node_list::insert_impl(const node *p, node *n)
+{
+	assert(n != nullptr);
+	assert(n->next() == n);
+	assert(n->prev() == n);
 
-		static_cast<element *>(e->parent())->erase(e);
-	}
+	if (n == nullptr)
+		throw exception("Invalid pointer passed to insert");
 
-	// And now clean up what remains
-	auto n = m_node->m_next;
+	if (n->parent() != nullptr or n->next() != n or n->prev() != n)
+		throw exception("attempt to add a node that already has a parent or siblings");
 
-	while (n != m_node)
-	{
-		auto t = n->m_next;
-		delete n;
-		n = t;
-		assert(n != nullptr);
-	}
+	n->parent(m_node->m_parent);
 
-	m_node->m_next = m_node->m_prev = m_node;
+	n->prev(p->prev());
+	n->prev()->next(n);
+	n->next(p);
+	n->next()->prev(n);
+
+	return n;
+}
+
+node *basic_node_list::erase_impl(node *n)
+{
+	if (n == m_node)
+		return n;
+
+	if (n->m_parent != m_node->m_parent)
+		throw exception("attempt to remove node whose parent is invalid");
+
+	node *result = n->next();
+
+	n->next()->prev(n->prev());
+	n->prev()->next(n->next());
+
+	n->next(nullptr);
+	n->prev(nullptr);
+	n->parent(nullptr);
+	delete n;
+
+	return result;
 }
 
 // --------------------------------------------------------------------

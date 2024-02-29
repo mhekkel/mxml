@@ -266,14 +266,7 @@ class basic_node_list
 		}
 	}
 
-	bool operator==(const basic_node_list &b) const
-	{
-		bool result = true;
-		auto na = m_node->m_next, nb = b.m_node->m_next;
-		for (; result and na != m_node and nb != b.m_node; na = na->m_next, nb = nb->m_next)
-			result = na->equals(nb);
-		return result and na == m_node and nb == b.m_node;
-	}
+	bool operator==(const basic_node_list &b) const;
 
 	/// \brief remove all nodes
 	void clear();
@@ -298,48 +291,8 @@ class basic_node_list
   protected:
 	// proxy methods for every insertion
 
-	virtual node *insert_impl(const node *p, node *n)
-	{
-		assert(n != nullptr);
-		assert(n->next() == n);
-		assert(n->prev() == n);
-
-		if (n == nullptr)
-			throw exception("Invalid pointer passed to insert");
-
-		if (n->parent() != nullptr or n->next() != n or n->prev() != n)
-			throw exception("attempt to add a node that already has a parent or siblings");
-
-		n->parent(m_node->m_parent);
-
-		n->prev(p->prev());
-		n->prev()->next(n);
-		n->next(p);
-		n->next()->prev(n);
-
-		return n;
-	}
-
-	node *erase_impl(node *n)
-	{
-		if (n == m_node)
-			return n;
-
-		if (n->m_parent != m_node->m_parent)
-			throw exception("attempt to remove node whose parent is invalid");
-
-		node *result = n->next();
-
-		n->next()->prev(n->prev());
-		n->prev()->next(n->next());
-
-		n->next(nullptr);
-		n->prev(nullptr);
-		n->parent(nullptr);
-		delete n;
-
-		return result;
-	}
+	virtual node *insert_impl(const node *p, node *n);
+	node *erase_impl(node *n);
 };
 
 // --------------------------------------------------------------------
@@ -368,11 +321,7 @@ class iterator_impl
 	iterator_impl(const node *current)
 		: m_current(const_cast<node *>(current))
 	{
-		if constexpr (std::is_same_v<std::remove_cv_t<value_type>, element>)
-		{
-			while (m_current->type() != node_type::element and m_current->type() != node_type::header)
-				m_current = m_current->next();
-		}
+		skip();
 	}
 
 	iterator_impl(const iterator_impl &i) = default;
@@ -383,11 +332,7 @@ class iterator_impl
 	iterator_impl(const iterator_impl<T2> &i)
 		: m_current(const_cast<node *>(i.m_current))
 	{
-		if constexpr (std::is_same_v<std::remove_cv_t<value_type>, element>)
-		{
-			while (m_current->type() != node_type::element and m_current->type() != node_type::header)
-				m_current = m_current->next();
-		}
+		skip();
 	}
 
 	template <typename Iterator>
@@ -396,11 +341,7 @@ class iterator_impl
 	iterator_impl(const Iterator &i)
 		: m_current(i.m_current)
 	{
-		if constexpr (std::is_same_v<std::remove_cv_t<value_type>, element>)
-		{
-			while (m_current->type() != node_type::element and m_current->type() != node_type::header)
-				m_current = m_current->next();
-		}
+		skip();
 	}
 
 	iterator_impl &operator=(iterator_impl i)
@@ -423,12 +364,7 @@ class iterator_impl
 	iterator_impl &operator++()
 	{
 		m_current = m_current->next();
-		if constexpr (std::is_same_v<std::remove_cv_t<value_type>, element>)
-		{
-			while (m_current->type() != node_type::element and m_current->type() != node_type::header)
-				m_current = m_current->next();
-		}
-
+		skip();
 		return *this;
 	}
 
@@ -477,6 +413,15 @@ class iterator_impl
 
   private:
 	using node_base_type = std::conditional_t<std::is_const_v<T>, const node, node>;
+
+	void skip()
+	{
+		if constexpr (std::is_same_v<std::remove_cv_t<value_type>, element>)
+		{
+			while (m_current->type() != node_type::element and m_current->type() != node_type::header)
+				m_current = m_current->next();
+		}
+	}
 
 	node_base_type *m_current = nullptr;
 };
@@ -1376,14 +1321,6 @@ auto node_list<node>::insert(const_iterator pos, value_type &&e) -> iterator
 			throw exception("internal error");
 	}
 }
-
-// /// \brief insert a copy of \a e at position \a pos, moving its data
-// template <>
-// auto node_list<element>::insert(const_iterator pos, value_type &&e) -> iterator
-// {
-// 	assert(e.type() == node_type::element);
-// 	return insert_impl(pos, new element(std::move(e)));
-// }
 
 // --------------------------------------------------------------------
 
