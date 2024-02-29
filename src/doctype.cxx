@@ -777,15 +777,20 @@ bool attribute::validate_value(std::string &value, const entity_list &entities) 
 		result = is_names(value);
 		if (result)
 		{
-			std::vector<std::string> values;
-			split(values, value, " ");
-			for (std::string_view v : values)
+			std::string::size_type i = 0, j = value.find(' ');
+			for (;;)
 			{
-				if (not is_unparsed_entity(v, entities))
+				if (not is_unparsed_entity(value.substr(i, j - i), entities))
 				{
 					result = false;
 					break;
 				}
+
+				if (j == std::string::npos)
+					break;
+				
+				i = j + 1;
+				j = value.find(' ', i);
 			}
 		}
 	}

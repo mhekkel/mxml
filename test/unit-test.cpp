@@ -873,3 +873,29 @@ TEST_CASE("doc-test-1")
 	doc.nodes().emplace_back(mxml::comment("test"));
 	CHECK(doc.empty());
 }
+
+TEST_CASE("trim")
+{
+	std::string s;
+	
+	s = "aap";
+	mxml::trim(s);
+	CHECK(s == "aap");
+
+
+	s = " aap";
+	mxml::trim(s);
+	CHECK(s == "aap");
+
+	s = "aap ";
+	mxml::trim(s);
+	CHECK(s == "aap");
+
+	s = " aap ";
+	mxml::trim(s);
+	CHECK(s == "aap");
+
+	s = "\t aap \n";
+	mxml::trim(s);
+	CHECK(s == "aap");
+}

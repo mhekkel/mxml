@@ -34,6 +34,7 @@ module;
 #include <set>
 #include <sstream>
 #include <stack>
+#include <utility>
 #include <vector>
 
 #include <cassert>
@@ -260,6 +261,12 @@ void istream_data_source::guess_encoding()
 	encoding(m_encoding);
 }
 
+/// \brief utf-8 is not single byte e.g.
+constexpr bool is_single_byte_encoding(encoding_type enc)
+{
+	return enc == encoding_type::ASCII or enc == encoding_type::ISO88591 or enc == encoding_type::UTF8;
+}
+
 void istream_data_source::encoding(encoding_type enc)
 {
 	if (enc != m_encoding)
@@ -437,7 +444,7 @@ class string_data_source : public data_source
   public:
 	string_data_source(std::string_view data)
 		: m_data(data)
-		, m_ptr(m_data.begin())
+		, m_ptr(m_data.cbegin())
 	{
 	}
 
@@ -446,7 +453,7 @@ class string_data_source : public data_source
 		char32_t result = 0;
 
 		if (m_ptr != m_data.end())
-			result = get_first_char(m_ptr, m_data.end());
+			result = get_first_char(m_ptr, m_data.cend());
 
 		if (result == '\n')
 			++m_line_nr;
@@ -456,7 +463,7 @@ class string_data_source : public data_source
 
   private:
 	std::string m_data;
-	std::string::iterator m_ptr;
+	std::string::const_iterator m_ptr;
 };
 
 // --------------------------------------------------------------------
@@ -1751,7 +1758,17 @@ void parser_imp::parse(bool validate, bool validate_ns)
 
 	if (not m_unresolved_ids.empty())
 	{
-		not_valid("document contains references to the following undefined ID's: '" + join(m_unresolved_ids, ", ") + "'");
+		std::ostringstream os;
+		os << "document contains references to the following undefined ID's: '";
+		for (bool first = true; auto &id : m_unresolved_ids)
+		{
+			if (not std::exchange(first, false))
+				os << ", ";
+			os << id;
+		}
+		os << '\'';
+
+		not_valid(os.str());
 	}
 }
 
@@ -2907,8 +2924,12 @@ void parser_imp::notation_decl()
 
 	collapse_spaces(sysid);
 
-	replace_all(pubid, "\t", " ");
-	replace_all(pubid, "\n", " ");
+	for (char &ch : pubid)
+	{
+		if (ch == '\t' or ch == '\n')
+			ch = ' ';
+	}
+
 	collapse_spaces(pubid);
 
 	m_parser.notation_decl(name, sysid, pubid);
@@ -3163,8 +3184,8 @@ void parser_imp::parse_general_entity_declaration(std::string &s)
 	char32_t charref = 0;
 	std::string name;
 
-	auto sp = s.begin();
-	auto se = s.end();
+	auto sp = s.cbegin();
+	auto se = s.cend();
 
 	while (sp < se)
 	{
