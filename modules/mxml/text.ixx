@@ -71,7 +71,7 @@ export void append(std::string& s, char32_t uc);
 /// \brief remove the last unicode character from an utf-8 string
 export char32_t pop_back_char(std::string& s);
 
-/// \brief return the first unicode and the advanced pointer from a string
+/// \brief return the first unicode and advance the pointer @a ptr from a string
 export char32_t pop_front_char(std::string::const_iterator &ptr, std::string::const_iterator end);
 
 /// \brief A simple implementation of trim, removing white space from start and end of \a s

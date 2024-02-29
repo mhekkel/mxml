@@ -2824,13 +2824,6 @@ node_set xpath::evaluate<node>(const node &root, context &ctxt) const
 	return m_impl->evaluate(const_cast<node &>(root), *ctxt.m_impl);
 }
 
-// template<>
-// node_set xpath::evaluate<node>(const node& root) const
-// {
-// 	context ctxt;
-// 	return evaluate<node>(root, ctxt);
-// }
-
 template <>
 element_set xpath::evaluate<element>(const node &root, context &ctxt) const
 {
@@ -2846,13 +2839,6 @@ element_set xpath::evaluate<element>(const node &root, context &ctxt) const
 
 	return result;
 }
-
-// template<>
-// element_set xpath::evaluate<element>(const node& root) const
-// {
-// 	context ctxt;
-// 	return evaluate<element>(root, ctxt);
-// }
 
 bool xpath::matches(const node *n) const
 {

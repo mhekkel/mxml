@@ -142,8 +142,7 @@ export class parser
 
 	virtual void report_invalidation(const std::string &msg);
 
-	virtual std::istream *
-	external_entity_ref(const std::string &base,
+	virtual std::istream *external_entity_ref(const std::string &base,
 		const std::string &pubid, const std::string &uri);
 
 	struct parser_imp *m_impl;
