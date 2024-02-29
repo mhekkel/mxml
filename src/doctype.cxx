@@ -116,7 +116,7 @@ struct state_element : public state_base
 
 struct state_repeated : public state_base
 {
-	state_repeated(content_spec_ptr sub)
+	state_repeated(content_spec_base * sub)
 		: m_sub(sub->create_state())
 		, m_state(0)
 	{
@@ -135,7 +135,7 @@ struct state_repeated : public state_base
 
 	virtual bool allow_char_data() { return m_sub->allow_char_data(); }
 
-	state_ptr m_sub;
+	state_base * m_sub;
 	int m_state;
 };
 
@@ -143,7 +143,7 @@ struct state_repeated : public state_base
 
 struct state_repeated_zero_or_once : public state_repeated
 {
-	state_repeated_zero_or_once(content_spec_ptr sub)
+	state_repeated_zero_or_once(content_spec_base * sub)
 		: state_repeated(sub)
 	{
 	}
@@ -186,7 +186,7 @@ std::tuple<bool, bool> state_repeated_zero_or_once::allow(std::string_view name)
 
 struct state_repeated_any : public state_repeated
 {
-	state_repeated_any(content_spec_ptr sub)
+	state_repeated_any(content_spec_base * sub)
 		: state_repeated(sub)
 	{
 	}
@@ -234,7 +234,7 @@ std::tuple<bool, bool> state_repeated_any::allow(std::string_view name)
 
 struct state_repeated_at_least_once : public state_repeated
 {
-	state_repeated_at_least_once(content_spec_ptr sub)
+	state_repeated_at_least_once(content_spec_base * sub)
 		: state_repeated(sub)
 	{
 	}
@@ -297,13 +297,13 @@ struct state_seq : public state_base
 	state_seq(const content_spec_list &allowed)
 		: m_state(0)
 	{
-		for (content_spec_ptr a : allowed)
+		for (content_spec_base * a : allowed)
 			m_states.push_back(a->create_state());
 	}
 
 	~state_seq()
 	{
-		for (state_ptr s : m_states)
+		for (state_base * s : m_states)
 			s->release();
 	}
 
@@ -321,7 +321,7 @@ struct state_seq : public state_base
 	virtual bool allow_char_data()
 	{
 		bool result = false;
-		for (state_ptr s : m_states)
+		for (state_base * s : m_states)
 		{
 			if (s->allow_char_data())
 			{
@@ -335,8 +335,8 @@ struct state_seq : public state_base
 
 	virtual bool allow_empty();
 
-	std::list<state_ptr> m_states;
-	std::list<state_ptr>::iterator m_next;
+	std::list<state_base *> m_states;
+	std::list<state_base *>::iterator m_next;
 	int m_state;
 };
 
@@ -406,13 +406,13 @@ struct state_choice : public state_base
 		: m_mixed(mixed)
 		, m_state(0)
 	{
-		for (content_spec_ptr a : allowed)
+		for (content_spec_base * a : allowed)
 			m_states.push_back(a->create_state());
 	}
 
 	~state_choice()
 	{
-		for (state_ptr s : m_states)
+		for (state_base * s : m_states)
 			s->release();
 	}
 
@@ -430,10 +430,10 @@ struct state_choice : public state_base
 
 	virtual bool allow_empty();
 
-	std::list<state_ptr> m_states;
+	std::list<state_base *> m_states;
 	bool m_mixed;
 	int m_state;
-	state_ptr m_sub;
+	state_base * m_sub;
 };
 
 std::tuple<bool, bool> state_choice::allow(std::string_view name)
@@ -477,7 +477,7 @@ bool state_choice::allow_empty()
 
 // --------------------------------------------------------------------
 
-validator::validator(content_spec_ptr allowed)
+validator::validator(content_spec_base * allowed)
 	: m_state(allowed->create_state())
 	, m_allowed(allowed)
 	, m_done(m_state->allow_empty())
@@ -516,28 +516,28 @@ bool validator::done()
 	return m_done;
 }
 
-ContentSpecType validator::get_content_spec() const
+content_spec_type validator::get_content_spec() const
 {
-	return m_allowed ? m_allowed->get_content_spec() : ContentSpecType::Any;
+	return m_allowed ? m_allowed->get_content_spec() : content_spec_type::Any;
 }
 
 // --------------------------------------------------------------------
 
-state_ptr content_spec_any::create_state() const
+state_base * content_spec_any::create_state() const
 {
 	return new state_any();
 }
 
 // --------------------------------------------------------------------
 
-state_ptr content_spec_empty::create_state() const
+state_base * content_spec_empty::create_state() const
 {
 	return new state_empty();
 }
 
 // --------------------------------------------------------------------
 
-state_ptr content_spec_element::create_state() const
+state_base * content_spec_element::create_state() const
 {
 	return new state_element(m_name);
 }
@@ -549,7 +549,7 @@ content_spec_repeated::~content_spec_repeated()
 	delete m_allowed;
 }
 
-state_ptr content_spec_repeated::create_state() const
+state_base * content_spec_repeated::create_state() const
 {
 	switch (m_repetition)
 	{
@@ -574,16 +574,16 @@ bool content_spec_repeated::element_content() const
 
 content_spec_seq::~content_spec_seq()
 {
-	for (content_spec_ptr a : m_allowed)
+	for (content_spec_base * a : m_allowed)
 		delete a;
 }
 
-void content_spec_seq::add(content_spec_ptr a)
+void content_spec_seq::add(content_spec_base * a)
 {
 	m_allowed.push_back(a);
 }
 
-state_ptr content_spec_seq::create_state() const
+state_base * content_spec_seq::create_state() const
 {
 	return new state_seq(m_allowed);
 }
@@ -591,7 +591,7 @@ state_ptr content_spec_seq::create_state() const
 bool content_spec_seq::element_content() const
 {
 	bool result = true;
-	for (content_spec_ptr a : m_allowed)
+	for (content_spec_base * a : m_allowed)
 	{
 		if (not a->element_content())
 		{
@@ -606,16 +606,16 @@ bool content_spec_seq::element_content() const
 
 content_spec_choice::~content_spec_choice()
 {
-	for (content_spec_ptr a : m_allowed)
+	for (content_spec_base * a : m_allowed)
 		delete a;
 }
 
-void content_spec_choice::add(content_spec_ptr a)
+void content_spec_choice::add(content_spec_base * a)
 {
 	m_allowed.push_back(a);
 }
 
-state_ptr content_spec_choice::create_state() const
+state_base * content_spec_choice::create_state() const
 {
 	return new state_choice(m_allowed, m_mixed);
 }
@@ -627,7 +627,7 @@ bool content_spec_choice::element_content() const
 		result = false;
 	else
 	{
-		for (content_spec_ptr a : m_allowed)
+		for (content_spec_base * a : m_allowed)
 		{
 			if (not a->element_content())
 			{
@@ -762,17 +762,17 @@ bool attribute::validate_value(std::string &value, const entity_list &entities) 
 {
 	bool result = true;
 
-	if (m_type == AttributeType::CDATA)
+	if (m_type == attribute_type::CDATA)
 		result = true;
-	else if (m_type == AttributeType::ENTITY)
+	else if (m_type == attribute_type::ENTITY)
 	{
 		result = is_name(value);
 		if (result)
 			result = is_unparsed_entity(value, entities);
 	}
-	else if (m_type == AttributeType::ID or m_type == AttributeType::IDREF)
+	else if (m_type == attribute_type::ID or m_type == attribute_type::IDREF)
 		result = is_name(value);
-	else if (m_type == AttributeType::ENTITIES)
+	else if (m_type == attribute_type::ENTITIES)
 	{
 		result = is_names(value);
 		if (result)
@@ -789,19 +789,19 @@ bool attribute::validate_value(std::string &value, const entity_list &entities) 
 			}
 		}
 	}
-	else if (m_type == AttributeType::IDREFS)
+	else if (m_type == attribute_type::IDREFS)
 		result = is_names(value);
-	else if (m_type == AttributeType::NMTOKEN)
+	else if (m_type == attribute_type::NMTOKEN)
 		result = is_nmtoken(value);
-	else if (m_type == AttributeType::NMTOKENS)
+	else if (m_type == attribute_type::NMTOKENS)
 		result = is_nmtokens(value);
-	else if (m_type == AttributeType::Enumerated or m_type == AttributeType::Notation)
+	else if (m_type == attribute_type::Enumerated or m_type == attribute_type::Notation)
 	{
 		trim(value);
 		result = find(m_enum.begin(), m_enum.end(), value) != m_enum.end();
 	}
 
-	if (result and m_default == AttributeDefault::Fixed and value != m_default_value)
+	if (result and m_default == attribute_default::Fixed and value != m_default_value)
 		result = false;
 
 	return result;
@@ -828,7 +828,7 @@ element::~element()
 	delete m_allowed;
 }
 
-void element::set_allowed(content_spec_ptr allowed)
+void element::set_allowed(content_spec_base * allowed)
 {
 	if (allowed != m_allowed)
 	{

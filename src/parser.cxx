@@ -542,7 +542,7 @@ struct parser_imp
 	void markup_decl();
 	void element_decl();
 	void contentspec(doctype::element &element);
-	doctype::content_spec_ptr cp();
+	doctype::content_spec_base * cp();
 	void attlist_decl();
 	void notation_decl();
 	void entity_decl();
@@ -975,7 +975,7 @@ parser_imp::parser_imp(std::istream &data, parser &parser)
 	m_general_entities.push_back(new doctype::general_entity("apos", "&#39;"));
 	m_general_entities.push_back(new doctype::general_entity("quot", "&#34;"));
 
-	m_xmlSpaceAttr.reset(new doctype::attribute("xml:space", doctype::AttributeType::Enumerated, { "preserve", "default" }));
+	m_xmlSpaceAttr.reset(new doctype::attribute("xml:space", doctype::attribute_type::Enumerated, { "preserve", "default" }));
 }
 
 parser_imp::~parser_imp()
@@ -2029,7 +2029,7 @@ void parser_imp::doctypedecl()
 	{
 		for (const doctype::attribute *attr : element->get_attributes())
 		{
-			if (attr->get_type() != doctype::AttributeType::Notation)
+			if (attr->get_type() != doctype::attribute_type::Notation)
 				continue;
 
 			for (auto &n : attr->get_enums())
@@ -2455,7 +2455,7 @@ void parser_imp::contentspec(doctype::element &element)
 	}
 }
 
-doctype::content_spec_ptr parser_imp::cp()
+doctype::content_spec_base * parser_imp::cp()
 {
 	std::unique_ptr<doctype::content_spec_base> result;
 
@@ -2714,7 +2714,7 @@ void parser_imp::attlist_decl()
 
 			match(XMLToken::CloseParenthesis);
 
-			attribute.reset(new doctype::attribute(name, doctype::AttributeType::Enumerated, enums));
+			attribute.reset(new doctype::attribute(name, doctype::attribute_type::Enumerated, enums));
 		}
 		else
 		{
@@ -2724,21 +2724,21 @@ void parser_imp::attlist_decl()
 			std::vector<std::string> notations;
 
 			if (type == "CDATA")
-				attribute.reset(new doctype::attribute(name, doctype::AttributeType::CDATA));
+				attribute.reset(new doctype::attribute(name, doctype::attribute_type::CDATA));
 			else if (type == "ID")
-				attribute.reset(new doctype::attribute(name, doctype::AttributeType::ID));
+				attribute.reset(new doctype::attribute(name, doctype::attribute_type::ID));
 			else if (type == "IDREF")
-				attribute.reset(new doctype::attribute(name, doctype::AttributeType::IDREF));
+				attribute.reset(new doctype::attribute(name, doctype::attribute_type::IDREF));
 			else if (type == "IDREFS")
-				attribute.reset(new doctype::attribute(name, doctype::AttributeType::IDREFS));
+				attribute.reset(new doctype::attribute(name, doctype::attribute_type::IDREFS));
 			else if (type == "ENTITY")
-				attribute.reset(new doctype::attribute(name, doctype::AttributeType::ENTITY));
+				attribute.reset(new doctype::attribute(name, doctype::attribute_type::ENTITY));
 			else if (type == "ENTITIES")
-				attribute.reset(new doctype::attribute(name, doctype::AttributeType::ENTITIES));
+				attribute.reset(new doctype::attribute(name, doctype::attribute_type::ENTITIES));
 			else if (type == "NMTOKEN")
-				attribute.reset(new doctype::attribute(name, doctype::AttributeType::NMTOKEN));
+				attribute.reset(new doctype::attribute(name, doctype::attribute_type::NMTOKEN));
 			else if (type == "NMTOKENS")
-				attribute.reset(new doctype::attribute(name, doctype::AttributeType::NMTOKENS));
+				attribute.reset(new doctype::attribute(name, doctype::attribute_type::NMTOKENS));
 			else if (type == "NOTATION")
 			{
 				s(true);
@@ -2768,7 +2768,7 @@ void parser_imp::attlist_decl()
 
 				match(XMLToken::CloseParenthesis);
 
-				attribute.reset(new doctype::attribute(name, doctype::AttributeType::Notation, notations));
+				attribute.reset(new doctype::attribute(name, doctype::attribute_type::Notation, notations));
 			}
 			else
 				not_well_formed("invalid attribute type");
@@ -2784,61 +2784,61 @@ void parser_imp::attlist_decl()
 		{
 			case XMLToken::Required:
 				match(m_lookahead);
-				attribute->set_default(doctype::AttributeDefault::Required, "");
+				attribute->set_default(doctype::attribute_default::Required, "");
 				break;
 
 			case XMLToken::Implied:
 				match(m_lookahead);
-				attribute->set_default(doctype::AttributeDefault::Implied, "");
+				attribute->set_default(doctype::attribute_default::Implied, "");
 				break;
 
 			case XMLToken::Fixed:
 			{
 				match(m_lookahead);
-				if (attribute->get_type() == doctype::AttributeType::ID)
+				if (attribute->get_type() == doctype::attribute_type::ID)
 					not_valid("the default declaration for an ID attribute declaration should be #IMPLIED or #REQUIRED");
 
 				s(true);
 
 				std::string token_value = m_token;
-				normalize_attribute_value(token_value, attribute->get_type() == doctype::AttributeType::CDATA);
+				normalize_attribute_value(token_value, attribute->get_type() == doctype::attribute_type::CDATA);
 				if (not token_value.empty() and not attribute->validate_value(token_value, m_general_entities))
 				{
 					not_valid("default value '" + token_value + "' for attribute '" + name + "' is not valid");
 				}
 
-				attribute->set_default(doctype::AttributeDefault::Fixed, token_value);
+				attribute->set_default(doctype::attribute_default::Fixed, token_value);
 				match(XMLToken::String);
 				break;
 			}
 
 			default:
 			{
-				if (attribute->get_type() == doctype::AttributeType::ID)
+				if (attribute->get_type() == doctype::attribute_type::ID)
 					not_valid("the default declaration for an ID attribute declaration should be #IMPLIED or #REQUIRED");
 
 				if (m_standalone)
 					not_valid("Document cannot be standalone since there is a default value for an attribute");
 
 				std::string token_value = m_token;
-				normalize_attribute_value(token_value, attribute->get_type() == doctype::AttributeType::CDATA);
+				normalize_attribute_value(token_value, attribute->get_type() == doctype::attribute_type::CDATA);
 				collapse_spaces(token_value);
 				if (not token_value.empty() and not attribute->validate_value(token_value, m_general_entities))
 				{
 					not_valid("default value '" + token_value + "' for attribute '" + name + "' is not valid");
 				}
-				attribute->set_default(doctype::AttributeDefault::None, token_value);
+				attribute->set_default(doctype::attribute_default::None, token_value);
 				match(XMLToken::String);
 				break;
 			}
 		}
 
-		if (attribute->get_type() == doctype::AttributeType::ID)
+		if (attribute->get_type() == doctype::attribute_type::ID)
 		{
 			const doctype::attribute_list &atts = (*dte)->get_attributes();
 			if (std::find_if(atts.begin(), atts.end(),
 					[](auto a)
-					{ return a->get_type() == doctype::AttributeType::ID; }) != atts.end())
+					{ return a->get_type() == doctype::attribute_type::ID; }) != atts.end())
 				not_valid("only one attribute per element can have the ID type");
 		}
 
@@ -3551,12 +3551,12 @@ void parser_imp::element(doctype::validator &valid)
 		if (dta == nullptr and m_validating)
 			not_valid("undeclared attribute '" + attr_name + "'");
 
-		std::string attr_value = normalize_attribute_value(m_token, dta == nullptr or dta->get_type() == doctype::AttributeType::CDATA);
+		std::string attr_value = normalize_attribute_value(m_token, dta == nullptr or dta->get_type() == doctype::attribute_type::CDATA);
 		match(XMLToken::String);
 
 		if (m_validating and
 			dta != nullptr and
-			dta->get_default_type() == doctype::AttributeDefault::Fixed and
+			dta->get_default_type() == doctype::attribute_default::Fixed and
 			attr_value != std::get<1>(dta->get_default()))
 		{
 			not_valid("invalid value specified for fixed attribute");
@@ -3619,7 +3619,7 @@ void parser_imp::element(doctype::validator &valid)
 				if (m_validating and m_standalone and dta->is_external() and v != attr_value)
 					not_valid("attribute value modified as a result of an external defined attlist declaration, which is not valid in a standalone document");
 
-				if (dta->get_type() == doctype::AttributeType::ID)
+				if (dta->get_type() == doctype::attribute_type::ID)
 				{
 					id = true;
 
@@ -3636,7 +3636,7 @@ void parser_imp::element(doctype::validator &valid)
 					if (m_unresolved_ids.count(attr_value) > 0)
 						m_unresolved_ids.erase(attr_value);
 				}
-				else if (dta->get_type() == doctype::AttributeType::IDREF)
+				else if (dta->get_type() == doctype::attribute_type::IDREF)
 				{
 					if (attr_value.empty())
 						not_valid("attribute value for attribute '" + attr_name + "' may not be empty");
@@ -3644,7 +3644,7 @@ void parser_imp::element(doctype::validator &valid)
 					if (not m_ids.count(attr_value))
 						m_unresolved_ids.insert(attr_value);
 				}
-				else if (dta->get_type() == doctype::AttributeType::IDREFS)
+				else if (dta->get_type() == doctype::attribute_type::IDREFS)
 				{
 					if (attr_value.empty())
 						not_valid("attribute value for attribute '" + attr_name + "' may not be empty");
@@ -3725,12 +3725,12 @@ void parser_imp::element(doctype::validator &valid)
 				[attr_name](auto &a)
 				{ return a.m_name == attr_name; });
 
-			doctype::AttributeDefault defType;
+			doctype::attribute_default defType;
 			std::string defValue;
 
 			std::tie(defType, defValue) = dta->get_default();
 
-			if (defType == doctype::AttributeDefault::Required)
+			if (defType == doctype::attribute_default::Required)
 			{
 				if (ai == attrs.end())
 					not_valid("missing #REQUIRED attribute '" + attr_name + "' for element '" + name + "'");
@@ -3742,7 +3742,7 @@ void parser_imp::element(doctype::validator &valid)
 
 				attr def_attr;
 				def_attr.m_name = attr_name;
-				def_attr.m_value = normalize_attribute_value(defValue, dta->get_type() == doctype::AttributeType::CDATA);
+				def_attr.m_value = normalize_attribute_value(defValue, dta->get_type() == doctype::attribute_type::CDATA);
 				def_attr.m_id = false;
 
 				if (m_ns != nullptr)
@@ -3820,7 +3820,7 @@ void parser_imp::element(doctype::validator &valid)
 
 void parser_imp::content(doctype::validator &valid)
 {
-	if (valid.get_content_spec() == doctype::ContentSpecType::Empty and m_lookahead != XMLToken::ETag)
+	if (valid.get_content_spec() == doctype::content_spec_type::Empty and m_lookahead != XMLToken::ETag)
 		not_valid("Content is not allowed in an element declared to be EMPTY");
 
 	do
@@ -3829,18 +3829,18 @@ void parser_imp::content(doctype::validator &valid)
 		{
 			case XMLToken::Content:
 			case XMLToken::Space:
-				if (valid.get_content_spec() == doctype::ContentSpecType::Empty)
+				if (valid.get_content_spec() == doctype::content_spec_type::Empty)
 					not_valid("character data not allowed in EMPTY element");
-				else if (valid.get_content_spec() == doctype::ContentSpecType::Children and m_lookahead == XMLToken::Content)
+				else if (valid.get_content_spec() == doctype::content_spec_type::Children and m_lookahead == XMLToken::Content)
 					not_valid("character data '" + m_token + "' not allowed in element");
 				m_parser.character_data(m_token);
 				match(m_lookahead);
 				break;
 
 			case XMLToken::CharRef:
-				if (valid.get_content_spec() == doctype::ContentSpecType::Empty)
+				if (valid.get_content_spec() == doctype::content_spec_type::Empty)
 					not_valid("data not allowed in EMPTY element");
-				else if (valid.get_content_spec() == doctype::ContentSpecType::Children and is_space(m_token))
+				else if (valid.get_content_spec() == doctype::content_spec_type::Children and is_space(m_token))
 					not_valid("Element may not contain reference to space");
 				m_parser.character_data(m_token);
 				match(m_lookahead);
@@ -3868,7 +3868,7 @@ void parser_imp::content(doctype::validator &valid)
 				save_state in_external_dtd(m_in_external_dtd, e.is_externally_defined());
 
 				// a children production may not contain references to spaces
-				if (m_lookahead == XMLToken::Space and valid.get_content_spec() == doctype::ContentSpecType::Children)
+				if (m_lookahead == XMLToken::Space and valid.get_content_spec() == doctype::content_spec_type::Children)
 				{
 					auto space = m_token;
 					match(m_lookahead);
@@ -3905,13 +3905,13 @@ void parser_imp::content(doctype::validator &valid)
 				break;
 
 			case XMLToken::CDSect:
-				if (valid.get_content_spec() != doctype::ContentSpecType::Mixed and valid.get_content_spec() != doctype::ContentSpecType::Any)
+				if (valid.get_content_spec() != doctype::content_spec_type::Mixed and valid.get_content_spec() != doctype::content_spec_type::Any)
 					not_valid("character data '" + m_token + "' not allowed in element");
 
 				m_parser.start_cdata_section();
 				m_parser.character_data(m_token);
 
-				if (is_space(m_token) and valid.get_content_spec() == doctype::ContentSpecType::Children)
+				if (is_space(m_token) and valid.get_content_spec() == doctype::content_spec_type::Children)
 					not_valid("Element may not contain CDATA section containing only space");
 
 				m_parser.end_cdata_section();

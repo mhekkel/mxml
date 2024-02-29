@@ -64,7 +64,7 @@ template <typename T>
 concept NodeType = std::is_base_of_v<mxml::node, T>;
 
 // Instead of using RTTI and/or virtual clone methods, we use our
-// own runtime type info based on a node_type
+// own runtime type info based on a node_type when needed
 enum class node_type
 {
 	element,
@@ -276,27 +276,7 @@ class basic_node_list
 	}
 
 	/// \brief remove all nodes
-	void clear()
-	{
-		// avoid deep recursion and stack overflows
-
-		// TODO: std::stack<node *> stack;
-		// stack.push()
-
-		auto n = m_node->m_next;
-
-		assert(n != nullptr);
-
-		while (n != m_node)
-		{
-			auto t = n->m_next;
-			delete n;
-			n = t;
-			assert(n != nullptr);
-		}
-
-		m_node->m_next = m_node->m_prev = m_node;
-	}
+	void clear();
 
   protected:
 	basic_node_list(basic_node_list &&nl) = delete;

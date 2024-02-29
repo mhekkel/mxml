@@ -54,7 +54,7 @@ using attribute_list = std::vector<attribute *>;
 
 // --------------------------------------------------------------------
 
-enum class ContentSpecType
+enum class content_spec_type
 {
 	Empty,
 	Any,
@@ -66,11 +66,9 @@ enum class ContentSpecType
 // validation of elements is done by the validator classes
 
 struct content_spec_base;
-using content_spec_ptr = content_spec_base *;
-using content_spec_list = std::list<content_spec_ptr>;
-
 struct state_base;
-using state_ptr = state_base *;
+
+using content_spec_list = std::list<content_spec_base *>;
 
 class validator
 {
@@ -84,12 +82,12 @@ class validator
 	~validator();
 
 	bool allow(std::string_view name);
-	ContentSpecType get_content_spec() const;
+	content_spec_type get_content_spec() const;
 	bool done();
 
   private:
-	state_ptr m_state;
-	content_spec_ptr m_allowed;
+	state_base *m_state;
+	content_spec_base *m_allowed;
 	bool m_done;
 };
 
@@ -102,49 +100,49 @@ struct content_spec_base
 
 	virtual ~content_spec_base() = default;
 
-	virtual state_ptr create_state() const = 0;
+	virtual state_base *create_state() const = 0;
 	virtual bool element_content() const { return false; }
 
-	ContentSpecType get_content_spec() const { return m_content_spec; }
+	content_spec_type get_content_spec() const { return m_content_spec; }
 
   protected:
-	content_spec_base(ContentSpecType contentSpec)
+	content_spec_base(content_spec_type contentSpec)
 		: m_content_spec(contentSpec)
 	{
 	}
 
-	ContentSpecType m_content_spec;
+	content_spec_type m_content_spec;
 };
 
 struct content_spec_any : public content_spec_base
 {
 	content_spec_any()
-		: content_spec_base(ContentSpecType::Any)
+		: content_spec_base(content_spec_type::Any)
 	{
 	}
 
-	state_ptr create_state() const override;
+	state_base *create_state() const override;
 };
 
 struct content_spec_empty : public content_spec_base
 {
 	content_spec_empty()
-		: content_spec_base(ContentSpecType::Empty)
+		: content_spec_base(content_spec_type::Empty)
 	{
 	}
 
-	state_ptr create_state() const override;
+	state_base *create_state() const override;
 };
 
 struct content_spec_element : public content_spec_base
 {
 	content_spec_element(std::string_view name)
-		: content_spec_base(ContentSpecType::Children)
+		: content_spec_base(content_spec_type::Children)
 		, m_name(name)
 	{
 	}
 
-	state_ptr create_state() const override;
+	state_base *create_state() const override;
 	bool element_content() const override { return true; }
 
 	std::string m_name;
@@ -152,7 +150,7 @@ struct content_spec_element : public content_spec_base
 
 struct content_spec_repeated : public content_spec_base
 {
-	content_spec_repeated(content_spec_ptr allowed, char repetion)
+	content_spec_repeated(content_spec_base *allowed, char repetion)
 		: content_spec_base(allowed->get_content_spec())
 		, m_allowed(allowed)
 		, m_repetition(repetion)
@@ -162,25 +160,25 @@ struct content_spec_repeated : public content_spec_base
 
 	~content_spec_repeated();
 
-	state_ptr create_state() const override;
+	state_base *create_state() const override;
 	bool element_content() const override;
 
-	content_spec_ptr m_allowed;
+	content_spec_base *m_allowed;
 	char m_repetition;
 };
 
 struct content_spec_seq : public content_spec_base
 {
-	content_spec_seq(content_spec_ptr a)
+	content_spec_seq(content_spec_base *a)
 		: content_spec_base(a->get_content_spec())
 	{
 		add(a);
 	}
 	~content_spec_seq();
 
-	void add(content_spec_ptr a);
+	void add(content_spec_base *a);
 
-	state_ptr create_state() const override;
+	state_base *create_state() const override;
 	bool element_content() const override;
 
 	content_spec_list m_allowed;
@@ -189,21 +187,21 @@ struct content_spec_seq : public content_spec_base
 struct content_spec_choice : public content_spec_base
 {
 	content_spec_choice(bool mixed)
-		: content_spec_base(mixed ? ContentSpecType::Mixed : ContentSpecType::Children)
+		: content_spec_base(mixed ? content_spec_type::Mixed : content_spec_type::Children)
 		, m_mixed(mixed)
 	{
 	}
-	content_spec_choice(content_spec_ptr a, bool mixed)
-		: content_spec_base(mixed ? ContentSpecType::Mixed : a->get_content_spec())
+	content_spec_choice(content_spec_base *a, bool mixed)
+		: content_spec_base(mixed ? content_spec_type::Mixed : a->get_content_spec())
 		, m_mixed(mixed)
 	{
 		add(a);
 	}
 	~content_spec_choice();
 
-	void add(content_spec_ptr a);
+	void add(content_spec_base *a);
 
-	state_ptr create_state() const override;
+	state_base *create_state() const override;
 	bool element_content() const override;
 
 	content_spec_list m_allowed;
@@ -212,7 +210,7 @@ struct content_spec_choice : public content_spec_base
 
 // --------------------------------------------------------------------
 
-enum class AttributeType
+enum class attribute_type
 {
 	CDATA,
 	ID,
@@ -226,7 +224,7 @@ enum class AttributeType
 	Enumerated
 };
 
-enum class AttributeDefault
+enum class attribute_default
 {
 	None,
 	Required,
@@ -238,19 +236,19 @@ enum class AttributeDefault
 class attribute
 {
   public:
-	attribute(std::string_view name, AttributeType type)
+	attribute(std::string_view name, attribute_type type)
 		: m_name(name)
 		, m_type(type)
-		, m_default(AttributeDefault::None)
+		, m_default(attribute_default::None)
 		, m_external(false)
 	{
 	}
 
-	attribute(std::string_view name, AttributeType type,
+	attribute(std::string_view name, attribute_type type,
 		const std::vector<std::string> &enums)
 		: m_name(name)
 		, m_type(type)
-		, m_default(AttributeDefault::None)
+		, m_default(attribute_default::None)
 		, m_enum(enums)
 		, m_external(false)
 	{
@@ -260,17 +258,17 @@ class attribute
 
 	bool validate_value(std::string &value, const entity_list &entities) const;
 
-	void set_default(AttributeDefault def, std::string_view value)
+	void set_default(attribute_default def, std::string_view value)
 	{
 		m_default = def;
 		m_default_value = value;
 	}
 
-	std::tuple<AttributeDefault, std::string>
+	std::tuple<attribute_default, std::string>
 	get_default() const { return std::make_tuple(m_default, m_default_value); }
 
-	AttributeType get_type() const { return m_type; }
-	AttributeDefault get_default_type() const { return m_default; }
+	attribute_type get_type() const { return m_type; }
+	attribute_default get_default_type() const { return m_default; }
 	const std::vector<std::string> &get_enums() const { return m_enum; }
 
 	void set_external(bool external) { m_external = external; }
@@ -286,8 +284,8 @@ class attribute
 	bool is_unparsed_entity(std::string_view s, const entity_list &l) const;
 
 	std::string m_name;
-	AttributeType m_type;
-	AttributeDefault m_default;
+	attribute_type m_type;
+	attribute_default m_default;
 	std::string m_default_value;
 	std::vector<std::string> m_enum;
 	bool m_external;
@@ -323,13 +321,13 @@ class element
 
 	bool empty() const;
 
-	void set_allowed(content_spec_ptr allowed);
-	content_spec_ptr get_allowed() const { return m_allowed; }
+	void set_allowed(content_spec_base *allowed);
+	content_spec_base *get_allowed() const { return m_allowed; }
 
   private:
 	std::string m_name;
 	attribute_list m_attlist;
-	content_spec_ptr m_allowed;
+	content_spec_base *m_allowed;
 	bool m_declared, m_external;
 };
 

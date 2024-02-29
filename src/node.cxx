@@ -220,6 +220,55 @@ std::string node::prefix_tag(std::string tag, const std::string &uri) const
 }
 
 // --------------------------------------------------------------------
+
+void basic_node_list::clear()
+{
+	// avoid deep recursion and stack overflows
+
+	std::stack<basic_node_list *> stack;
+	std::stack<element *> s2;
+
+	stack.push(this);
+
+	while (not stack.empty())
+	{
+		auto nl = stack.top();
+		stack.pop();
+
+		for (auto n = nl->m_node->m_next; n != nl->m_node; n = n->m_next)
+		{
+			if (n->type() != node_type::element)
+				continue;
+			
+			auto e = static_cast<element *>(n);
+			s2.push(e);
+			stack.push(e);
+		}
+	}
+
+	while (not s2.empty())
+	{
+		auto e = s2.top();
+		s2.pop();
+
+		static_cast<element *>(e->parent())->erase(e);
+	}
+
+	// And now clean up what remains
+	auto n = m_node->m_next;
+
+	while (n != m_node)
+	{
+		auto t = n->m_next;
+		delete n;
+		n = t;
+		assert(n != nullptr);
+	}
+
+	m_node->m_next = m_node->m_prev = m_node;
+}
+
+// --------------------------------------------------------------------
 // comment
 
 void comment::write(std::ostream &os, format_info fmt) const
