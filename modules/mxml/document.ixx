@@ -234,8 +234,13 @@ export class document final : public node, public node_list<element>
 	node *root() override { return this; }
 	const node *root() const override { return this; }
 
-	element *child() { return &node_list<element>(m_nodes).front(); }
-	const element *child() const { return &node_list<element>(m_nodes).front(); }
+	element *child()
+	{
+		node_list<element> children(m_nodes);
+		return children.empty() ? nullptr : &children.front();
+	}
+
+	const element *child() const { return const_cast<document *>(this)->child(); }
 
 	node_list<> &nodes() { return m_nodes; }
 	const node_list<> &nodes() const { return m_nodes; }

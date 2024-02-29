@@ -84,7 +84,7 @@ export class not_wf_exception : public exception
 /// mxml::parser is a SAX parser. After construction, you should assign
 /// call back handlers for the SAX events and then call parse().
 
-class parser
+export class parser
 {
   public:
 	using attr_type = attr;

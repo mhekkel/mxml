@@ -1626,10 +1626,12 @@ object core_function_expression<CoreFunction::Lang>::evaluate(expression_context
 	object v = m_args.front()->evaluate(context);
 
 	std::string test = v.as<std::string>();
-	to_lower(test);
+	for (auto &ch : test)
+		ch = std::tolower(ch);
 
 	std::string lang = context.m_node->lang();
-	to_lower(lang);
+	for (auto &ch : lang)
+		ch = std::tolower(ch);
 
 	bool result = test == lang;
 

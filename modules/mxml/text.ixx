@@ -66,18 +66,15 @@ export enum class encoding_type
 };
 
 /// \brief Append a single unicode character to an utf-8 string
-void append(std::string& s, char32_t uc);
+export void append(std::string& s, char32_t uc);
 
 /// \brief remove the last unicode character from an utf-8 string
-char32_t pop_back_char(std::string& s);
+export char32_t pop_back_char(std::string& s);
 
 /// \brief return the first unicode and the advanced pointer from a string
-char32_t pop_front_char(std::string::const_iterator &ptr, std::string::const_iterator end);
+export char32_t pop_front_char(std::string::const_iterator &ptr, std::string::const_iterator end);
 
 /// \brief A simple implementation of trim, removing white space from start and end of \a s
 export void trim(std::string& s);
-
-/// \brief Simplistic to_lower function, works for one byte charsets only...
-void to_lower(std::string& s);
 
 } // namespace xml

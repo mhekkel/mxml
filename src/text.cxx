@@ -278,13 +278,4 @@ void trim(std::string& s)
 		s.erase(end, s.end());
 }
 
-// --------------------------------------------------------------------
-/// \brief Simplistic to_lower function, works for one byte charsets only...
-
-void to_lower(std::string& s)
-{
-	for (char& ch: s)
-		ch = std::tolower(ch);
-}
-
 } // namespace mxml
