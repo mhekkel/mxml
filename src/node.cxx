@@ -479,7 +479,7 @@ std::string element::id() const
 	return result;
 }
 
-std::string element::get_attribute(const std::string &qname) const
+std::string element::get_attribute(std::string_view qname) const
 {
 	std::string result;
 
@@ -490,7 +490,7 @@ std::string element::get_attribute(const std::string &qname) const
 	return result;
 }
 
-void element::set_attribute(const std::string &qname, const std::string &value)
+void element::set_attribute(std::string_view qname, std::string_view value)
 {
 	m_attributes.emplace(qname, value);
 }

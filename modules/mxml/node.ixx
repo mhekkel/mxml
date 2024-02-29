@@ -909,7 +909,7 @@ class attribute final : public node
 	{
 	}
 
-	attribute(const std::string &qname, const std::string &value, bool id = false)
+	attribute(std::string_view qname, std::string_view value, bool id = false)
 		: m_qname(qname)
 		, m_value(value)
 		, m_id(id)
@@ -1018,13 +1018,13 @@ class attribute_set : public node_list<attribute>
 	}
 
 	/// \brief return true if the attribute with name \a key is defined
-	bool contains(const std::string &key) const
+	bool contains(std::string_view key) const
 	{
 		return find(key) != end();
 	}
 
 	/// \brief return const_iterator to the attribute with name \a key
-	const_iterator find(const std::string &key) const
+	const_iterator find(std::string_view key) const
 	{
 		for (auto i = begin(); i != end(); ++i)
 		{
@@ -1035,7 +1035,7 @@ class attribute_set : public node_list<attribute>
 	}
 
 	/// \brief return iterator to the attribute with name \a key
-	iterator find(const std::string &key)
+	iterator find(std::string_view key)
 	{
 		return const_cast<const attribute_set &>(*this).find(key);
 	}
@@ -1218,10 +1218,10 @@ class element final : public node, public node_list<element>
 	void set_content(const std::string &content);
 
 	/// \brief return the value of attribute name \a qname or the empty string if not found
-	std::string get_attribute(const std::string &qname) const;
+	std::string get_attribute(std::string_view qname) const;
 
 	/// \brief set the value of attribute named \a qname to the value \a value
-	void set_attribute(const std::string &qname, const std::string &value);
+	void set_attribute(std::string_view qname, std::string_view value);
 
 	/// \brief The set_text method replaces any text node with the new text (call set_content)
 	virtual void set_text(const std::string &s);
