@@ -50,6 +50,39 @@ import :parser;
 namespace mxml
 {
 
+std::string to_hex(uint32_t i)
+{
+	char s[sizeof(i) * 2 + 3];
+	char* p = s + sizeof(s);
+	*--p = 0;
+
+	const char kHexChars[] = "0123456789abcdef";
+
+	while (i)
+	{
+		*--p = kHexChars[i & 0x0F];
+		i >>= 4;
+	}
+
+	*--p = 'x';
+	*--p = '0';
+
+	return p;
+}
+
+/// \brief our own implementation of iequals: compares \a a with \a b case-insensitive
+///
+/// This is a limited use function, works only reliably with ASCII. But that's OK.
+bool iequals(const std::string& a, const std::string& b)
+{
+	bool equal = a.length() == b.length();
+
+	for (std::string::size_type i = 0; equal and i < a.length(); ++i)
+		equal = std::toupper(a[i]) == std::toupper(b[i]);
+
+	return equal;
+}
+
 bool is_absolute_path(std::string_view s)
 {
 	bool result = false;
@@ -453,7 +486,7 @@ class string_data_source : public data_source
 		char32_t result = 0;
 
 		if (m_ptr != m_data.end())
-			result = get_first_char(m_ptr, m_data.cend());
+			result = pop_front_char(m_ptr, m_data.cend());
 
 		if (result == '\n')
 			++m_line_nr;
@@ -1093,7 +1126,7 @@ void parser_imp::retract()
 	assert(not m_token.empty());
 
 	assert(m_buffer_ptr < m_buffer.end());
-	*m_buffer_ptr++ = pop_last_char(m_token);
+	*m_buffer_ptr++ = pop_back_char(m_token);
 }
 
 void parser_imp::match(XMLToken token)
@@ -3189,7 +3222,7 @@ void parser_imp::parse_general_entity_declaration(std::string &s)
 
 	while (sp < se)
 	{
-		char32_t c = get_first_char(sp, se);
+		char32_t c = pop_front_char(sp, se);
 
 		switch (state)
 		{

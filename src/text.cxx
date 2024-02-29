@@ -125,20 +125,6 @@ bool is_valid_public_id(const std::string &s)
 	return result;
 }
 
-
-/// \brief our own implementation of iequals: compares \a a with \a b case-insensitive
-///
-/// This is a limited use function, works only reliably with ASCII. But that's OK.
-bool iequals(const std::string& a, const std::string& b)
-{
-	bool equal = a.length() == b.length();
-
-	for (std::string::size_type i = 0; equal and i < a.length(); ++i)
-		equal = std::toupper(a[i]) == std::toupper(b[i]);
-
-	return equal;
-}
-
 /// \brief Append a single unicode character to an utf-8 string
 void append(std::string& s, char32_t uc)
 {
@@ -174,7 +160,7 @@ void append(std::string& s, char32_t uc)
 }
 
 /// \brief remove the last unicode character from an utf-8 string
-char32_t pop_last_char(std::string& s)
+char32_t pop_back_char(std::string& s)
 {
 	char32_t result = 0;
 
@@ -214,7 +200,7 @@ char32_t pop_last_char(std::string& s)
 }
 
 /// \brief return the first unicode and the advanced pointer from a string
-char32_t get_first_char(std::string::const_iterator &ptr, std::string::const_iterator end)
+char32_t pop_front_char(std::string::const_iterator &ptr, std::string::const_iterator end)
 {
 	char32_t result = static_cast<unsigned char>(*ptr);
 	++ptr;
@@ -269,34 +255,6 @@ char32_t get_first_char(std::string::const_iterator &ptr, std::string::const_ite
 
 // --------------------------------------------------------------------
 
-/**
- * @brief Return a hexadecimal string representation for the numerical value in @a i
- * 
- * @param i The value to convert
- * @return std::string The hexadecimal representation
- */
-std::string to_hex(uint32_t i)
-{
-	char s[sizeof(i) * 2 + 3];
-	char* p = s + sizeof(s);
-	*--p = 0;
-
-	const char kHexChars[] = "0123456789abcdef";
-
-	while (i)
-	{
-		*--p = kHexChars[i & 0x0F];
-		i >>= 4;
-	}
-
-	*--p = 'x';
-	*--p = '0';
-
-	return p;
-}
-
-// --------------------------------------------------------------------
-
 /// \brief A simple implementation of trim, removing white space from start and end of \a s
 void trim(std::string& s)
 {
@@ -318,14 +276,6 @@ void trim(std::string& s)
 	}
 	else if (end != s.end())
 		s.erase(end, s.end());
-}
-
-// --------------------------------------------------------------------
-/// \brief Simplistic implementation of contains
-
-bool contains(std::string_view s, std::string_view p)
-{
-	return s.find(p) != std::string_view::npos;
 }
 
 // --------------------------------------------------------------------

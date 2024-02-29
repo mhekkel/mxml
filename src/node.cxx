@@ -64,7 +64,7 @@ void write_string(std::ostream &os, const std::string &s, bool escape_whitespace
 	{
 		auto sb = sp;
 
-		char32_t c = get_first_char(sp, se);
+		char32_t c = pop_front_char(sp, se);
 
 		switch (c)
 		{

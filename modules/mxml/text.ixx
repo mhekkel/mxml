@@ -65,43 +65,19 @@ export enum class encoding_type
 	ISO88591		///< Default single byte encoding, is a subset of utf-8
 };
 
-/// \brief our own implementation of iequals: compares \a a with \a b case-insensitive
-///
-/// This is a limited use function, works only reliably with ASCII. But that's OK.
-bool iequals(const std::string& a, const std::string& b);
-
 /// \brief Append a single unicode character to an utf-8 string
 void append(std::string& s, char32_t uc);
 
 /// \brief remove the last unicode character from an utf-8 string
-char32_t pop_last_char(std::string& s);
+char32_t pop_back_char(std::string& s);
 
 /// \brief return the first unicode and the advanced pointer from a string
-char32_t get_first_char(std::string::const_iterator &ptr, std::string::const_iterator end);
-
-// --------------------------------------------------------------------
-
-/**
- * @brief Return a hexadecimal string representation for the numerical value in @a i
- * 
- * @param i The value to convert
- * @return std::string The hexadecimal representation
- */
-std::string to_hex(uint32_t i);
-
-// --------------------------------------------------------------------
+char32_t pop_front_char(std::string::const_iterator &ptr, std::string::const_iterator end);
 
 /// \brief A simple implementation of trim, removing white space from start and end of \a s
 export void trim(std::string& s);
 
-// --------------------------------------------------------------------
-/// \brief Simplistic implementation of contains
-
-bool contains(std::string_view s, std::string_view p);
-
-// --------------------------------------------------------------------
 /// \brief Simplistic to_lower function, works for one byte charsets only...
-
 void to_lower(std::string& s);
 
 } // namespace xml
