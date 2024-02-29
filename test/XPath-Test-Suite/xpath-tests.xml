@@ -49,6 +49,12 @@
 	<xpath-test data="data-003.xml" xpath="//BBB[position() = last()]" expected-size="1"
 		test-name="test-last" test-attr="1" />
 
+	<xpath-test data="data-003.xml" xpath="//BBB[number(@test) = number(3)]" expected-size="1"
+		test-name="test-even" test-attr="1" />
+
+	<xpath-test data="data-003.xml" xpath="//BBB[number(@test) = number(x)]" expected-size="0" />
+	<xpath-test data="data-003.xml" xpath="//BBB[number(@test) = number('x')]" expected-size="0" />
+
 	<xpath-test data="data-002.xml" xpath="/AAA/XXX//GGG/ancestor::*"
 		expected-size="4" test-attr="a" />
 

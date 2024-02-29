@@ -332,9 +332,14 @@ double object::as<double>() const
 		case object_type::number: result = m_number; break;
 		case object_type::node_set:
 		{
-			auto s = m_node_set.front()->str();
-			if (auto r = std::from_chars(s.data(), s.data() + s.size(), result); r.ec != std::errc{})
+			if (m_node_set.empty())
 				result = std::nan("1");
+			else
+			{
+				auto s = m_node_set.front()->str();
+				if (auto r = std::from_chars(s.data(), s.data() + s.size(), result); r.ec != std::errc{})
+					result = std::nan("1");
+			}
 			break;
 		}
 		case object_type::string:
@@ -1644,7 +1649,7 @@ object core_function_expression<CoreFunction::Number>::evaluate(expression_conte
 	if (m_args.size() == 1)
 		v = m_args.front()->evaluate(context);
 	else
-		v = stod(context.m_node->str());
+		v = context.m_node->str();
 
 	return v.as<double>();
 }
