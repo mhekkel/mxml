@@ -57,7 +57,10 @@ struct st_1
 	template <class Archive>
 	void serialize(Archive &ar, unsigned long /*v*/)
 	{
-		ar &mxml::make_element_nvp("i", i) & mxml::make_element_nvp("i", s);
+		// clang-format off
+		ar & mxml::make_element_nvp("i", i)
+		   & mxml::make_element_nvp("s", s);
+		// clang-format on
 	}
 
 	bool operator==(const st_1 &rhs) const { return i == rhs.i and s == rhs.s; }
@@ -98,9 +101,9 @@ struct S
 	void serialize(Archive &ar, unsigned long /*version*/)
 	{
 		// clang-format off
-		ar & mxml::element_nvp("a", a)
-		   & mxml::element_nvp("b", b)
-		   & mxml::element_nvp("c", c);
+		ar & mxml::make_element_nvp("a", a)
+		   & mxml::make_element_nvp("b", b)
+		   & mxml::make_element_nvp("c", c);
 		// clang-format on
 	}
 };

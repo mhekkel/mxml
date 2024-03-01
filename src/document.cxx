@@ -253,6 +253,15 @@ void document::write(std::ostream &os, format_info fmt) const
 
 // --------------------------------------------------------------------
 
+node *document::insert_impl(const node *p, node *n)
+{
+	if (child() != nullptr)
+		throw exception("Only one child element is allowed in a document");
+	return element_container::insert_impl(p, n);
+}
+
+// --------------------------------------------------------------------
+
 void document::XmlDeclHandler(encoding_type /*encoding*/, bool standalone, float version)
 {
 	m_has_xml_decl = true;

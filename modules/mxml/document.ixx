@@ -259,12 +259,13 @@ export class document final : public element_container
 		requires std::is_constructible_v<element, Args...>
 	auto emplace(Args &&... args)
 	{
-		if (not empty())
-			throw exception("Only one child element is allowed in a document");
-		return node_list<element>(m_nodes).emplace_back(std::forward<Args>(args)...);
+		emplace_back(std::forward<Args>(args)...);
 	}
 
   protected:
+
+	node *insert_impl(const node *p, node *n) override;
+
 	void XmlDeclHandler(encoding_type encoding, bool standalone, float version);
 	void StartElementHandler(const std::string &name, const std::string &uri, const parser::attr_list_type &atts);
 	void EndElementHandler(const std::string &name, const std::string &uri);

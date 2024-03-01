@@ -430,10 +430,13 @@ class name_value_pair
 	}
 
 	name_value_pair(const name_value_pair &) = default;
+	name_value_pair(name_value_pair &&) = default;
 	name_value_pair &operator=(const name_value_pair &) = default;
+	name_value_pair &operator=(name_value_pair &&) = default;
 
 	const std::string &name() const { return m_name; }
-	T &value() { return m_value; }
+
+	// T &value() { return m_value; }
 	T &value() const { return m_value; }
 
   private:
@@ -441,44 +444,33 @@ class name_value_pair
 	T &m_value;
 };
 
-export template <typename T>
-constexpr name_value_pair<T> make_nvp(std::string_view name, T &v)
+template <typename T> class element_nvp : public name_value_pair<T>
 {
-	return name_value_pair<T>(name, v);
-}
-
-export template <typename T>
-struct element_nvp : public name_value_pair<T>
-{
-	element_nvp(std::string_view name, T &v)
-		: name_value_pair<T>(name, v)
+  public:
+	element_nvp(std::string_view name, T &value)
+		: name_value_pair<T>(name, value)
 	{
 	}
-	element_nvp(const element_nvp &rhs) = default;
-	element_nvp &operator=(const element_nvp &) = default;
+};
+template <typename T> class attribute_nvp : public name_value_pair<T>
+{
+  public:
+	attribute_nvp(std::string_view name, T &value)
+		: name_value_pair<T>(name, value)
+	{
+	}
 };
 
 export template <typename T>
-struct attribute_nvp : public name_value_pair<T>
+constexpr attribute_nvp<T> make_attribute_nvp(std::string_view name, T &value)
 {
-	attribute_nvp(std::string_view name, T &v)
-		: name_value_pair<T>(name, v)
-	{
-	}
-	attribute_nvp(const attribute_nvp &rhs) = default;
-	attribute_nvp &operator=(const attribute_nvp &) = default;
-};
-
-export template <typename T>
-constexpr element_nvp<T> make_element_nvp(std::string_view name, T &v)
-{
-	return element_nvp<T>(name, v);
+	return attribute_nvp(name, value);
 }
 
 export template <typename T>
-constexpr attribute_nvp<T> make_attribute_nvp(std::string_view name, T &v)
+constexpr element_nvp<T> make_element_nvp(std::string_view name, T &value)
 {
-	return attribute_nvp<T>(name, v);
+	return element_nvp(name, value);
 }
 
 /// serializer, deserializer and schema_creator are classes that can be used
@@ -493,12 +485,6 @@ export struct serializer
 	serializer(element_container &node)
 		: m_node(node)
 	{
-	}
-
-	template <typename T>
-	serializer &operator&(const name_value_pair<T> &rhs)
-	{
-		return serialize_element(rhs.name(), rhs.value());
 	}
 
 	template <typename T>
@@ -535,37 +521,13 @@ export struct deserializer
 	}
 
 	template <typename T>
-	deserializer &operator&(name_value_pair<T> &rhs)
+	deserializer &operator&(const element_nvp<T> &rhs)
 	{
 		return deserialize_element(rhs.name(), rhs.value());
 	}
 
 	template <typename T>
-	deserializer &operator&(element_nvp<T> &rhs)
-	{
-		return deserialize_element(rhs.name(), rhs.value());
-	}
-
-	template <typename T>
-	deserializer &operator&(attribute_nvp<T> &rhs)
-	{
-		return deserialize_attribute(rhs.name(), rhs.value());
-	}
-
-	template <typename T>
-	deserializer &operator&(name_value_pair<T> &&rhs)
-	{
-		return deserialize_element(rhs.name(), rhs.value());
-	}
-
-	template <typename T>
-	deserializer &operator&(element_nvp<T> &&rhs)
-	{
-		return deserialize_element(rhs.name(), rhs.value());
-	}
-
-	template <typename T>
-	deserializer &operator&(attribute_nvp<T> &&rhs)
+	deserializer &operator&(const attribute_nvp<T> &rhs)
 	{
 		return deserialize_attribute(rhs.name(), rhs.value());
 	}
@@ -598,19 +560,7 @@ struct schema_creator
 	template <typename T>
 	schema_creator &operator&(const name_value_pair<T> &rhs)
 	{
-		return add_element(rhs.name(), rhs.value());
-	}
-
-	template <typename T>
-	schema_creator &operator&(const element_nvp<T> &rhs)
-	{
-		return add_element(rhs.name(), rhs.value());
-	}
-
-	template <typename T>
-	schema_creator &operator&(const attribute_nvp<T> &rhs)
-	{
-		return add_attribute(rhs.name(), rhs.value());
+		return rhs.to_attribute ? add_attribute(rhs.name(), rhs.value()) : add_element(rhs.name(), rhs.value());
 	}
 
 	template <typename T>
