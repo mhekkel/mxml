@@ -1107,4 +1107,22 @@ schema_creator &schema_creator::add_attribute(std::string_view name, const T & /
 	return *this;
 }
 
+// --------------------------------------------------------------------
+// Convenience routines
+
+export template <typename T>
+void to_xml(mxml::element_container &e, std::string_view name, const T &value)
+{
+	mxml::serializer sr(e);
+	sr.serialize_element(name, value);
+}
+
+export template <typename T>
+void from_xml(const mxml::element_container &e, std::string_view name, T &value)
+{
+	mxml::deserializer dsr(e);
+	dsr.deserialize_element(name, value);
+}
+
+
 } // namespace mxml

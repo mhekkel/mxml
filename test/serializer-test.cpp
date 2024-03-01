@@ -76,15 +76,12 @@ TEST_CASE("serializer_1")
 	auto doc = R"(<test>42</test>)"_xml;
 
 	int32_t i = -1;
-
-	deserializer ds(doc);
-	ds.deserialize_element("test", i);
+	from_xml(doc, "test", i);
 
 	CHECK(i == 42);
 
 	document doc2;
-	serializer sr(doc2);
-	sr.serialize_element("test", i);
+	to_xml(doc2, "test", i);
 
 	CHECK(doc == doc2);
 }
@@ -114,19 +111,15 @@ TEST_CASE("serializer_2")
 	using namespace mxml::literals;
 
 	auto doc = R"(<test><a>1</a><b>0.2</b><c>aap</c></test>)"_xml;
-
 	S s;
-
-	deserializer ds(doc);
-	ds.deserialize_element("test", s);
+	from_xml(doc, "test", s);
 
 	CHECK(s.a == 1);
 	CHECK(std::to_string(s.b).substr(0, 3) == "0.2");
 	CHECK(s.c == "aap");
 
 	document doc2;
-	serializer sr(doc2);
-	sr.serialize_element("test", s);
+	to_xml(doc2, "test", s);
 
 	CHECK(doc == doc2);
 }
@@ -139,14 +132,10 @@ TEST_CASE("test_s_1")
 
 	document doc;
 	doc.serialize("s1", s1);
-
-	// static_assert(has_serialize_v<S, serializer>, "Oeps");
-
 	CHECK((std::ostringstream() << doc).str() == "<s1><i>1</i><s>aap</s></s1>");
 
 	doc.clear();
-	serializer sr(doc);
-	sr.serialize_element("s1", s1);
+	to_xml(doc, "s1", s1);
 
 	CHECK((std::ostringstream() << doc).str() == "<s1><i>1</i><s>aap</s></s1>");
 
@@ -172,22 +161,18 @@ TEST_CASE("test_serialize_arrays")
 {
 	using namespace mxml;
 
-	static_assert(std::experimental::is_detected_v<std_string_npos_t, std::string>, "oeps");
-	static_assert(not std::experimental::is_detected_v<std_string_npos_t, std::vector<int>>, "oeps");
-	static_assert(not std::experimental::is_detected_v<std_string_npos_t, int>, "oeps");
-
 	std::vector<int> ii{ 1, 2, 3, 4 };
 
 	element e("test");
-	serializer sr(e);
-	sr.serialize_element("i", ii);
+	to_xml(e, "i", ii);
+
+	CHECK((std::ostringstream() << e).str() == "<test><i>1</i><i>2</i><i>3</i><i>4</i></test>");
 
 	document doc;
 	doc.insert(doc.begin(), e); // copy
 
 	std::vector<int> ii2;
-	deserializer dsr(e);
-	dsr.deserialize_element("i", ii2);
+	from_xml(e, "i", ii2);
 
 	CHECK(ii == ii2);
 }
@@ -201,12 +186,6 @@ TEST_CASE("test_serialize_arrays2")
 		{ { 1, 0.5f, "aap" },
 			{ 2, 1.5f, "noot" } }
 	};
-
-	static_assert(has_serialize_v<decltype(sa.ds)::value_type, serializer>, "oeps");
-	static_assert(not has_serialize_v<decltype(sa.vi)::value_type, serializer>, "oeps");
-
-	static_assert(is_serializable_type_v<decltype(sa.ds)::value_type, serializer>, "oeps");
-	static_assert(is_serializable_type_v<decltype(sa.vi)::value_type, serializer>, "oeps");
 
 	document doc;
 	doc.serialize("test", sa);
