@@ -232,17 +232,17 @@ class basic_node_list
 	};
 
 	node_list_header *m_node;
+	node_list_header m_node_store;
 	bool m_owner;
 
   protected:
 	basic_node_list()
 		: m_node(nullptr)
-		, m_owner(false)
 	{
 	}
 
 	basic_node_list(element_container *e)
-		: m_node(new node_list_header)
+		: m_node(&m_node_store)
 		, m_owner(true)
 	{
 		m_node->m_next = m_node->m_prev = m_node;
@@ -265,10 +265,7 @@ class basic_node_list
 	virtual ~basic_node_list()
 	{
 		if (m_owner)
-		{
 			clear();
-			delete m_node;
-		}
 	}
 
 	bool operator==(const basic_node_list &b) const;
