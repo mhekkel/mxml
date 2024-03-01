@@ -823,21 +823,7 @@ class name_test_step_expression : public step_expression
   protected:
 	bool name_matches(const node *n)
 	{
-		bool result = m_name == "*";
-		if (result == false)
-		{
-			const element *e = dynamic_cast<const element *>(n);
-			if (e != nullptr and e->name() == m_name)
-				result = true;
-		}
-
-		if (result == false)
-		{
-			const attribute *a = dynamic_cast<const attribute *>(n);
-			if (a != nullptr and a->name() == m_name)
-				result = true;
-		}
-
+		bool result = m_name == "*" or n->name() == m_name;
 		return result;
 	}
 
@@ -2832,9 +2818,8 @@ element_set xpath::evaluate<element>(const node &root, context &ctxt) const
 	object s(m_impl->evaluate(const_cast<node &>(root), *ctxt.m_impl));
 	for (node *n : s.as<const node_set &>())
 	{
-		element *e = dynamic_cast<element *>(n);
-		if (e != nullptr)
-			result.push_back(e);
+		if (n->type() == node_type::element)
+			result.push_back(static_cast<element *>(n));
 	}
 
 	return result;

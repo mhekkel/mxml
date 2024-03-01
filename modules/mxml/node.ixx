@@ -56,6 +56,7 @@ export class comment;
 export class cdata;
 export class processing_instruction;
 export class document;
+class element_container;
 
 using node_set = std::list<node *>;
 using element_set = std::list<element *>;
@@ -65,7 +66,7 @@ concept NodeType = std::is_base_of_v<mxml::node, T>;
 
 // Instead of using RTTI and/or virtual clone methods, we use our
 // own runtime type info based on a node_type when needed
-enum class node_type
+export enum class node_type
 {
 	element,
 	text,
@@ -75,6 +76,7 @@ enum class node_type
 	document,
 	processing_instruction,
 
+	element_container,
 	header
 };
 
@@ -169,9 +171,9 @@ class node
 	virtual node *root();             ///< The root node for this node
 	virtual const node *root() const; ///< The root node for this node
 
-	void parent(node *p) noexcept { m_parent = p; }
-	node *parent() { return m_parent; }             ///< The parent node for this node
-	const node *parent() const { return m_parent; } ///< The parent node for this node
+	void parent(element_container *p) noexcept { m_parent = p; }
+	element_container *parent() { return m_parent; }             ///< The parent node for this node
+	const element_container *parent() const { return m_parent; } ///< The parent node for this node
 
 	void next(const node *n) noexcept { m_next = const_cast<node *>(n); }
 	node *next() { return m_next; }             ///< The next sibling
@@ -206,7 +208,7 @@ class node
 	node &operator=(node &&n) = delete;
 
   protected:
-	node *m_parent = nullptr;
+	element_container *m_parent = nullptr;
 	node *m_next;
 	node *m_prev;
 };
@@ -236,7 +238,7 @@ class basic_node_list
 	{
 	}
 
-	basic_node_list(node *e)
+	basic_node_list(element_container *e)
 		: m_node(new node_list_header)
 		, m_owner(true)
 	{
@@ -441,7 +443,7 @@ class node_list : public basic_node_list
 	using pointer = value_type *;
 	using const_pointer = const value_type *;
 
-	node_list(node *e)
+	node_list(element_container *e)
 		: basic_node_list(e)
 	{
 	}
@@ -644,6 +646,86 @@ template <>
 node_list<element>::node_list()
 {
 }
+
+// --------------------------------------------------------------------
+// internal class as base class for element and document
+
+class element_container : public node, public node_list<element>
+{
+  public:
+	node_type type() const override { return node_type::element_container; }
+
+	element_container()
+		: m_nodes(this)
+	{
+		set_header_from(m_nodes);
+	}
+
+	element_container(const element_container &e)
+		: m_nodes(this)
+	{
+		set_header_from(m_nodes);
+		m_nodes.assign(e.m_nodes.begin(), e.m_nodes.end());
+	}
+
+	element_container(element_container &&e) noexcept
+		: m_nodes(this)
+	{
+		swap(*this, e);
+	}
+
+	element_container &operator=(element_container e) noexcept
+	{
+		swap(*this, e);
+		return *this;
+	}
+
+	// --------------------------------------------------------------------
+
+	friend void swap(element_container &a, element_container &b) noexcept
+	{
+		swap(a.m_nodes, b.m_nodes);
+
+		a.set_header_from(a.m_nodes);
+		b.set_header_from(b.m_nodes);
+	}
+
+	// --------------------------------------------------------------------
+	// children
+
+	node_list<> &nodes() { return m_nodes; }
+	const node_list<> &nodes() const { return m_nodes; }
+
+	/// \brief will return the concatenation of str() from all child nodes
+	std::string str() const override;
+
+	/// xpath wrappers
+	/// TODO: create recursive iterator and use it as return type here
+
+	/// \brief return the elements that match XPath \a path.
+	///
+	/// If you need to find other classes than xml::element, of if your XPath
+	/// contains variables, you should create a mxml::xpath object and use
+	/// its evaluate method.
+	element_set find(std::string_view path) const;
+
+	/// \brief return the first element that matches XPath \a path.
+	///
+	/// If you need to find other classes than xml::element, of if your XPath
+	/// contains variables, you should create a mxml::xpath object and use
+	/// its evaluate method.
+	element *find_first(std::string_view path);
+	const element *find_first(std::string_view path) const
+	{
+		return const_cast<element_container *>(this)->find_first(path);
+	}
+
+  protected:
+
+	void write(std::ostream &os, format_info fmt) const override;
+
+	node_list<> m_nodes;
+};
 
 // --------------------------------------------------------------------
 // internal node base class for storing text
@@ -999,7 +1081,7 @@ class attribute_set : public node_list<attribute>
 	using const_iterator = typename node_list::const_iterator;
 	using size_type = std::size_t;
 
-	attribute_set(node *el)
+	attribute_set(element_container *el)
 		: node_list(el)
 	{
 	}
@@ -1091,43 +1173,37 @@ class attribute_set : public node_list<attribute>
 /// XML element as found in the XML document. It has a qname, can have children,
 /// attributes and a namespace.
 
-class element final : public node, public node_list<element>
+class element final : public element_container
 {
   public:
 	node_type type() const override { return node_type::element; }
 
 	element()
-		: m_nodes(this)
-		, m_attributes(this)
+		: m_attributes(this)
 	{
-		set_header_from(m_nodes);
 	}
 
 	// 	/// \brief constructor taking a \a qname and a list of \a attributes
 	element(const std::string &qname, std::initializer_list<attribute> attributes = {})
-		: m_qname(qname)
-		, m_nodes(this)
+		: element_container()
+		, m_qname(qname)
 		, m_attributes(this)
 	{
-		set_header_from(m_nodes);
 		m_attributes.assign(attributes.begin(), attributes.end());
 	}
 
 	element(std::initializer_list<element> il);
 
 	element(const element &e)
-		: m_qname(e.m_qname)
-		, m_nodes(this)
+		: element_container(e)
+		, m_qname(e.m_qname)
 		, m_attributes(this)
 	{
-		set_header_from(m_nodes);
-		m_nodes.assign(e.m_nodes.begin(), e.m_nodes.end());
 		m_attributes.assign(e.m_attributes.begin(), e.m_attributes.end());
 	}
 
 	element(element &&e) noexcept
-		: m_nodes(this)
-		, m_attributes(this)
+		: m_attributes(this)
 	{
 		swap(*this, e);
 	}
@@ -1140,12 +1216,9 @@ class element final : public node, public node_list<element>
 
 	friend void swap(element &a, element &b) noexcept
 	{
+		swap(static_cast<element_container &>(a), static_cast<element_container &>(b));
+
 		std::swap(a.m_qname, b.m_qname);
-		swap(a.m_nodes, b.m_nodes);
-
-		a.set_header_from(a.m_nodes);
-		b.set_header_from(b.m_nodes);
-
 		swap(a.m_attributes, b.m_attributes);
 	}
 
@@ -1169,12 +1242,6 @@ class element final : public node, public node_list<element>
 	bool equals(const node *n) const override;
 
 	// --------------------------------------------------------------------
-	// children
-
-	node_list<> &nodes() { return m_nodes; }
-	const node_list<> &nodes() const { return m_nodes; }
-
-	// --------------------------------------------------------------------
 	// attribute support
 
 	/// \brief return the set of attributes for this element
@@ -1184,13 +1251,6 @@ class element final : public node, public node_list<element>
 	const attribute_set &attributes() const { return m_attributes; }
 
 	// --------------------------------------------------------------------
-
-	/// \brief write the element to \a os
-	friend std::ostream &operator<<(std::ostream &os, const element &e);
-	// 	friend class document;
-
-	/// \brief will return the concatenation of str() from all child nodes
-	std::string str() const override;
 
 	/// \brief return the URI of the namespace for \a prefix
 	std::string namespace_for_prefix(const std::string &prefix) const override;
@@ -1210,6 +1270,12 @@ class element final : public node, public node_list<element>
 	/// \param including_attributes	Move the attributes to this new namespace as well
 	void move_to_name_space(const std::string &prefix, const std::string &uri,
 		bool recursive, bool including_attributes);
+
+	// --------------------------------------------------------------------
+
+	/// \brief write the element to \a os
+	friend std::ostream &operator<<(std::ostream &os, const element &e);
+	// 	friend class document;
 
 	/// \brief return the concatenation of the content of all enclosed mxml::text nodes
 	std::string get_content() const;
@@ -1234,32 +1300,10 @@ class element final : public node, public node_list<element>
 	/// To combine all adjacent child text nodes into one
 	void flatten_text();
 
-	/// xpath wrappers
-	/// TODO: create recursive iterator and use it as return type here
-
-	/// \brief return the elements that match XPath \a path.
-	///
-	/// If you need to find other classes than xml::element, of if your XPath
-	/// contains variables, you should create a mxml::xpath object and use
-	/// its evaluate method.
-	element_set find(std::string_view path) const;
-
-	/// \brief return the first element that matches XPath \a path.
-	///
-	/// If you need to find other classes than xml::element, of if your XPath
-	/// contains variables, you should create a mxml::xpath object and use
-	/// its evaluate method.
-	element *find_first(std::string_view path);
-	const element *find_first(std::string_view path) const
-	{
-		return const_cast<element *>(this)->find_first(path);
-	}
-
 	void write(std::ostream &os, format_info fmt) const override;
 
   private:
 	std::string m_qname;
-	node_list<> m_nodes;
 	attribute_set m_attributes;
 };
 

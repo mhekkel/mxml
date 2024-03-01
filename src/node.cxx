@@ -247,7 +247,7 @@ void basic_node_list::clear()
 			if (n->type() != node_type::element)
 				continue;
 
-			auto e = static_cast<element *>(n);
+			auto e = static_cast<element_container *>(n);
 			if (e->empty())
 				continue;
 
@@ -448,6 +448,36 @@ void attribute::write(std::ostream &os, format_info fmt) const
 }
 
 // --------------------------------------------------------------------
+// element_container
+
+std::string element_container::str() const
+{
+	std::string result;
+
+	for (auto &n : nodes())
+		result += n.str();
+
+	return result;
+}
+
+void element_container::write(std::ostream &os, format_info fmt) const
+{
+}
+
+element_set element_container::find(std::string_view path) const
+{
+	return xpath(path).evaluate<element>(*this);
+}
+
+element *element_container::find_first(std::string_view path)
+{
+	element_set s = xpath(path).evaluate<element>(*this);
+
+	return s.empty() ? nullptr : s.front();
+}
+
+
+// --------------------------------------------------------------------
 // element
 
 std::string element::lang() const
@@ -498,10 +528,11 @@ void element::set_attribute(std::string_view qname, std::string_view value)
 bool element::equals(const node *n) const
 {
 	bool result = false;
-	const element *e = dynamic_cast<const element *>(n);
 
-	if (e != nullptr)
+	if (type() == n->type())
 	{
+		const element *e = dynamic_cast<const element *>(n);
+
 		result = name() == e->name() and get_ns() == e->get_ns();
 
 		auto &na = m_nodes;
@@ -585,12 +616,6 @@ bool element::equals(const node *n) const
 	return result;
 }
 
-// void element::clear()
-// {
-// 	m_nodes.clear();
-// 	m_attributes.clear();
-// }
-
 std::string element::get_content() const
 {
 	std::string result;
@@ -617,16 +642,6 @@ void element::set_content(const std::string &s)
 
 	// and add a new text node with the content
 	nn.emplace_back(text(s));
-}
-
-std::string element::str() const
-{
-	std::string result;
-
-	for (auto &n : nodes())
-		result += n.str();
-
-	return result;
 }
 
 void element::add_text(const std::string &s)
@@ -669,71 +684,6 @@ void element::flatten_text()
 	}
 }
 
-void element::write(std::ostream &os, format_info fmt) const
-{
-	// if width is set, we wrap and indent the file
-	size_t indentation = fmt.indent_level * fmt.indent_width;
-
-	if (fmt.indent)
-	{
-		if (fmt.indent_level > 0)
-			os << '\n';
-		if (indentation > 0)
-			os << std::string(indentation, ' ');
-	}
-
-	os << '<' << m_qname;
-
-	// if the left flag is set, wrap and indent attributes as well
-	auto attr_fmt = fmt;
-	attr_fmt.indent_width = 0;
-
-	for (auto &attr : m_attributes)
-	{
-		attr.write(os, attr_fmt);
-		if (attr_fmt.indent_width == 0 and fmt.indent_attributes)
-			attr_fmt.indent_width = indentation + 1 + m_qname.length() + 1;
-	}
-
-	if ((fmt.html and kEmptyHTMLElements.count(m_qname)) or
-		(not fmt.html and fmt.collapse_tags and nodes().empty()))
-		os << "/>";
-	else
-	{
-		os << '>';
-		auto sub_fmt = fmt;
-		++sub_fmt.indent_level;
-
-		bool wrote_element = false;
-		for (auto &n : nodes())
-		{
-			n.write(os, sub_fmt);
-			wrote_element = dynamic_cast<const element *>(&n) != nullptr;
-		}
-
-		if (wrote_element and fmt.indent != 0)
-			os << '\n'
-			   << std::string(indentation, ' ');
-
-		os << "</" << m_qname << '>';
-	}
-}
-
-std::ostream &operator<<(std::ostream &os, const element &e)
-{
-	auto flags = os.flags({});
-	auto width = os.width(0);
-
-	format_info fmt;
-	fmt.indent = width > 0;
-	fmt.indent_width = width;
-	fmt.indent_attributes = flags & std::ios_base::left;
-
-	e.write(os, fmt);
-
-	return os;
-}
-
 std::string element::namespace_for_prefix(const std::string &prefix) const
 {
 	std::string result;
@@ -760,8 +710,8 @@ std::string element::namespace_for_prefix(const std::string &prefix) const
 		}
 	}
 
-	if (result.empty() and dynamic_cast<element *>(m_parent) != nullptr)
-		result = static_cast<element *>(m_parent)->namespace_for_prefix(prefix);
+	if (result.empty() and dynamic_cast<element_container *>(m_parent) != nullptr)
+		result = static_cast<element_container *>(m_parent)->namespace_for_prefix(prefix);
 
 	return result;
 }
@@ -785,8 +735,8 @@ std::pair<std::string, bool> element::prefix_for_namespace(const std::string &ur
 		}
 	}
 
-	if (not found and dynamic_cast<element *>(m_parent) != nullptr)
-		std::tie(result, found) = static_cast<element *>(m_parent)->prefix_for_namespace(uri);
+	if (not found and dynamic_cast<element_container *>(m_parent) != nullptr)
+		std::tie(result, found) = static_cast<element_container *>(m_parent)->prefix_for_namespace(uri);
 
 	return make_pair(result, found);
 }
@@ -863,16 +813,69 @@ void element::move_to_name_space(const std::string &prefix, const std::string &u
 	}
 }
 
-element_set element::find(std::string_view path) const
+void element::write(std::ostream &os, format_info fmt) const
 {
-	return xpath(path).evaluate<element>(*this);
+	// if width is set, we wrap and indent the file
+	size_t indentation = fmt.indent_level * fmt.indent_width;
+
+	if (fmt.indent)
+	{
+		if (fmt.indent_level > 0)
+			os << '\n';
+		if (indentation > 0)
+			os << std::string(indentation, ' ');
+	}
+
+	os << '<' << m_qname;
+
+	// if the left flag is set, wrap and indent attributes as well
+	auto attr_fmt = fmt;
+	attr_fmt.indent_width = 0;
+
+	for (auto &attr : m_attributes)
+	{
+		attr.write(os, attr_fmt);
+		if (attr_fmt.indent_width == 0 and fmt.indent_attributes)
+			attr_fmt.indent_width = indentation + 1 + m_qname.length() + 1;
+	}
+
+	if ((fmt.html and kEmptyHTMLElements.count(m_qname)) or
+		(not fmt.html and fmt.collapse_tags and nodes().empty()))
+		os << "/>";
+	else
+	{
+		os << '>';
+		auto sub_fmt = fmt;
+		++sub_fmt.indent_level;
+
+		bool wrote_element = false;
+		for (auto &n : nodes())
+		{
+			n.write(os, sub_fmt);
+			wrote_element = dynamic_cast<const element_container *>(&n) != nullptr;
+		}
+
+		if (wrote_element and fmt.indent != 0)
+			os << '\n'
+			   << std::string(indentation, ' ');
+
+		os << "</" << m_qname << '>';
+	}
 }
 
-element *element::find_first(std::string_view path)
+std::ostream &operator<<(std::ostream &os, const element &e)
 {
-	element_set s = xpath(path).evaluate<element>(*this);
+	auto flags = os.flags({});
+	auto width = os.width(0);
 
-	return s.empty() ? nullptr : s.front();
+	format_info fmt;
+	fmt.indent = width > 0;
+	fmt.indent_width = width;
+	fmt.indent_attributes = flags & std::ios_base::left;
+
+	e.write(os, fmt);
+
+	return os;
 }
 
 // --------------------------------------------------------------------

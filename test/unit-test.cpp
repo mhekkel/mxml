@@ -540,7 +540,7 @@ TEST_CASE("xml_iterators_2")
 
 	// for (int i = 0; i < 10; ++i)
 	// {
-	// 	mxml::element *el = dynamic_cast<mxml::element *>(nodes[i]);
+	// 	mxml::element *el = dynamic_cast<mxml::element_container *>(nodes[i]);
 	// 	CHECK(el != nullptr);
 	// 	CHECK(el->get_content() == std::to_string(i));
 	// }

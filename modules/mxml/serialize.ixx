@@ -192,7 +192,8 @@ struct value_serializer<double> : char_conv_serializer<double>
 /// A recent addition is the init() call to initialize the instance
 
 template <typename T>
-struct value_serializer<T, std::enable_if_t<std::is_enum_v<T>>>
+	requires std::is_enum_v<T>
+struct value_serializer<T>
 {
 	std::string m_type_name;
 
@@ -487,7 +488,7 @@ constexpr attribute_nvp<T> make_attribute_nvp(std::string_view name, T &v)
 
 export struct serializer
 {
-	serializer(node &node)
+	serializer(element &node)
 		: m_node(node)
 	{
 	}
@@ -519,14 +520,14 @@ export struct serializer
 	template <typename T>
 	serializer &serialize_attribute(std::string_view name, const T &data);
 
-	node &m_node;
+	element &m_node;
 };
 
 /// deserializer is the class that initiates the deserialization process.
 
 export struct deserializer
 {
-	deserializer(const node &node)
+	deserializer(const element &node)
 		: m_node(node)
 	{
 	}
@@ -558,7 +559,7 @@ export struct deserializer
 	template <typename T>
 	deserializer &deserialize_attribute(std::string_view name, T &data);
 
-	const node &m_node;
+	const element &m_node;
 };
 
 using type_map = std::map<std::string, element>;
@@ -605,7 +606,7 @@ struct schema_creator
 
 // --------------------------------------------------------------------
 
-template <typename T, typename = void>
+template <typename T>
 struct type_serializer;
 
 template <typename T, size_t N>
@@ -863,7 +864,8 @@ struct priority_tag<0>
 };
 
 template <typename T>
-struct type_serializer<T, std::enable_if_t<is_serializable_array_type_v<T, serializer>>>
+	requires is_serializable_array_type_v<T, serializer>
+struct type_serializer<T>
 {
 	using container_type = typename std::remove_const_t<typename std::remove_reference_t<T>>;
 	using value_type = value_type_t<container_type>;
@@ -1044,8 +1046,7 @@ serializer &serializer::serialize_attribute(std::string_view name, const T &valu
 	using value_type = typename std::remove_const_t<typename std::remove_reference_t<T>>;
 	using type_serializer = type_serializer<value_type>;
 
-	if (m_node.type() == node_type::element)
-		static_cast<element&>(m_node).attributes().emplace(name, type_serializer::serialize_value(value));
+	m_node.attributes().emplace(name, type_serializer::serialize_value(value));
 
 	return *this;
 }
@@ -1078,12 +1079,9 @@ deserializer &deserializer::deserialize_attribute(std::string_view name, T &valu
 	using value_type = typename std::remove_const_t<typename std::remove_reference_t<T>>;
 	using type_serializer = type_serializer<value_type>;
 
-	if (m_node.type() == node_type::element)
-	{
-		std::string attr = static_cast<const element&>(m_node).get_attribute(name);
-		if (not attr.empty())
-			value = type_serializer::deserialize_value(attr);
-	}
+	std::string attr = m_node.get_attribute(name);
+	if (not attr.empty())
+		value = type_serializer::deserialize_value(attr);
 
 	return *this;
 }
@@ -1113,7 +1111,7 @@ schema_creator &schema_creator::add_attribute(std::string_view name, const T & /
 
 	std::string type_name = type_serializer::type_name();
 
-	static_cast<element*>(m_node.parent())->emplace_back(
+	m_node.parent()->emplace_back(
 		element("xsd:attribute",
 			{ { "name", name },
 				{ "type", type_name } }));

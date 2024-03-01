@@ -74,7 +74,7 @@ struct doc_type
 /// A document has one mxml::root_node element. This root element
 /// can have only one mxml::element child node.
 
-export class document final : public node, public node_list<element>
+export class document final : public element_container
 {
   public:
 	node_type type() const override { return node_type::document; }
@@ -258,27 +258,6 @@ export class document final : public node, public node_list<element>
 		return node_list<element>(m_nodes).emplace_back(std::forward<Args>(args)...);
 	}
 
-	/// xpath wrappers
-	/// TODO: create recursive iterator and use it as return type here
-
-	/// \brief return the elements that match XPath \a path.
-	///
-	/// If you need to find other classes than xml::element, of if your XPath
-	/// contains variables, you should create a mxml::xpath object and use
-	/// its evaluate method.
-	element_set find(std::string_view path) const;
-
-	/// \brief return the first element that matches XPath \a path.
-	///
-	/// If you need to find other classes than xml::element, of if your XPath
-	/// contains variables, you should create a mxml::xpath object and use
-	/// its evaluate method.
-	element *find_first(std::string_view path);
-	const element *find_first(std::string_view path) const
-	{
-		return const_cast<document *>(this)->find_first(path);
-	}
-
   protected:
 	void XmlDeclHandler(encoding_type encoding, bool standalone, float version);
 	void StartElementHandler(const std::string &name, const std::string &uri, const parser::attr_list_type &atts);
@@ -335,8 +314,7 @@ export class document final : public node, public node_list<element>
 		std::string m_pubid;
 	};
 
-	node_list<> m_nodes;
-	node *m_cur = nullptr; // construction
+	element_container *m_cur = nullptr; // construction
 	cdata *m_cdata = nullptr; // only defined in a CDATA section
 	std::vector<std::pair<std::string, std::string>> m_namespaces;
 	std::list<notation> m_notations;
