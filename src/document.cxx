@@ -47,20 +47,17 @@ namespace mxml
 // --------------------------------------------------------------------
 
 document::document()
-	: m_nodes(this)
-	, m_validating(false)
+	: m_validating(false)
 	, m_preserve_cdata(false)
 	, m_has_xml_decl(false)
 	, m_encoding(encoding_type::UTF8)
 	, m_version(1.0f)
 	, m_standalone(false)
 {
-	set_header_from(m_nodes);
 }
 
 document::document(const document &doc)
-	: m_nodes(this)
-	, m_doctype(doc.m_doctype)
+	: m_doctype(doc.m_doctype)
 	, m_validating(doc.m_validating)
 	, m_preserve_cdata(doc.m_preserve_cdata)
 	, m_has_xml_decl(doc.m_has_xml_decl)
@@ -69,7 +66,6 @@ document::document(const document &doc)
 	, m_standalone(doc.m_standalone)
 	, m_fmt(doc.m_fmt)
 {
-	set_header_from(m_nodes);
 }
 
 document::document(std::string_view s)
@@ -296,13 +292,11 @@ void document::StartElementHandler(const std::string &name, const std::string &u
 			qname = std::string{ prefix } + ':' + std::string{ name };
 	}
 
-	if (m_cur == this)
-		m_cur = static_cast<element *>((node *)emplace(element(qname)));
-	else
-		m_cur = static_cast<element *>(m_cur)->emplace_back(qname);
+	m_cur = static_cast<element *>(m_cur)->emplace_back(qname);
 
 	for (const auto &[prefix, uri] : m_namespaces)
 	{
+		// assert(m_cur->type() == nodes_type::element);
 		if (prefix.empty())
 			static_cast<element *>(m_cur)->attributes().emplace("xmlns", uri);
 		else
@@ -376,7 +370,7 @@ void document::ProcessingInstructionHandler(const std::string &target, const std
 	if (m_cur == this)
 		m_nodes.emplace_back(processing_instruction(target, data));
 	else
-		static_cast<element *>(m_cur)->nodes().emplace_back(processing_instruction(target, data));
+		static_cast<element_container *>(m_cur)->nodes().emplace_back(processing_instruction(target, data));
 }
 
 void document::CommentHandler(const std::string &s)
@@ -384,12 +378,12 @@ void document::CommentHandler(const std::string &s)
 	if (m_cur == this)
 		m_nodes.emplace_back(comment(s));
 	else
-		static_cast<element *>(m_cur)->nodes().emplace_back(comment(s));
+		static_cast<element_container *>(m_cur)->nodes().emplace_back(comment(s));
 }
 
 void document::StartCdataSectionHandler()
 {
-	m_cdata = static_cast<cdata *>((node *)static_cast<element *>(m_cur)->nodes().emplace_back(cdata()));
+	m_cdata = static_cast<cdata *>((node *)static_cast<element_container *>(m_cur)->nodes().emplace_back(cdata()));
 }
 
 void document::EndCdataSectionHandler()
@@ -489,17 +483,6 @@ std::string document::str() const
 		return child()->str();
 	else
 		return {};
-}
-
-element_set document::find(std::string_view path) const
-{
-	return xpath(path).evaluate<element>(*this);
-}
-
-element *document::find_first(std::string_view path)
-{
-	element_set s = xpath(path).evaluate<element>(*this);
-	return s.empty() ? nullptr : s.front();
 }
 
 namespace literals
