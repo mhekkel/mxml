@@ -29,8 +29,16 @@ module;
 /// \file
 /// definition of the mxml::xpath class, implementing a XPath 1.0 compatible search facility
 
+#include <algorithm>
+#include <charconv>
+#include <functional>
+#include <iostream>
 #include <list>
-#include <string>
+#include <map>
+#include <memory>
+#include <sstream>
+
+#include <cmath>
 
 export module mxml:xpath;
 

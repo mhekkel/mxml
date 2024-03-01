@@ -29,14 +29,17 @@ module;
 /// \file
 /// the core of the libzeep XML library defining the main classes in the DOM API
 
-#include <cassert>
-#include <compare>
+#include <iostream>
 #include <list>
+#include <map>
+#include <memory>
+#include <set>
 #include <stack>
 #include <string>
 #include <tuple>
-#include <typeinfo>
 #include <utility>
+
+#include <cassert>
 
 export module mxml:node;
 

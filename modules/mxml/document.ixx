@@ -29,10 +29,15 @@ module;
 /// \file
 /// definition of the mxml::document class
 
+#include <algorithm>
+#include <fstream>
 #include <functional>
+#include <iomanip>
 #include <list>
-#include <memory>
-#include <string>
+#include <sstream>
+#include <tuple>
+
+#include <cassert>
 
 export module mxml:document;
 
@@ -41,6 +46,7 @@ import :error;
 import :node;
 import :parser;
 import :text;
+import :serialize;
 
 namespace mxml
 {
@@ -326,24 +332,24 @@ export namespace literals
 	document operator""_xml(const char *text, size_t length);
 }
 
-// template <typename T>
-// void document::serialize(const char *name, const T &data)
-// {
-// 	serializer sr(*this);
-// 	sr.serialize_element(name, data);
-// }
+template <typename T>
+void document::serialize(const char *name, const T &data)
+{
+	serializer sr(*this);
+	sr.serialize_element(name, data);
+}
 
-// template <typename T>
-// void document::deserialize(const char *name, T &data)
-// {
-// 	if (child() == nullptr)
-// 		throw zeep::exception("empty document");
+template <typename T>
+void document::deserialize(const char *name, T &data)
+{
+	if (child() == nullptr)
+		throw exception("empty document");
 
-// 	if (child()->name() != name)
-// 		throw zeep::exception("root mismatch");
+	if (child()->name() != name)
+		throw exception("root mismatch");
 
-// 	deserializer sr(*this);
-// 	sr.deserialize_element(name, data);
-// }
+	deserializer sr(*this);
+	sr.deserialize_element(name, data);
+}
 
 } // namespace mxml
