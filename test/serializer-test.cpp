@@ -13,8 +13,6 @@
 #include <iostream>
 #include <system_error>
 
-#include <experimental/type_traits>
-
 import mxml;
 
 std::filesystem::path gTestDir = std::filesystem::current_path();
