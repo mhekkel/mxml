@@ -34,4 +34,4 @@ export import :error;
 export import :text;
 export import :parser;
 export import :xpath;
-// export import :serialize;
+export import :serialize;

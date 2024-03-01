@@ -31,8 +31,8 @@ module;
 
 #include <algorithm>
 #include <charconv>
-#include <cinttypes>
 #include <chrono>
+#include <cinttypes>
 #include <map>
 #include <optional>
 #include <string>
@@ -373,8 +373,10 @@ struct has_serialize<T, Archive, typename std::enable_if_t<std::is_class_v<T>>>
 template <typename T, typename S>
 inline constexpr bool has_serialize_v = has_serialize<T, S>::value;
 
-template<typename T, typename S, typename = void>
-struct is_serializable_array_type : std::false_type {};
+template <typename T, typename S, typename = void>
+struct is_serializable_array_type : std::false_type
+{
+};
 
 template <typename T>
 using value_type_t = typename T::value_type;
@@ -382,35 +384,34 @@ using value_type_t = typename T::value_type;
 template <typename T>
 using iterator_t = typename T::iterator;
 
-template<typename T>
+template <typename T>
 using std_string_npos_t = decltype(T::npos);
 
 /// Struct used to detect whether type \a T is serializable
-template<typename T, typename S>
+template <typename T, typename S>
 struct is_serializable_type
 {
 	using value_type = std::remove_const_t<typename std::remove_reference_t<T>>;
 	static constexpr bool value =
-		std::experimental::is_detected_v<serialize_value_t,value_type> or
-		has_serialize_v<value_type,S>;
+		std::experimental::is_detected_v<serialize_value_t, value_type> or
+		has_serialize_v<value_type, S>;
 };
 
-template<typename T, typename S>
-inline constexpr bool is_serializable_type_v = is_serializable_type<T,S>::value;
+template <typename T, typename S>
+inline constexpr bool is_serializable_type_v = is_serializable_type<T, S>::value;
 
-template<typename T, typename S>
+template <typename T, typename S>
 struct is_serializable_array_type<T, S,
 	std::enable_if_t<
 		std::experimental::is_detected_v<value_type_t, T> and
 		std::experimental::is_detected_v<iterator_t, T> and
 		not std::experimental::is_detected_v<std_string_npos_t, T>>>
 {
-	static constexpr bool value = is_serializable_type_v<typename T::value_type,S>;
+	static constexpr bool value = is_serializable_type_v<typename T::value_type, S>;
 };
 
-template<typename T, typename S>
-inline constexpr bool is_serializable_array_type_v = is_serializable_array_type<T,S>::value;
-
+template <typename T, typename S>
+inline constexpr bool is_serializable_array_type_v = is_serializable_array_type<T, S>::value;
 
 // --------------------------------------------------------------------
 
@@ -488,7 +489,7 @@ constexpr attribute_nvp<T> make_attribute_nvp(std::string_view name, T &v)
 
 export struct serializer
 {
-	serializer(element &node)
+	serializer(element_container &node)
 		: m_node(node)
 	{
 	}
@@ -520,14 +521,14 @@ export struct serializer
 	template <typename T>
 	serializer &serialize_attribute(std::string_view name, const T &data);
 
-	element &m_node;
+	element_container &m_node;
 };
 
 /// deserializer is the class that initiates the deserialization process.
 
 export struct deserializer
 {
-	deserializer(const element &node)
+	deserializer(const element_container &node)
 		: m_node(node)
 	{
 	}
@@ -559,7 +560,7 @@ export struct deserializer
 	template <typename T>
 	deserializer &deserialize_attribute(std::string_view name, T &data);
 
-	const element &m_node;
+	const element_container &m_node;
 };
 
 using type_map = std::map<std::string, element>;
@@ -569,7 +570,7 @@ using type_map = std::map<std::string, element>;
 
 struct schema_creator
 {
-	schema_creator(type_map &types, element &node)
+	schema_creator(type_map &types, element_container &node)
 		: m_node(node)
 		, m_types(types)
 	{
@@ -599,7 +600,7 @@ struct schema_creator
 	template <typename T>
 	schema_creator &add_attribute(std::string_view name, const T &value);
 
-	element &m_node;
+	element_container &m_node;
 	type_map &m_types;
 	std::string m_prefix = "ns";
 };
@@ -617,13 +618,13 @@ struct type_serializer<T[N]>
 
 	static constexpr std::string type_name() { return type_serializer_type::type_name(); }
 
-	static void serialize_child(element &n, std::string_view name, const value_type (&value)[N])
+	static void serialize_child(element_container &n, std::string_view name, const value_type (&value)[N])
 	{
 		for (const value_type &v : value)
 			type_serializer_type::serialize_child(n, name, v);
 	}
 
-	static void deserialize_child(const element &n, std::string_view name, value_type (&value)[N])
+	static void deserialize_child(const element_container &n, std::string_view name, value_type (&value)[N])
 	{
 		size_t ix = 0;
 		for (auto &e : n)
@@ -675,20 +676,26 @@ struct type_serializer<T>
 		return value_serializer_type::from_string(value);
 	}
 
-	static void serialize_child(element &n, std::string_view name, const value_type &value)
+	static void serialize_child(element_container &n, std::string_view name, const value_type &value)
 	{
 		if (name.empty() or name == ".")
-			n.set_content(value_serializer_type::to_string(value));
+		{
+			if (n.type() == node_type::element)
+				static_cast<element &>(n).set_content(value_serializer_type::to_string(value));
+		}
 		else
 			n.emplace_back(name)->set_content(value_serializer_type::to_string(value));
 	}
 
-	static void deserialize_child(const element &n, std::string_view name, value_type &value)
+	static void deserialize_child(const element_container &n, std::string_view name, value_type &value)
 	{
 		value = value_type();
 
 		if (name.empty() or name == ".")
-			value = value_serializer_type::from_string(n.get_content());
+		{
+			if (n.type() == node_type::element)
+				value = value_serializer_type::from_string(static_cast<const element &>(n).get_content());
+		}
 		else
 		{
 			auto e = std::find_if(n.begin(), n.end(), [name](auto &e)
@@ -746,7 +753,7 @@ struct type_serializer<T>
 		return s_instance;
 	}
 
-	static void serialize_child(element &n, std::string_view name, const value_type &value)
+	static void serialize_child(element_container &n, std::string_view name, const value_type &value)
 	{
 		if (name.empty() or name == ".")
 		{
@@ -761,7 +768,7 @@ struct type_serializer<T>
 		}
 	}
 
-	static void deserialize_child(const element &n, std::string_view name, value_type &value)
+	static void deserialize_child(const element_container &n, std::string_view name, value_type &value)
 	{
 		value = value_type();
 
@@ -817,13 +824,13 @@ struct type_serializer<std::optional<T>>
 
 	static constexpr std::string type_name() { return type_serializer_type::type_name(); }
 
-	static void serialize_child(element &n, std::string_view name, const container_type &value)
+	static void serialize_child(element_container &n, std::string_view name, const container_type &value)
 	{
 		if (value)
 			type_serializer_type::serialize_child(n, name, *value);
 	}
 
-	static void deserialize_child(const element &n, std::string_view name, container_type &value)
+	static void deserialize_child(const element_container &n, std::string_view name, container_type &value)
 	{
 		for (auto &e : n)
 		{
@@ -873,14 +880,14 @@ struct type_serializer<T>
 
 	static constexpr std::string type_name() { return type_serializer_type::type_name(); }
 
-	static void serialize_child(element &n, std::string_view name, const container_type &value)
+	static void serialize_child(element_container &n, std::string_view name, const container_type &value)
 	{
 		for (const value_type &v : value)
 			type_serializer_type::serialize_child(n, name, v);
 	}
 
 	template <size_t N>
-	static auto deserialize_array(const element &n, std::string_view name,
+	static auto deserialize_array(const element_container &n, std::string_view name,
 		std::array<value_type, N> &value, priority_tag<2>)
 	{
 		size_t ix = 0;
@@ -901,7 +908,7 @@ struct type_serializer<T>
 	}
 
 	template <typename A>
-	static auto deserialize_array(const element &n, std::string_view name, A &arr, priority_tag<1>)
+	static auto deserialize_array(const element_container &n, std::string_view name, A &arr, priority_tag<1>)
 		-> decltype(arr.reserve(std::declval<typename container_type::size_type>()),
 			void())
 	{
@@ -919,7 +926,7 @@ struct type_serializer<T>
 		}
 	}
 
-	static void deserialize_array(const element &n, std::string_view name, container_type &arr, priority_tag<0>)
+	static void deserialize_array(const element_container &n, std::string_view name, container_type &arr, priority_tag<0>)
 	{
 		for (auto &e : n)
 		{
@@ -933,7 +940,7 @@ struct type_serializer<T>
 		}
 	}
 
-	static void deserialize_child(const element &n, std::string_view name, container_type &value)
+	static void deserialize_child(const element_container &n, std::string_view name, container_type &value)
 	{
 		type_serializer::deserialize_array(n, name, value, priority_tag<2>{});
 	}
@@ -957,7 +964,7 @@ struct type_serializer<T>
 	}
 };
 
-template <typename T, typename U>
+template <typename T>
 struct type_serializer
 {
 	using value_type = typename std::remove_const_t<typename std::remove_reference_t<T>>;
@@ -975,20 +982,26 @@ struct type_serializer
 		return value_serializer_type::from_string(value);
 	}
 
-	static void serialize_child(element &n, std::string_view name, const value_type &value)
+	static void serialize_child(element_container &n, std::string_view name, const value_type &value)
 	{
 		if (name.empty() or name == ".")
-			n.set_content(value_serializer_type::to_string(value));
+		{
+			if (n.type() == node_type::element)
+				static_cast<element &>(n).set_content(value_serializer_type::to_string(value));
+		}
 		else
 			n.emplace_back(name)->set_content(value_serializer_type::to_string(value));
 	}
 
-	static void deserialize_child(const element &n, std::string_view name, value_type &value)
+	static void deserialize_child(const element_container &n, std::string_view name, value_type &value)
 	{
 		value = {};
 
 		if (name.empty() or name == ".")
-			value = value_serializer_type::from_string(n.get_content());
+		{
+			if (n.type() == node_type::element)
+				value = value_serializer_type::from_string(static_cast<const element &>(n).get_content());
+		}
 		else
 		{
 			auto e = std::find_if(n.begin(), n.end(), [name](auto &e)
@@ -1046,7 +1059,8 @@ serializer &serializer::serialize_attribute(std::string_view name, const T &valu
 	using value_type = typename std::remove_const_t<typename std::remove_reference_t<T>>;
 	using type_serializer = type_serializer<value_type>;
 
-	m_node.attributes().emplace(name, type_serializer::serialize_value(value));
+	if (m_node.type() == node_type::element)
+		static_cast<element &>(m_node).attributes().emplace(name, type_serializer::serialize_value(value));
 
 	return *this;
 }
@@ -1079,10 +1093,12 @@ deserializer &deserializer::deserialize_attribute(std::string_view name, T &valu
 	using value_type = typename std::remove_const_t<typename std::remove_reference_t<T>>;
 	using type_serializer = type_serializer<value_type>;
 
-	std::string attr = m_node.get_attribute(name);
-	if (not attr.empty())
-		value = type_serializer::deserialize_value(attr);
-
+	if (m_node.type() == node_type::element)
+	{
+		std::string attr = static_cast<const element &>(m_node).get_attribute(name);
+		if (not attr.empty())
+			value = type_serializer::deserialize_value(attr);
+	}
 	return *this;
 }
 

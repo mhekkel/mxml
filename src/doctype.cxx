@@ -874,7 +874,7 @@ const attribute *element::get_attribute(std::string_view name) const
 
 bool element::empty() const
 {
-	return dynamic_cast<content_spec_empty *>(m_allowed) != nullptr;
+	return typeid(*m_allowed) == typeid(content_spec_empty);
 }
 
 } // namespace mxml::doctype

@@ -27,7 +27,7 @@ target_sources(mxml
 	modules/mxml/error.ixx
 	modules/mxml/node.ixx
 	modules/mxml/parser.ixx
-	# modules/mxml/serialize.ixx
+	modules/mxml/serialize.ixx
 	modules/mxml/text.ixx
 	modules/mxml/xpath.ixx
 )

@@ -29,7 +29,7 @@ add_custom_target(XML_CONF ALL DEPENDS ${XML_CONF_FILE})
 list(APPEND MXML_TESTS
 	unit
 	parser
-	# serializer
+	serializer
 	xpath)
 
 foreach(TEST IN LISTS MXML_TESTS)

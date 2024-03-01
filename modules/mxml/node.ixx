@@ -1184,7 +1184,7 @@ class element final : public element_container
 	}
 
 	// 	/// \brief constructor taking a \a qname and a list of \a attributes
-	element(const std::string &qname, std::initializer_list<attribute> attributes = {})
+	element(std::string_view qname, std::initializer_list<attribute> attributes = {})
 		: element_container()
 		, m_qname(qname)
 		, m_attributes(this)

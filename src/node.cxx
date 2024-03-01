@@ -371,10 +371,11 @@ void processing_instruction::write(std::ostream &os, format_info fmt) const
 bool text::equals(const node *n) const
 {
 	bool result = false;
-	auto t = dynamic_cast<const text *>(n);
 
-	if (t != nullptr)
+	if (n->type() == node_type::text)
 	{
+		auto t = static_cast<const text *>(n);
+
 		std::string text = m_text;
 		trim(text);
 
@@ -531,7 +532,7 @@ bool element::equals(const node *n) const
 
 	if (type() == n->type())
 	{
-		const element *e = dynamic_cast<const element *>(n);
+		const element *e = static_cast<const element *>(n);
 
 		result = name() == e->name() and get_ns() == e->get_ns();
 
@@ -622,7 +623,7 @@ std::string element::get_content() const
 
 	for (auto &n : nodes())
 	{
-		auto t = dynamic_cast<const text *>(&n);
+		auto t = dynamic_cast<const node_with_text *>(&n);
 		if (t != nullptr)
 			result += t->get_text();
 	}
