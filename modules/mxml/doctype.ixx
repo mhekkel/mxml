@@ -81,7 +81,7 @@ class validator
 
 	~validator();
 
-	bool allow(std::string_view name);
+	bool allow(const std::string &name);
 	content_spec_type get_content_spec() const;
 	bool done();
 
@@ -136,7 +136,7 @@ struct content_spec_empty : public content_spec_base
 
 struct content_spec_element : public content_spec_base
 {
-	content_spec_element(std::string_view name)
+	content_spec_element(const std::string &name)
 		: content_spec_base(content_spec_type::Children)
 		, m_name(name)
 	{
@@ -236,7 +236,7 @@ enum class attribute_default
 class attribute
 {
   public:
-	attribute(std::string_view name, attribute_type type)
+	attribute(const std::string &name, attribute_type type)
 		: m_name(name)
 		, m_type(type)
 		, m_default(attribute_default::None)
@@ -244,7 +244,7 @@ class attribute
 	{
 	}
 
-	attribute(std::string_view name, attribute_type type,
+	attribute(const std::string &name, attribute_type type,
 		const std::vector<std::string> &enums)
 		: m_name(name)
 		, m_type(type)
@@ -258,7 +258,7 @@ class attribute
 
 	bool validate_value(std::string &value, const entity_list &entities) const;
 
-	void set_default(attribute_default def, std::string_view value)
+	void set_default(attribute_default def, const std::string &value)
 	{
 		m_default = def;
 		m_default_value = value;
@@ -281,7 +281,7 @@ class attribute
 	bool is_nmtoken(std::string &s) const;
 	bool is_nmtokens(std::string &s) const;
 
-	bool is_unparsed_entity(std::string_view s, const entity_list &l) const;
+	bool is_unparsed_entity(const std::string &s, const entity_list &l) const;
 
 	std::string m_name;
 	attribute_type m_type;
@@ -299,7 +299,7 @@ class element
 	element(const element &) = delete;
 	element &operator=(const element &) = delete;
 
-	element(std::string_view name, bool declared, bool external)
+	element(const std::string &name, bool declared, bool external)
 		: m_name(name)
 		, m_allowed(nullptr)
 		, m_declared(declared)
@@ -313,7 +313,7 @@ class element
 
 	void add_attribute(attribute *attr);
 
-	const attribute *get_attribute(std::string_view name) const;
+	const attribute *get_attribute(const std::string &name) const;
 
 	const std::string &name() const { return m_name; }
 
@@ -346,7 +346,7 @@ class entity
 	bool is_parsed() const { return m_parsed; }
 
 	const std::string &get_ndata() const { return m_ndata; }
-	void set_ndata(std::string_view ndata) { m_ndata = ndata; }
+	void set_ndata(const std::string &ndata) { m_ndata = ndata; }
 
 	bool is_external() const { return m_external; }
 
@@ -357,7 +357,7 @@ class entity
 	}
 
   protected:
-	entity(std::string_view name, std::string_view replacement,
+	entity(const std::string &name, const std::string &replacement,
 		bool external, bool parsed)
 		: m_name(name)
 		, m_replacement(replacement)
@@ -368,8 +368,8 @@ class entity
 	{
 	}
 
-	entity(std::string_view name, std::string_view replacement,
-		std::string_view path)
+	entity(const std::string &name, const std::string &replacement,
+		const std::string &path)
 		: m_name(name)
 		, m_replacement(replacement)
 		, m_path(path)
@@ -393,7 +393,7 @@ class entity
 class general_entity : public entity
 {
   public:
-	general_entity(std::string_view name, std::string_view replacement,
+	general_entity(const std::string &name, const std::string &replacement,
 		bool external = false, bool parsed = true)
 		: entity(name, replacement, external, parsed)
 	{
@@ -403,8 +403,8 @@ class general_entity : public entity
 class parameter_entity : public entity
 {
   public:
-	parameter_entity(std::string_view name, std::string_view replacement,
-		std::string_view path)
+	parameter_entity(const std::string &name, const std::string &replacement,
+		const std::string &path)
 		: entity(name, replacement, path)
 	{
 	}

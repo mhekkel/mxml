@@ -264,8 +264,6 @@ class basic_node_list
   public:
 	virtual ~basic_node_list()
 	{
-		if (m_owner)
-			clear();
 	}
 
 	bool operator==(const basic_node_list &b) const;
@@ -680,6 +678,11 @@ class element_container : public node, public node_list<element>
 		return *this;
 	}
 
+	~element_container()
+	{
+		clear();
+	}
+
 	// --------------------------------------------------------------------
 
 	friend void swap(element_container &a, element_container &b) noexcept
@@ -1092,6 +1095,11 @@ class attribute_set : public node_list<attribute>
 	{
 		swap(*this, as);
 		return *this;
+	}
+
+	~attribute_set()
+	{
+		clear();
 	}
 
 	friend void swap(attribute_set &a, attribute_set &b) noexcept

@@ -475,7 +475,7 @@ char32_t istream_data_source::get_next_char()
 class string_data_source : public data_source
 {
   public:
-	string_data_source(std::string_view data)
+	string_data_source(const std::string &data)
 		: m_data(data)
 		, m_ptr(m_data.cbegin())
 	{
@@ -504,7 +504,7 @@ class string_data_source : public data_source
 class entity_data_source : public string_data_source
 {
   public:
-	entity_data_source(std::string_view text, std::string_view entity_path)
+	entity_data_source(const std::string &text, const std::string &entity_path)
 		: string_data_source(text)
 	{
 		base(entity_path);
@@ -516,7 +516,7 @@ class entity_data_source : public string_data_source
 class parameter_entity_data_source : public string_data_source
 {
   public:
-	parameter_entity_data_source(std::string_view data, std::string_view base_dir)
+	parameter_entity_data_source(const std::string &data, const std::string &base_dir)
 		: string_data_source(" " + std::string{ data } + " ")
 	{
 		base(base_dir);
@@ -741,9 +741,9 @@ struct parser_imp
 	void not_valid(const std::string &msg) const;
 
 	// doctype support
-	const doctype::entity &get_general_entity(std::string_view name) const;
-	const doctype::entity &get_parameter_entity(std::string_view name) const;
-	const doctype::element *get_element(std::string_view name) const;
+	const doctype::entity &get_general_entity(const std::string &name) const;
+	const doctype::entity &get_parameter_entity(const std::string &name) const;
+	const doctype::element *get_element(const std::string &name) const;
 
 	struct save_state
 	{
@@ -841,7 +841,7 @@ struct parser_imp
 			return result;
 		}
 
-		void default_ns(std::string_view ns)
+		void default_ns(const std::string &ns)
 		{
 			m_default_ns = ns;
 		}
@@ -862,7 +862,7 @@ struct parser_imp
 			return result;
 		}
 
-		void bind(const std::string &prefix, std::string_view uri)
+		void bind(const std::string &prefix, const std::string &uri)
 		{
 			m_known[prefix] = uri;
 		}
@@ -1036,7 +1036,7 @@ parser_imp::~parser_imp()
 		delete e;
 }
 
-const doctype::entity &parser_imp::get_general_entity(std::string_view name) const
+const doctype::entity &parser_imp::get_general_entity(const std::string &name) const
 {
 	auto e = std::find_if(m_general_entities.begin(), m_general_entities.end(),
 		[name](auto e)
@@ -1060,7 +1060,7 @@ const doctype::entity &parser_imp::get_general_entity(std::string_view name) con
 	return **e;
 }
 
-const doctype::entity &parser_imp::get_parameter_entity(std::string_view name) const
+const doctype::entity &parser_imp::get_parameter_entity(const std::string &name) const
 {
 	auto e = find_if(m_parameter_entities.begin(), m_parameter_entities.end(),
 		[name](auto e)
@@ -1072,7 +1072,7 @@ const doctype::entity &parser_imp::get_parameter_entity(std::string_view name) c
 	return **e;
 }
 
-const doctype::element *parser_imp::get_element(std::string_view name) const
+const doctype::element *parser_imp::get_element(const std::string &name) const
 {
 	const doctype::element *result = nullptr;
 
