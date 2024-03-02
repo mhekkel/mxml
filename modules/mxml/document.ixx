@@ -252,8 +252,7 @@ struct doc_type
 
 	element *child()
 	{
-		node_list<element> children(m_nodes);
-		return children.empty() ? nullptr : &children.front();
+		return empty() ? nullptr : &front();
 	}
 
 	const element *child() const { return const_cast<document *>(this)->child(); }
@@ -262,8 +261,6 @@ struct doc_type
 	const node_list<> &nodes() const { return m_nodes; }
 
 	std::string str() const override;
-
-	bool empty() const { return node_list<element>(m_nodes).empty(); }
 
 	template <typename ...Args>
 		requires std::is_constructible_v<element, Args...>

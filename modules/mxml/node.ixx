@@ -213,6 +213,15 @@ class node
 	node &operator=(const node &n) = delete;
 	node &operator=(node &&n) = delete;
 
+	friend void swap(node &a, node &b) noexcept
+	{
+		std::swap(a.m_parent, b.m_parent);
+		std::swap(a.m_next, b.m_next);
+		a.m_next->m_prev = a.m_prev->m_next = &a;
+		std::swap(a.m_prev, b.m_prev);
+		b.m_next->m_prev = b.m_prev->m_next = &b;	
+	}
+
   protected:
 	element_container *m_parent = nullptr;
 	node *m_next;
@@ -228,53 +237,42 @@ class basic_node_list
 	{
 		node_type type() const override { return node_type::header; }
 
-		node_list_header() = default;
+		node_list_header()
+		{
+			init();
+		}
 
 		void write(std::ostream &os, format_info fmt) const override {}
 		std::string str() const override { return {}; }
 
-
 		friend void swap(node_list_header &a, node_list_header &b)
 		{
-			std::swap(a.m_parent, b.m_parent);
+			swap(static_cast<node &>(a), static_cast<node &>(b));
 
 			for (node *n = a.m_next; n != &a; n = n->next())
 				n->parent(a.m_parent);
 
 			for (node *n = b.m_next; n != &b; n = n->next())
 				n->parent(b.m_parent);
+		}
 
+		void init()
+		{
+			m_next = m_prev = this;
 		}
 	};
 
-	node_list_header *m_node;
-	node_list_header m_node_store;
+	node_list_header m_header_node;
+	node *m_header = nullptr;
 	bool m_owner;
 
+	template <typename T> friend class node_list;
+
   protected:
-	basic_node_list()
-		: m_node(nullptr)
-	{
-	}
-
 	basic_node_list(element_container *e)
-		: m_node(&m_node_store)
-		, m_owner(true)
+		: m_header(&m_header_node)
 	{
-		m_node->m_next = m_node->m_prev = m_node;
-		m_node->parent(e);
-	}
-
-	basic_node_list(const basic_node_list &nl)
-		: m_node(const_cast<node_list_header *>(nl.m_node))
-		, m_owner(false)
-	{
-	}
-
-	void set_header_from(const basic_node_list &nl)
-	{
-		m_node = const_cast<node_list_header *>(nl.m_node);
-		m_owner = false;
+		m_header_node.parent(e);
 	}
 
   public:
@@ -285,7 +283,7 @@ class basic_node_list
 	bool operator==(const basic_node_list &b) const;
 
 	/// \brief remove all nodes
-	void clear();
+	virtual void clear();
 
   protected:
 	basic_node_list(basic_node_list &&nl) = delete;
@@ -294,8 +292,8 @@ class basic_node_list
 
 	friend void swap(basic_node_list &a, basic_node_list &b) noexcept
 	{
-		std::swap(a.m_node, b.m_node);
-		swap(a.m_node_store, b.m_node_store);
+		swap(a.m_header_node, b.m_header_node);
+		std::swap(a.m_header, b.m_header);
 	}
 
   protected:
@@ -451,34 +449,40 @@ class node_list : public basic_node_list
 	using pointer = value_type *;
 	using const_pointer = const value_type *;
 
-	node_list(element_container *e)
-		: basic_node_list(e)
-	{
-	}
+	node_list(element_container *e);
 
-	template <typename T2>
-		requires std::is_base_of_v<basic_node_list, T2>
-	node_list(T2 &nl)
-		: basic_node_list(nl)
+	template<typename T2>
+		requires (std::is_same_v<value_type, node> and std::is_same_v<T2, element>)
+	node_list(node_list<T2> *e)
+		: basic_node_list(e->m_header->m_parent)
 	{
+		m_header = e->m_header->m_parent;
 	}
 
 	node_list(const node_list &nl) = delete;
-	node_list(node_list &&nl) = delete;
-	node_list &operator=(const node_list &nl) = delete;
-	node_list &operator=(node_list &&nl) = delete;
+
+	node_list(node_list &&nl)
+	{
+		swap(*this, nl);
+	}
+
+	node_list &operator=(node_list nl)
+	{
+		swap(*this, nl);
+		return *this;
+	}
 
 	using iterator = iterator_impl<value_type>;
 	using const_iterator = iterator_impl<const value_type>;
 
-	iterator begin() { return iterator(m_node->m_next); }
-	iterator end() { return iterator(m_node); }
+	iterator begin() { return iterator(m_header->m_next); }
+	iterator end() { return iterator(m_header); }
 
-	const_iterator cbegin() { return const_iterator(m_node->m_next); }
-	const_iterator cend() { return const_iterator(m_node); }
+	const_iterator cbegin() { return const_iterator(m_header->m_next); }
+	const_iterator cend() { return const_iterator(m_header); }
 
-	const_iterator begin() const { return const_iterator(m_node->m_next); }
-	const_iterator end() const { return const_iterator(m_node); }
+	const_iterator begin() const { return const_iterator(m_header->m_next); }
+	const_iterator end() const { return const_iterator(m_header); }
 
 	value_type &front() { return *begin(); }
 	const value_type &front() const { return *begin(); }
@@ -543,7 +547,7 @@ class node_list : public basic_node_list
 	template <typename InputIter>
 	void assign(InputIter first, InputIter last)
 	{
-		clear();
+		basic_node_list::clear();
 		insert(begin(), first, last);
 	}
 
@@ -626,15 +630,12 @@ class node_list : public basic_node_list
 		emplace(end(), e);
 	}
 
-  protected:
-	// For node_list<element> only
-	node_list();
+	void clear() override
+	{
+		if constexpr (not std::is_same_v<value_type, node>)
+			basic_node_list::clear();
+	}
 };
-
-template <>
-inline node_list<element>::node_list()
-{
-}
 
 // --------------------------------------------------------------------
 // internal class as base class for element and document
@@ -645,20 +646,21 @@ class element_container : public node, public node_list<element>
 	node_type type() const override { return node_type::element_container; }
 
 	element_container()
-		: m_nodes(this)
+		: node_list<element>(this)
+		, m_nodes(this)
 	{
-		set_header_from(m_nodes);
 	}
 
 	element_container(const element_container &e)
-		: m_nodes(this)
+		: node_list<element>(this)
+		, m_nodes(this)
 	{
-		set_header_from(m_nodes);
 		m_nodes.assign(e.m_nodes.begin(), e.m_nodes.end());
 	}
 
 	element_container(element_container &&e) noexcept
-		: m_nodes(this)
+		: node_list<element>(this)
+		, m_nodes(this)
 	{
 		swap(*this, e);
 	}
@@ -678,10 +680,8 @@ class element_container : public node, public node_list<element>
 
 	friend void swap(element_container &a, element_container &b) noexcept
 	{
+		swap(static_cast<node_list<element>&>(a), static_cast<node_list<element>&>(b));
 		swap(a.m_nodes, b.m_nodes);
-
-		a.set_header_from(a.m_nodes);
-		b.set_header_from(b.m_nodes);
 	}
 
 	// --------------------------------------------------------------------
@@ -1307,6 +1307,14 @@ class element final : public element_container
 };
 
 // --------------------------------------------------------------------
+
+template <typename T>
+inline node_list<T>::node_list(element_container *e)
+	: basic_node_list(e)
+{
+	if constexpr (std::is_same_v<value_type, node>)
+		m_header = e->m_header;
+}
 
 template <>
 inline auto node_list<node>::insert(const_iterator pos, const value_type &e) -> iterator

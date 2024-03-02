@@ -471,7 +471,7 @@ void iterate_child_elements(context_node *context, node_set &s, bool deep, PREDI
 template <typename PREDICATE>
 void iterate_child_nodes(context_node *context, node_set &s, bool deep, PREDICATE pred)
 {
-	for (node &child : node_list<>(*context))
+	for (node &child : node_list<node>(context))
 	{
 		if (find(s.begin(), s.end(), &child) != s.end())
 			continue;

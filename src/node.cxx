@@ -225,10 +225,10 @@ std::string node::prefix_tag(std::string tag, const std::string &uri) const
 bool basic_node_list::operator==(const basic_node_list &b) const
 {
 	bool result = true;
-	auto na = m_node->m_next, nb = b.m_node->m_next;
-	for (; result and na != m_node and nb != b.m_node; na = na->m_next, nb = nb->m_next)
+	auto na = m_header->m_next, nb = b.m_header->m_next;
+	for (; result and na != m_header and nb != b.m_header; na = na->m_next, nb = nb->m_next)
 		result = na->equals(nb);
-	return result and na == m_node and nb == b.m_node;
+	return result and na == m_header and nb == b.m_header;
 }
 
 void basic_node_list::clear()
@@ -243,7 +243,7 @@ void basic_node_list::clear()
 	{
 		auto nl = stack.top();
 
-		for (auto n = nl->m_node->m_next; n != nl->m_node; n = n->m_next)
+		for (auto n = nl->m_header->m_next; n != nl->m_header; n = n->m_next)
 		{
 			if (n->type() != node_type::element)
 				continue;
@@ -262,7 +262,7 @@ void basic_node_list::clear()
 		// nothing was added, we can safely delete nl
 		stack.pop();
 
-		for (auto n = nl->m_node->m_next; n != nl->m_node;)
+		for (auto n = nl->m_header->m_next; n != nl->m_header;)
 		{
 			auto t = n->m_next;
 			assert(n->type() != node_type::header);
@@ -270,7 +270,7 @@ void basic_node_list::clear()
 			n = t;
 		}
 
-		nl->m_node->m_next = nl->m_node->m_prev = nl->m_node;
+		nl->m_header->m_next = nl->m_header->m_prev = nl->m_header;
 	}
 }
 
@@ -286,7 +286,7 @@ node *basic_node_list::insert_impl(const node *p, node *n)
 	if (n->parent() != nullptr or n->next() != n or n->prev() != n)
 		throw exception("attempt to add a node that already has a parent or siblings");
 
-	n->parent(m_node->m_parent);
+	n->parent(m_header->m_parent);
 
 	n->prev(p->prev());
 	n->prev()->next(n);
@@ -298,10 +298,10 @@ node *basic_node_list::insert_impl(const node *p, node *n)
 
 node *basic_node_list::erase_impl(node *n)
 {
-	if (n == m_node)
+	if (n == m_header)
 		return n;
 
-	if (n->m_parent != m_node->m_parent)
+	if (n->m_parent != m_header->m_parent)
 		throw exception("attempt to remove node whose parent is invalid");
 
 	node *result = n->next();
@@ -636,7 +636,7 @@ std::string element::get_content() const
 void element::set_content(const std::string &s)
 {
 	// remove all existing text nodes (including cdata ones)
-	auto nn = nodes();
+	auto &nn = nodes();
 	for (auto n = nn.begin(); n != nn.end(); ++n)
 	{
 		if (auto &t = *n; (typeid(t) == typeid(text)) or (typeid(t) == typeid(cdata)))
@@ -649,7 +649,7 @@ void element::set_content(const std::string &s)
 
 void element::add_text(const std::string &s)
 {
-	auto nn = nodes();
+	auto &nn = nodes();
 
 	if (auto &t = nn.back(); typeid(t) == typeid(text))
 		static_cast<text &>(nn.back()).append(s);
@@ -664,7 +664,7 @@ void element::set_text(const std::string &s)
 
 void element::flatten_text()
 {
-	auto nn = nodes();
+	auto &nn = nodes();
 	auto n = nn.begin();
 	while (n != nn.end())
 	{
