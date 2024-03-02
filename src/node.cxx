@@ -264,6 +264,7 @@ void basic_node_list::clear()
 		for (auto n = nl->m_node->m_next; n != nl->m_node;)
 		{
 			auto t = n->m_next;
+			assert(n->type() != node_type::header);
 			delete n;
 			n = t;
 		}

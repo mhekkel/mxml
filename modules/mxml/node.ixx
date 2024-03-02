@@ -616,25 +616,6 @@ class node_list : public basic_node_list
 		emplace(end(), e);
 	}
 
-	/// \brief remove all nodes
-	void clear()
-	{
-		// avoid deep recursion and stack overflows
-		auto n = m_node->m_next;
-
-		assert(n != nullptr);
-
-		while (n != m_node)
-		{
-			auto t = n->m_next;
-			delete n;
-			n = t;
-			assert(n != nullptr);
-		}
-
-		m_node->m_next = m_node->m_prev = m_node;
-	}
-
   protected:
 	// For node_list<element> only
 	node_list();
