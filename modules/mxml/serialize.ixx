@@ -39,8 +39,6 @@
 #include <string>
 #include <system_error>
 
-#include <experimental/type_traits>
-
 // /* export */ module mxml:serialize;
 
 // import :node;
@@ -356,6 +354,31 @@ struct value_serializer<date::sys_days>
 #endif
 
 // --------------------------------------------------------------------
+// start type checking templates with our own version of is_detected_v
+
+template <class Default, class AlwaysVoid, template <class...> class Op, class... Args>
+struct detector
+{
+	using value_t = std::false_type;
+	using type = Default;
+};
+
+template <class Default, template <class...> class Op, class... Args>
+struct detector<Default, std::void_t<Op<Args...>>, Op, Args...>
+{
+	using value_t = std::true_type;
+	using type = Op<Args...>;
+};
+
+struct nope
+{
+};
+
+template <template <class...> class Op, class... Args>
+using is_detected = typename detector<nope, void, Op, Args...>::value_t;
+
+template <template <class...> class Op, class... Args>
+constexpr inline bool is_detected_v = is_detected<Op, Args...>::value;
 
 /* export */ template <typename T>
 using serialize_value_t = decltype(std::declval<value_serializer<T> &>().from_string(std::declval<const std::string &>()));
@@ -371,7 +394,7 @@ struct has_serialize : std::false_type
 /* export */ template <typename T, typename Archive>
 struct has_serialize<T, Archive, typename std::enable_if_t<std::is_class_v<T>>>
 {
-	static constexpr bool value = std::experimental::is_detected_v<serialize_function, T, Archive>;
+	static constexpr bool value = is_detected_v<serialize_function, T, Archive>;
 };
 
 /* export */ template <typename T, typename S>
@@ -395,9 +418,9 @@ using std_string_npos_t = decltype(T::npos);
 /* export */ template <typename T, typename S>
 struct is_serializable_type
 {
-	using value_type = std::remove_const_t<typename std::remove_reference_t<T>>;
+	using value_type = std::remove_cvref_t<T>;
 	static constexpr bool value =
-		std::experimental::is_detected_v<serialize_value_t, value_type> or
+		is_detected_v<serialize_value_t, value_type> or
 		has_serialize_v<value_type, S>;
 };
 
@@ -407,9 +430,9 @@ inline constexpr bool is_serializable_type_v = is_serializable_type<T, S>::value
 /* export */ template <typename T, typename S>
 struct is_serializable_array_type<T, S,
 	std::enable_if_t<
-		std::experimental::is_detected_v<value_type_t, T> and
-		std::experimental::is_detected_v<iterator_t, T> and
-		not std::experimental::is_detected_v<std_string_npos_t, T>>>
+		is_detected_v<value_type_t, T> and
+		is_detected_v<iterator_t, T> and
+		not is_detected_v<std_string_npos_t, T>>>
 {
 	static constexpr bool value = is_serializable_type_v<typename T::value_type, S>;
 };
@@ -447,7 +470,8 @@ class name_value_pair
 	T &m_value;
 };
 
-template <typename T> class element_nvp : public name_value_pair<T>
+template <typename T>
+class element_nvp : public name_value_pair<T>
 {
   public:
 	element_nvp(std::string_view name, T &value)
@@ -455,7 +479,8 @@ template <typename T> class element_nvp : public name_value_pair<T>
 	{
 	}
 };
-template <typename T> class attribute_nvp : public name_value_pair<T>
+template <typename T>
+class attribute_nvp : public name_value_pair<T>
 {
   public:
 	attribute_nvp(std::string_view name, T &value)
@@ -711,7 +736,7 @@ template <typename T>
 	requires has_serialize_v<T, serializer>
 struct type_serializer<T>
 {
-	using value_type = typename std::remove_const_t<typename std::remove_reference_t<T>>;
+	using value_type = std::remove_cvref_t<T>;
 
 	// the name of this type
 	std::string m_type_name;
@@ -798,7 +823,7 @@ struct type_serializer<std::optional<T>>
 
 	static void serialize_child(element_container &n, std::string_view name, const container_type &value)
 	{
-		if (value)
+		if (value.has_value())
 			type_serializer_type::serialize_child(n, name, *value);
 	}
 
@@ -846,7 +871,7 @@ template <typename T>
 	requires is_serializable_array_type_v<T, serializer>
 struct type_serializer<T>
 {
-	using container_type = typename std::remove_const_t<typename std::remove_reference_t<T>>;
+	using container_type = std::remove_cvref_t<T>;
 	using value_type = value_type_t<container_type>;
 	using type_serializer_type = type_serializer<value_type>;
 
@@ -939,7 +964,7 @@ struct type_serializer<T>
 template <typename T>
 struct type_serializer
 {
-	using value_type = typename std::remove_const_t<typename std::remove_reference_t<T>>;
+	using value_type = std::remove_cvref_t<T>;
 	using value_serializer_type = value_serializer<value_type>;
 
 	static constexpr std::string type_name() { return value_serializer_type::type_name(); }
@@ -1006,7 +1031,7 @@ struct type_serializer
 template <typename T>
 serializer &serializer::serialize_element(const T &value)
 {
-	using value_type = typename std::remove_const_t<typename std::remove_reference_t<T>>;
+	using value_type = std::remove_cvref_t<T>;
 	using type_serializer = type_serializer<value_type>;
 
 	type_serializer::serialize_child(m_node, "", value);
@@ -1017,7 +1042,7 @@ serializer &serializer::serialize_element(const T &value)
 template <typename T>
 serializer &serializer::serialize_element(std::string_view name, const T &value)
 {
-	using value_type = typename std::remove_const_t<typename std::remove_reference_t<T>>;
+	using value_type = std::remove_cvref_t<T>;
 	using type_serializer = type_serializer<value_type>;
 
 	type_serializer::serialize_child(m_node, name, value);
@@ -1028,7 +1053,7 @@ serializer &serializer::serialize_element(std::string_view name, const T &value)
 template <typename T>
 serializer &serializer::serialize_attribute(std::string_view name, const T &value)
 {
-	using value_type = typename std::remove_const_t<typename std::remove_reference_t<T>>;
+	using value_type = std::remove_cvref_t<T>;
 	using type_serializer = type_serializer<value_type>;
 
 	if (m_node.type() == node_type::element)
@@ -1040,7 +1065,7 @@ serializer &serializer::serialize_attribute(std::string_view name, const T &valu
 template <typename T>
 deserializer &deserializer::deserialize_element(T &value)
 {
-	using value_type = typename std::remove_const_t<typename std::remove_reference_t<T>>;
+	using value_type = std::remove_cvref_t<T>;
 	using type_serializer = type_serializer<value_type>;
 
 	type_serializer::deserialize_child(m_node, "", value);
@@ -1051,7 +1076,7 @@ deserializer &deserializer::deserialize_element(T &value)
 template <typename T>
 deserializer &deserializer::deserialize_element(std::string_view name, T &value)
 {
-	using value_type = typename std::remove_const_t<typename std::remove_reference_t<T>>;
+	using value_type = std::remove_cvref_t<T>;
 	using type_serializer = type_serializer<value_type>;
 
 	type_serializer::deserialize_child(m_node, name, value);
@@ -1062,7 +1087,7 @@ deserializer &deserializer::deserialize_element(std::string_view name, T &value)
 template <typename T>
 deserializer &deserializer::deserialize_attribute(std::string_view name, T &value)
 {
-	using value_type = typename std::remove_const_t<typename std::remove_reference_t<T>>;
+	using value_type = std::remove_cvref_t<T>;
 	using type_serializer = type_serializer<value_type>;
 
 	if (m_node.type() == node_type::element)
@@ -1077,7 +1102,7 @@ deserializer &deserializer::deserialize_attribute(std::string_view name, T &valu
 template <typename T>
 schema_creator &schema_creator::add_element(std::string_view name, const T & /*value*/)
 {
-	using value_type = typename std::remove_const_t<typename std::remove_reference_t<T>>;
+	using value_type = std::remove_cvref_t<T>;
 	using type_serializer = type_serializer<value_type>;
 
 	m_node.emplace_back(type_serializer::schema(name, m_prefix));
@@ -1094,7 +1119,7 @@ schema_creator &schema_creator::add_element(std::string_view name, const T & /*v
 template <typename T>
 schema_creator &schema_creator::add_attribute(std::string_view name, const T & /*value*/)
 {
-	using value_type = typename std::remove_const_t<typename std::remove_reference_t<T>>;
+	using value_type = std::remove_cvref_t<T>;
 	using type_serializer = type_serializer<value_type>;
 
 	std::string type_name = type_serializer::type_name();
@@ -1114,18 +1139,31 @@ schema_creator &schema_creator::add_attribute(std::string_view name, const T & /
 // Convenience routines
 
 /* export */ template <typename T>
+void to_xml(mxml::element_container &e, const T &value)
+{
+	serializer sr(e);
+	sr.serialize_element(value);
+}
+
+/* export */ template <typename T>
 void to_xml(mxml::element_container &e, std::string_view name, const T &value)
 {
-	mxml::serializer sr(e);
+	serializer sr(e);
 	sr.serialize_element(name, value);
+}
+
+/* export */ template <typename T>
+void from_xml(const mxml::element_container &e, T &value)
+{
+	deserializer dsr(e);
+	dsr.deserialize_element(value);
 }
 
 /* export */ template <typename T>
 void from_xml(const mxml::element_container &e, std::string_view name, T &value)
 {
-	mxml::deserializer dsr(e);
+	deserializer dsr(e);
 	dsr.deserialize_element(name, value);
 }
-
 
 } // namespace mxml

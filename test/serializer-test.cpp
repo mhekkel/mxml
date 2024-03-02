@@ -127,7 +127,7 @@ TEST_CASE("test_s_1")
 {
 	using namespace mxml;
 
-	st_1 s1 = { 1, "aap" };
+	st_1 s1{ 1, "aap" };
 
 	document doc;
 	doc.serialize("s1", s1);
@@ -152,7 +152,10 @@ struct S_arr
 	template <typename Archive>
 	void serialize(Archive &ar, unsigned long)
 	{
-		ar &mxml::make_element_nvp("vi", vi) & mxml::make_element_nvp("ds", ds);
+		// clang-format off
+		ar & mxml::make_element_nvp("vi", vi)
+		   & mxml::make_element_nvp("ds", ds);
+		// clang-format on
 	}
 };
 
