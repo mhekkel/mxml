@@ -3,3 +3,4 @@ build/
 src/revision.hpp
 test/XML-Test-Suite/
 test/perf.data*
+test/.gdb_history
