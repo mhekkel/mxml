@@ -24,7 +24,9 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-module;
+// module;
+
+#pragma once
 
 /// \file
 /// the core of the libzeep XML library defining the main classes in the DOM API
@@ -41,24 +43,25 @@ module;
 
 #include <cassert>
 
-export module mxml:node;
+// /* /* export */ */ module mxml:node;
 
-import :error;
+// import :error;
+#include "mxml/error.ixx"
 
 namespace mxml
 {
 
 // forward declarations
 
-export class node;
-export class element;
-export class text;
-export class attribute;
-export class name_space;
-export class comment;
-export class cdata;
-export class processing_instruction;
-export class document;
+/* export */ class node;
+/* export */ class element;
+/* export */ class text;
+/* export */ class attribute;
+/* export */ class name_space;
+/* export */ class comment;
+/* export */ class cdata;
+/* export */ class processing_instruction;
+/* export */ class document;
 class element_container;
 
 using node_set = std::list<node *>;
@@ -69,7 +72,7 @@ concept NodeType = std::is_base_of_v<mxml::node, T>;
 
 // Instead of using RTTI and/or virtual clone methods, we use our
 // own runtime type info based on a node_type when needed
-export enum class node_type
+/* export */ enum class node_type
 {
 	element,
 	text,
@@ -229,6 +232,19 @@ class basic_node_list
 
 		void write(std::ostream &os, format_info fmt) const override {}
 		std::string str() const override { return {}; }
+
+
+		friend void swap(node_list_header &a, node_list_header &b)
+		{
+			std::swap(a.m_parent, b.m_parent);
+
+			for (node *n = a.m_next; n != &a; n = n->next())
+				n->parent(a.m_parent);
+
+			for (node *n = b.m_next; n != &b; n = n->next())
+				n->parent(b.m_parent);
+
+		}
 	};
 
 	node_list_header *m_node;
@@ -279,13 +295,7 @@ class basic_node_list
 	friend void swap(basic_node_list &a, basic_node_list &b) noexcept
 	{
 		std::swap(a.m_node, b.m_node);
-		std::swap(a.m_node->m_parent, b.m_node->m_parent);
-
-		for (node *n = a.m_node->m_next; n != a.m_node; n = n->m_next)
-			n->parent(a.m_node->m_parent);
-
-		for (node *n = b.m_node->m_next; n != b.m_node; n = n->m_next)
-			n->parent(b.m_node->m_parent);
+		swap(a.m_node_store, b.m_node_store);
 	}
 
   protected:
@@ -622,7 +632,7 @@ class node_list : public basic_node_list
 };
 
 template <>
-node_list<element>::node_list()
+inline node_list<element>::node_list()
 {
 }
 
@@ -1299,7 +1309,7 @@ class element final : public element_container
 // --------------------------------------------------------------------
 
 template <>
-auto node_list<node>::insert(const_iterator pos, const value_type &e) -> iterator
+inline auto node_list<node>::insert(const_iterator pos, const value_type &e) -> iterator
 {
 	switch (e.type())
 	{
@@ -1328,7 +1338,7 @@ auto node_list<node>::insert(const_iterator pos, const value_type &e) -> iterato
 
 /// \brief insert a copy of \a e at position \a pos, moving its data
 template <>
-auto node_list<node>::insert(const_iterator pos, value_type &&e) -> iterator
+inline auto node_list<node>::insert(const_iterator pos, value_type &&e) -> iterator
 {
 	switch (e.type())
 	{

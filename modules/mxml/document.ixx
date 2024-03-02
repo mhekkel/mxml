@@ -24,7 +24,9 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-module;
+// module;
+
+#pragma once
 
 /// \file
 /// definition of the mxml::document class
@@ -39,14 +41,22 @@ module;
 
 #include <cassert>
 
-export module mxml:document;
+// /* export */ module mxml:document;
 
-import :doctype;
-import :error;
-import :node;
-import :parser;
-import :text;
-import :serialize;
+// import :doctype;
+// import :error;
+// import :node;
+// import :parser;
+// import :text;
+// import :serialize;
+
+#include "mxml/doctype.ixx"
+#include "mxml/error.ixx"
+#include "mxml/node.ixx"
+#include "mxml/parser.ixx"
+#include "mxml/text.ixx"
+#include "mxml/serialize.ixx"
+
 
 namespace mxml
 {
@@ -80,7 +90,7 @@ struct doc_type
 /// A document has one mxml::root_node element. This root element
 /// can have only one mxml::element child node.
 
-export class document final : public element_container
+/* export */ class document final : public element_container
 {
   public:
 	node_type type() const override { return node_type::document; }
@@ -328,7 +338,7 @@ export class document final : public element_container
 	size_t m_root_size_at_first_notation = 0; // for processing instructions that occur before a notation
 };
 
-export namespace literals
+/* export */ namespace literals
 {
 	document operator""_xml(const char *text, size_t length);
 }

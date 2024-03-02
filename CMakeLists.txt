@@ -17,7 +17,7 @@ target_sources(mxml
 	src/text.cxx
 	src/xpath.cxx
 	PUBLIC
-	FILE_SET public_modules TYPE CXX_MODULES
+	FILE_SET public_modules TYPE HEADERS
 	BASE_DIRS
 	${CMAKE_CURRENT_SOURCE_DIR}/modules
 	FILES
@@ -30,6 +30,22 @@ target_sources(mxml
 	modules/mxml/serialize.ixx
 	modules/mxml/text.ixx
 	modules/mxml/xpath.ixx
+
+
+	# PUBLIC
+	# FILE_SET public_modules TYPE CXX_MODULES
+	# BASE_DIRS
+	# ${CMAKE_CURRENT_SOURCE_DIR}/modules
+	# FILES
+	# modules/mxml.ixx
+	# modules/mxml/doctype.ixx
+	# modules/mxml/document.ixx
+	# modules/mxml/error.ixx
+	# modules/mxml/node.ixx
+	# modules/mxml/parser.ixx
+	# modules/mxml/serialize.ixx
+	# modules/mxml/text.ixx
+	# modules/mxml/xpath.ixx
 )
 
 target_compile_features(mxml PUBLIC cxx_std_20)

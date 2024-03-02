@@ -24,7 +24,9 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-module;
+// module;
+
+#pragma once
 
 /// \file
 /// various definitions of data types and routines used to work with Unicode encoded text
@@ -35,28 +37,30 @@ module;
 #include <string>
 #include <tuple>
 
-export module mxml:text;
+// /* export */ module mxml:text;
 
-import :error;
+// import :error;
+
+#include "mxml/error.ixx"
 
 namespace mxml
 {
 
 /// some character classification routines
 
-export bool is_name_start_char(char32_t uc);
-export bool is_name_char(char32_t uc);
-export bool is_valid_xml_1_0_char(char32_t uc);
-export bool is_valid_xml_1_1_char(char32_t uc);
-export bool is_valid_system_literal_char(char32_t uc);
-export bool is_valid_system_literal(const std::string& s);
-export bool is_valid_public_id_char(char32_t uc);
-export bool is_valid_public_id(const std::string& s);
+/* export */ bool is_name_start_char(char32_t uc);
+/* export */ bool is_name_char(char32_t uc);
+/* export */ bool is_valid_xml_1_0_char(char32_t uc);
+/* export */ bool is_valid_xml_1_1_char(char32_t uc);
+/* export */ bool is_valid_system_literal_char(char32_t uc);
+/* export */ bool is_valid_system_literal(const std::string& s);
+/* export */ bool is_valid_public_id_char(char32_t uc);
+/* export */ bool is_valid_public_id(const std::string& s);
 
 /// \brief the (admittedly limited) set of supported text encodings in libmxml
 /// 
 /// these are the supported encodings. Perhaps we should extend this list a bit?
-export enum class encoding_type
+/* export */ enum class encoding_type
 {
 	ASCII,			///< 7-bit ascii 
 	UTF8,			///< UTF-8
@@ -66,15 +70,15 @@ export enum class encoding_type
 };
 
 /// \brief Append a single unicode character to an utf-8 string
-export void append(std::string& s, char32_t uc);
+/* export */ void append(std::string& s, char32_t uc);
 
 /// \brief remove the last unicode character from an utf-8 string
-export char32_t pop_back_char(std::string& s);
+/* export */ char32_t pop_back_char(std::string& s);
 
 /// \brief return the first unicode and advance the pointer @a ptr from a string
-export char32_t pop_front_char(std::string::const_iterator &ptr, std::string::const_iterator end);
+/* export */ char32_t pop_front_char(std::string::const_iterator &ptr, std::string::const_iterator end);
 
 /// \brief A simple implementation of trim, removing white space from start and end of \a s
-export void trim(std::string& s);
+/* export */ void trim(std::string& s);
 
 } // namespace xml

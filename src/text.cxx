@@ -24,12 +24,13 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-module;
-
+// module;
 #include <string>
 #include <vector>
 
-module mxml;
+// module mxml;
+
+#include "mxml.ixx"
 
 namespace mxml
 {

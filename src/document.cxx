@@ -24,8 +24,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-module;
-
+// module;
 #include <algorithm>
 #include <fstream>
 #include <functional>
@@ -36,10 +35,12 @@ module;
 
 #include <cassert>
 
-module mxml;
+// module mxml;
 
-import :document;
-import :error;
+// import :document;
+// import :error;
+
+#include "mxml.ixx"
 
 namespace mxml
 {

@@ -24,7 +24,8 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-module;
+// module;
+#pragma once
 
 /// \file
 /// definition of the libzeep XML parser, a recursive descent parser
@@ -42,10 +43,14 @@ module;
 
 #include <cassert>
 
-export module mxml:parser;
+// /* export */ module mxml:parser;
 
-import :error;
-import :text;
+// import :error;
+// import :text;
+
+#include "mxml/error.ixx"
+#include "mxml/text.ixx"
+
 
 namespace mxml
 {
@@ -64,7 +69,7 @@ struct attr
 ///
 /// The what() member of the exception object will contain an explanation.
 
-export class invalid_exception : public exception
+/* export */ class invalid_exception : public exception
 {
   public:
 	invalid_exception(const std::string &msg)
@@ -80,7 +85,7 @@ export class invalid_exception : public exception
 ///
 /// The what() member of the exception object will contain an explanation.
 
-export class not_wf_exception : public exception
+/* export */ class not_wf_exception : public exception
 {
   public:
 	not_wf_exception(const std::string &msg)
@@ -93,7 +98,7 @@ export class not_wf_exception : public exception
 /// mxml::parser is a SAX parser. After construction, you should assign
 /// call back handlers for the SAX events and then call parse().
 
-export class parser
+/* export */ class parser
 {
   public:
 	using attr_type = attr;

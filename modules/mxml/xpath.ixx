@@ -24,7 +24,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-module;
+// module;
 
 /// \file
 /// definition of the mxml::xpath class, implementing a XPath 1.0 compatible search facility
@@ -40,9 +40,11 @@ module;
 
 #include <cmath>
 
-export module mxml:xpath;
+// /* export */ module mxml:xpath;
 
-import :node;
+// import :node;
+
+#include "mxml/node.ixx"
 
 namespace mxml
 {
@@ -53,7 +55,7 @@ namespace mxml
 /// you can define a context, add your variables to it and then pass it on
 /// in the xpath::evaluate method.
 
-export class context
+/* export */ class context
 {
   public:
 	context();
@@ -79,7 +81,7 @@ export class context
 /// The actual xpath implementation. It expects an xpath in the constructor and
 /// this path _must_ be UTF-8 encoded.
 
-export class xpath
+/* export */ class xpath
 {
   public:
 	xpath(std::string_view path);

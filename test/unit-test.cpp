@@ -8,7 +8,8 @@
 
 #include <filesystem>
 
-import mxml;
+// import mxml;
+#include "mxml.ixx"
 
 std::filesystem::path gTestDir = std::filesystem::current_path();
 

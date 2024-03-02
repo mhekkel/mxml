@@ -24,7 +24,9 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-module;
+// module;
+
+#pragma once
 
 #include <algorithm>
 #include <array>
@@ -58,12 +60,20 @@ module;
 #include <utility>
 #include <vector>
 
-export module mxml;
+// /* export */ module mxml;
 
-export import :document;
-export import :node;
-export import :error;
-export import :text;
-export import :parser;
-export import :xpath;
-export import :serialize;
+// /* export */ import :document;
+// /* export */ import :node;
+// /* export */ import :error;
+// /* export */ import :text;
+// /* export */ import :parser;
+// /* export */ import :xpath;
+// /* export */ import :serialize;
+
+#include "mxml/document.ixx"
+#include "mxml/node.ixx"
+#include "mxml/error.ixx"
+#include "mxml/text.ixx"
+#include "mxml/parser.ixx"
+#include "mxml/xpath.ixx"
+#include "mxml/serialize.ixx"
