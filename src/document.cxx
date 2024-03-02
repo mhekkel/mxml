@@ -149,15 +149,6 @@ void document::set_version(float v)
 
 // --------------------------------------------------------------------
 
-// element::iterator document::insert_impl(const_iterator pos, node *n)
-// {
-// 	if (not empty())
-// 		throw exception("Cannot add a node to a non-empty document");
-// 	return element::insert_impl(pos, n);
-// }
-
-// --------------------------------------------------------------------
-
 bool document::is_html5() const
 {
 	return m_doctype.m_root == "html" and
@@ -257,7 +248,10 @@ void document::write(std::ostream &os, format_info fmt) const
 node *document::insert_impl(const node *p, node *n)
 {
 	if (child() != nullptr)
+	{
+		delete n;
 		throw exception("Only one child element is allowed in a document");
+	}
 	return element_container::insert_impl(p, n);
 }
 
