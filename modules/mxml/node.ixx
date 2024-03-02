@@ -267,11 +267,6 @@ class basic_node_list
 	{
 		node_type type() const override { return node_type::header; }
 
-		node_list_header()
-		{
-			init();
-		}
-
 		void write(std::ostream &os, format_info fmt) const override {}
 		std::string str() const override { return {}; }
 
@@ -284,11 +279,6 @@ class basic_node_list
 
 			for (node *n = b.m_next; n != &b; n = n->next())
 				n->parent(b.m_parent);
-		}
-
-		void init()
-		{
-			m_next = m_prev = this;
 		}
 	};
 
@@ -671,6 +661,26 @@ class node_list : public basic_node_list
 			basic_node_list::clear();
 	}
 };
+
+// // --------------------------------------------------------------------
+
+// template<>
+// inline node_list<node>::iterator node_list<node>::end()
+// {
+// 	return iterator(m_header->m_next->m_prev);
+// }
+
+// template<>
+// inline node_list<node>::const_iterator node_list<node>::cend()
+// {
+// 	return iterator(m_header->m_next->m_prev);
+// }
+
+// template<>
+// inline node_list<node>::const_iterator node_list<node>::end() const
+// {
+// 	return iterator(m_header->m_next->m_prev);
+// }
 
 // --------------------------------------------------------------------
 // internal class as base class for element and document

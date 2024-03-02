@@ -450,10 +450,8 @@ std::ostream &operator<<(std::ostream &lhs, object &rhs)
 // --------------------------------------------------------------------
 // visiting (or better, collecting) other nodes in the hierarchy is done here.
 
-using context_node = node_list<element>;
-
 template <typename PREDICATE>
-void iterate_child_elements(context_node *context, node_set &s, bool deep, PREDICATE pred)
+void iterate_child_elements(element_container *context, node_set &s, bool deep, PREDICATE pred)
 {
 	for (element &child : *context)
 	{
@@ -469,9 +467,9 @@ void iterate_child_elements(context_node *context, node_set &s, bool deep, PREDI
 }
 
 template <typename PREDICATE>
-void iterate_child_nodes(context_node *context, node_set &s, bool deep, PREDICATE pred)
+void iterate_child_nodes(element_container *context, node_set &s, bool deep, PREDICATE pred)
 {
-	for (node &child : node_list<node>(context))
+	for (node &child : context->nodes())
 	{
 		if (find(s.begin(), s.end(), &child) != s.end())
 			continue;
@@ -481,7 +479,7 @@ void iterate_child_nodes(context_node *context, node_set &s, bool deep, PREDICAT
 
 		if (deep)
 		{
-			context_node *child_element = dynamic_cast<context_node *>(&child);
+			element_container *child_element = dynamic_cast<element_container *>(&child);
 			if (child_element != nullptr)
 				iterate_child_nodes(child_element, s, true, pred);
 		}
@@ -489,7 +487,7 @@ void iterate_child_nodes(context_node *context, node_set &s, bool deep, PREDICAT
 }
 
 template <typename PREDICATE>
-inline void iterate_children(context_node *context, node_set &s, bool deep, PREDICATE pred, bool elementsOnly)
+inline void iterate_children(element_container *context, node_set &s, bool deep, PREDICATE pred, bool elementsOnly)
 {
 	if (elementsOnly)
 		iterate_child_elements(context, s, deep, pred);
@@ -498,7 +496,7 @@ inline void iterate_children(context_node *context, node_set &s, bool deep, PRED
 }
 
 template <typename PREDICATE>
-void iterate_ancestor(context_node *e, node_set &s, PREDICATE pred)
+void iterate_ancestor(element_container *e, node_set &s, PREDICATE pred)
 {
 	auto n = dynamic_cast<node *>(e)->parent();
 	while (n != nullptr and n->type() != node_type::document)
@@ -525,7 +523,7 @@ void iterate_preceding(node *n, node_set &s, bool sibling, PREDICATE pred, bool 
 
 		n = n->prev();
 
-		context_node *e = dynamic_cast<context_node *>(n);
+		element_container *e = dynamic_cast<element_container *>(n);
 		if (e == nullptr)
 			continue;
 
@@ -553,7 +551,7 @@ void iterate_following(node *n, node_set &s, bool sibling, PREDICATE pred, bool 
 
 		n = n->next();
 
-		context_node *e = dynamic_cast<context_node *>(n);
+		element_container *e = dynamic_cast<element_container *>(n);
 		if (e == nullptr)
 			continue;
 
@@ -566,7 +564,7 @@ void iterate_following(node *n, node_set &s, bool sibling, PREDICATE pred, bool 
 }
 
 template <typename PREDICATE>
-void iterate_attributes(context_node *e, node_set &s, PREDICATE pred)
+void iterate_attributes(element_container *e, node_set &s, PREDICATE pred)
 {
 	auto el = dynamic_cast<element *>(e);
 	if (el != nullptr)
@@ -580,7 +578,7 @@ void iterate_attributes(context_node *e, node_set &s, PREDICATE pred)
 }
 
 template <typename PREDICATE>
-void iterate_namespaces(context_node *e, node_set &s, PREDICATE pred)
+void iterate_namespaces(element_container *e, node_set &s, PREDICATE pred)
 {
 	auto el = dynamic_cast<element *>(e);
 	if (el != nullptr)
@@ -730,7 +728,7 @@ object step_expression::evaluate(expression_context &context, T pred, bool eleme
 {
 	node_set result;
 
-	context_node *context_element = dynamic_cast<context_node *>(context.m_node);
+	element_container *context_element = dynamic_cast<element_container *>(context.m_node);
 	if (context_element != nullptr)
 	{
 		switch (m_axis)
@@ -789,12 +787,12 @@ object step_expression::evaluate(expression_context &context, T pred, bool eleme
 				break;
 
 			case AxisType::Attribute:
-				if (auto c = dynamic_cast<context_node *>(context_element); c != nullptr)
+				if (auto c = dynamic_cast<element_container *>(context_element); c != nullptr)
 					iterate_attributes(c, result, pred);
 				break;
 
 			case AxisType::Namespace:
-				if (auto c = dynamic_cast<context_node *>(context_element); c != nullptr)
+				if (auto c = dynamic_cast<element_container *>(context_element); c != nullptr)
 					iterate_namespaces(c, result, pred);
 				break;
 
