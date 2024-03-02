@@ -257,9 +257,6 @@ struct doc_type
 
 	const element *child() const { return const_cast<document *>(this)->child(); }
 
-	node_list<> &nodes() { return m_nodes; }
-	const node_list<> &nodes() const { return m_nodes; }
-
 	std::string str() const override;
 
 	template <typename ...Args>

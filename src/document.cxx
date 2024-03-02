@@ -100,7 +100,7 @@ document::document(std::istream &is, const std::string &base_dir)
 
 void swap(document &a, document &b) noexcept
 {
-	swap(a.m_nodes, b.m_nodes);
+	swap(static_cast<element_container&>(a), static_cast<element_container&>(b));
 
 	std::swap(a.m_dtd_dir, b.m_dtd_dir);
 	std::swap(a.m_doctype, b.m_doctype);
@@ -161,7 +161,7 @@ void document::set_version(float v)
 bool document::is_html5() const
 {
 	return m_doctype.m_root == "html" and
-	       (not m_nodes.empty() and m_nodes.front().name() == "html") and
+	       (not empty() and front().name() == "html") and
 	       m_doctype.m_pubid == "" and
 	       m_doctype.m_dtd == "about:legacy-compat";
 }
@@ -170,7 +170,7 @@ bool document::is_html5() const
 
 bool document::operator==(const document &other) const
 {
-	return m_nodes == other.m_nodes;
+	return static_cast<const element_container&>(*this) == static_cast<const element_container&>(other);
 }
 
 std::ostream &operator<<(std::ostream &os, const document &doc)
@@ -248,7 +248,7 @@ void document::write(std::ostream &os, format_info fmt) const
 		os << ">\n";
 	}
 
-	for (auto &n : m_nodes)
+	for (auto &n : nodes())
 		n.write(os, fmt);
 }
 
@@ -378,7 +378,7 @@ void document::CharacterDataHandler(const std::string &data)
 void document::ProcessingInstructionHandler(const std::string &target, const std::string &data)
 {
 	if (m_cur == this)
-		m_nodes.emplace_back(processing_instruction(target, data));
+		nodes().emplace_back(processing_instruction(target, data));
 	else
 		static_cast<element_container *>(m_cur)->nodes().emplace_back(processing_instruction(target, data));
 }
@@ -386,7 +386,7 @@ void document::ProcessingInstructionHandler(const std::string &target, const std
 void document::CommentHandler(const std::string &s)
 {
 	if (m_cur == this)
-		m_nodes.emplace_back(comment(s));
+		nodes().emplace_back(comment(s));
 	else
 		static_cast<element_container *>(m_cur)->nodes().emplace_back(comment(s));
 }
@@ -420,7 +420,7 @@ void document::DoctypeDeclHandler(const std::string &root, const std::string &pu
 void document::NotationDeclHandler(const std::string &name, const std::string &sysid, const std::string &pubid)
 {
 	if (m_notations.empty())
-		m_root_size_at_first_notation = m_nodes.size();
+		m_root_size_at_first_notation = nodes().size();
 
 	notation n = { std::string{ name }, std::string{ sysid }, std::string{ pubid } };
 

@@ -68,7 +68,7 @@ using node_set = std::list<node *>;
 using element_set = std::list<element *>;
 
 template <typename T>
-concept NodeType = std::is_base_of_v<mxml::node, T>;
+concept NodeType = std::is_base_of_v<mxml::node, std::remove_cvref_t<T>>;
 
 // Instead of using RTTI and/or virtual clone methods, we use our
 // own runtime type info based on a node_type when needed
@@ -205,7 +205,7 @@ class node
 
 	node()
 	{
-		m_next = m_prev = this;
+		init();
 	}
 
 	node(const node &n) = delete;
@@ -215,14 +215,44 @@ class node
 
 	friend void swap(node &a, node &b) noexcept
 	{
-		std::swap(a.m_parent, b.m_parent);
-		std::swap(a.m_next, b.m_next);
-		a.m_next->m_prev = a.m_prev->m_next = &a;
-		std::swap(a.m_prev, b.m_prev);
-		b.m_next->m_prev = b.m_prev->m_next = &b;	
+		if (a.m_next == &a)	// a empty?
+		{
+			if (b.m_next == &b)	// b empty?
+			{
+				a.init();
+				b.init();
+			}
+			else
+			{
+				a.m_next = b.m_next;
+				a.m_prev = b.m_prev;
+				a.m_next->m_prev = a.m_prev->m_next = &a;
+				b.init();
+			}
+		}
+		else if (b.m_next == &b)
+		{
+			b.m_next = a.m_next;
+			b.m_prev = a.m_prev;
+			b.m_next->m_prev = b.m_prev->m_next = &b;
+			a.init();
+		}
+		else
+		{
+			std::swap(a.m_next, b.m_next);
+			std::swap(a.m_prev, b.m_prev);
+			a.m_next->m_prev = a.m_prev->m_next = &a;
+			b.m_next->m_prev = b.m_prev->m_next = &b;	
+		}
 	}
 
   protected:
+
+	void init()
+	{
+		m_next = m_prev = this;
+	}
+
 	element_container *m_parent = nullptr;
 	node *m_next;
 	node *m_prev;
@@ -292,8 +322,13 @@ class basic_node_list
 
 	friend void swap(basic_node_list &a, basic_node_list &b) noexcept
 	{
-		swap(a.m_header_node, b.m_header_node);
-		std::swap(a.m_header, b.m_header);
+		if (a.m_header != &a.m_header_node and b.m_header != &b.m_header_node)
+			std::swap(a.m_header, b.m_header);
+		else
+		{
+			assert((a.m_header != &a.m_header_node) == (b.m_header != &b.m_header_node));
+			swap(a.m_header_node, b.m_header_node);
+		}
 	}
 
   protected:
@@ -647,20 +682,19 @@ class element_container : public node, public node_list<element>
 
 	element_container()
 		: node_list<element>(this)
-		, m_nodes(this)
 	{
 	}
 
 	element_container(const element_container &e)
 		: node_list<element>(this)
-		, m_nodes(this)
 	{
-		m_nodes.assign(e.m_nodes.begin(), e.m_nodes.end());
+		auto a = nodes();
+		auto b = e.nodes();
+		a.assign(b.begin(), b.end());
 	}
 
 	element_container(element_container &&e) noexcept
 		: node_list<element>(this)
-		, m_nodes(this)
 	{
 		swap(*this, e);
 	}
@@ -681,14 +715,13 @@ class element_container : public node, public node_list<element>
 	friend void swap(element_container &a, element_container &b) noexcept
 	{
 		swap(static_cast<node_list<element>&>(a), static_cast<node_list<element>&>(b));
-		swap(a.m_nodes, b.m_nodes);
 	}
 
 	// --------------------------------------------------------------------
 	// children
 
-	node_list<> &nodes() { return m_nodes; }
-	const node_list<> &nodes() const { return m_nodes; }
+	node_list<> nodes() { return node_list<node>(this); }
+	const node_list<> nodes() const { return node_list<node>(const_cast<element_container *>(this)); }
 
 	/// \brief will return the concatenation of str() from all child nodes
 	std::string str() const override;
@@ -708,17 +741,12 @@ class element_container : public node, public node_list<element>
 	/// If you need to find other classes than xml::element, of if your XPath
 	/// contains variables, you should create a mxml::xpath object and use
 	/// its evaluate method.
-	element *find_first(std::string_view path);
-	const element *find_first(std::string_view path) const
-	{
-		return const_cast<element_container *>(this)->find_first(path);
-	}
+	iterator find_first(std::string_view path);
+	const_iterator find_first(std::string_view path) const;
 
   protected:
 
 	void write(std::ostream &os, format_info fmt) const override;
-
-	node_list<> m_nodes;
 };
 
 // --------------------------------------------------------------------
@@ -1215,6 +1243,7 @@ class element final : public element_container
 
 	friend void swap(element &a, element &b) noexcept
 	{
+		// swap(static_cast<node&>(a), static_cast<node&>(b));
 		swap(static_cast<element_container &>(a), static_cast<element_container &>(b));
 
 		std::swap(a.m_qname, b.m_qname);

@@ -41,6 +41,20 @@ int main(int argc, char *argv[])
 	return session.run();
 }
 
+TEST_CASE("test-0")
+{
+	using namespace mxml;
+
+	attribute_set attr(nullptr);
+	attr.emplace("a", "1");
+
+	attribute_set a2(nullptr);
+
+	swap(attr, a2);
+
+	assert(attr.empty());
+}
+
 TEST_CASE("test_1")
 {
 	mxml::element n("test");
@@ -105,6 +119,7 @@ TEST_CASE("test_1")
 		auto n2 = n;
 
 		CHECK(n2.size() == 4);
+		CHECK(n2.name() == "test");
 		CHECK(n2.front().name() == "c0");
 		CHECK(n2.back().name() == "c3");
 		for (auto &e : n2)
@@ -118,7 +133,9 @@ TEST_CASE("test_1")
 
 		auto n3(std::move(n2));
 
+		CHECK(n2.name().empty());
 		CHECK(n2.empty());
+		CHECK(n3.name() == "test");
 		CHECK(n3.size() == 4);
 		CHECK(n3.front().name() == "c0");
 		CHECK(n3.back().name() == "c3");
@@ -613,13 +630,13 @@ TEST_CASE("xml_doc")
 	CHECK(l4.empty());
 
 	auto i = l3.find_first("./l4");
-	REQUIRE(i != nullptr);
+	REQUIRE(i != l3.end());
 	l3.erase(i);
 
 	CHECK(l3.empty());
 
 	i = l1.find_first(".//l3");
-	CHECK(i != nullptr);
+	CHECK(i != l1.end());
 
 	CHECK_THROWS_AS(l1.erase(i), mxml::exception);
 

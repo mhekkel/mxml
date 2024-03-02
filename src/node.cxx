@@ -472,13 +472,17 @@ element_set element_container::find(std::string_view path) const
 	return xpath(path).evaluate<element>(*this);
 }
 
-element *element_container::find_first(std::string_view path)
+element_container::iterator element_container::find_first(std::string_view path)
 {
 	element_set s = xpath(path).evaluate<element>(*this);
 
-	return s.empty() ? nullptr : s.front();
+	return s.empty() ? end() : iterator(s.front());
 }
 
+element_container::const_iterator element_container::find_first(std::string_view path) const
+{
+	return const_cast<element_container *>(this)->find_first(path);
+}
 
 // --------------------------------------------------------------------
 // element
@@ -538,8 +542,8 @@ bool element::equals(const node *n) const
 
 		result = name() == e->name() and get_ns() == e->get_ns();
 
-		auto &na = m_nodes;
-		auto &nb = e->m_nodes;
+		auto na = nodes();
+		auto nb = e->nodes();
 
 		auto a = na.begin();
 		auto b = nb.begin();
@@ -636,7 +640,7 @@ std::string element::get_content() const
 void element::set_content(const std::string &s)
 {
 	// remove all existing text nodes (including cdata ones)
-	auto &nn = nodes();
+	auto nn = nodes();
 	for (auto n = nn.begin(); n != nn.end(); ++n)
 	{
 		if (auto &t = *n; (typeid(t) == typeid(text)) or (typeid(t) == typeid(cdata)))
@@ -649,7 +653,7 @@ void element::set_content(const std::string &s)
 
 void element::add_text(const std::string &s)
 {
-	auto &nn = nodes();
+	auto nn = nodes();
 
 	if (auto &t = nn.back(); typeid(t) == typeid(text))
 		static_cast<text &>(nn.back()).append(s);
@@ -664,7 +668,7 @@ void element::set_text(const std::string &s)
 
 void element::flatten_text()
 {
-	auto &nn = nodes();
+	auto nn = nodes();
 	auto n = nn.begin();
 	while (n != nn.end())
 	{
