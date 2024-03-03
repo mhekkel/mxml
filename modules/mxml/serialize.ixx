@@ -24,8 +24,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-// module;
-#pragma once
+module;
 
 /// \file
 /// definition of the serializer classes used to (de-)serialize XML data.
@@ -41,11 +40,9 @@
 
 #include <experimental/type_traits>
 
-// /* export */ module mxml:serialize;
+export module mxml:serialize;
 
-// import :node;
-
-#include "mxml/node.ixx"
+import :node;
 
 namespace mxml
 {
@@ -60,7 +57,7 @@ namespace mxml
 /// method as well as a type_name method. This type_name is used in e.g.
 /// constructing WSDL files.
 
-/* export */ template <typename T>
+export template <typename T>
 struct value_serializer;
 
 /// @ref value_serializer implementation for booleans
@@ -382,42 +379,42 @@ using is_detected = typename detector<nope, void, Op, Args...>::value_t;
 template <template <class...> class Op, class... Args>
 constexpr inline bool is_detected_v = is_detected<Op, Args...>::value;
 
-/* export */ template <typename T>
+export template <typename T>
 using serialize_value_t = decltype(std::declval<value_serializer<T> &>().from_string(std::declval<const std::string &>()));
 
-/* export */ template <typename T, typename Archive>
+export template <typename T, typename Archive>
 using serialize_function = decltype(std::declval<T &>().serialize(std::declval<Archive &>(), std::declval<unsigned long>()));
 
-/* export */ template <typename T, typename Archive, typename = void>
+export template <typename T, typename Archive, typename = void>
 struct has_serialize : std::false_type
 {
 };
 
-/* export */ template <typename T, typename Archive>
+export template <typename T, typename Archive>
 struct has_serialize<T, Archive, typename std::enable_if_t<std::is_class_v<T>>>
 {
 	static constexpr bool value = is_detected_v<serialize_function, T, Archive>;
 };
 
-/* export */ template <typename T, typename S>
+export template <typename T, typename S>
 inline constexpr bool has_serialize_v = has_serialize<T, S>::value;
 
-/* export */ template <typename T, typename S, typename = void>
+export template <typename T, typename S, typename = void>
 struct is_serializable_array_type : std::false_type
 {
 };
 
-/* export */ template <typename T>
+export template <typename T>
 using value_type_t = typename T::value_type;
 
-/* export */ template <typename T>
+export template <typename T>
 using iterator_t = typename T::iterator;
 
-/* export */ template <typename T>
+export template <typename T>
 using std_string_npos_t = decltype(T::npos);
 
 /// Struct used to detect whether type \a T is serializable
-/* export */ template <typename T, typename S>
+export template <typename T, typename S>
 struct is_serializable_type
 {
 	using value_type = std::remove_cvref_t<T>;
@@ -426,10 +423,10 @@ struct is_serializable_type
 		has_serialize_v<value_type, S>;
 };
 
-/* export */ template <typename T, typename S>
+export template <typename T, typename S>
 inline constexpr bool is_serializable_type_v = is_serializable_type<T, S>::value;
 
-/* export */ template <typename T, typename S>
+export template <typename T, typename S>
 struct is_serializable_array_type<T, S,
 	std::enable_if_t<
 		is_detected_v<value_type_t, T> and
@@ -439,13 +436,13 @@ struct is_serializable_array_type<T, S,
 	static constexpr bool value = is_serializable_type_v<typename T::value_type, S>;
 };
 
-/* export */ template <typename T, typename S>
+export template <typename T, typename S>
 inline constexpr bool is_serializable_array_type_v = is_serializable_array_type<T, S>::value;
 
 // --------------------------------------------------------------------
 
-/* export */ struct serializer;
-/* export */ struct deserializer;
+export struct serializer;
+export struct deserializer;
 
 template <typename T>
 class name_value_pair
@@ -491,13 +488,13 @@ class attribute_nvp : public name_value_pair<T>
 	}
 };
 
-/* export */ template <typename T>
+export template <typename T>
 constexpr attribute_nvp<T> make_attribute_nvp(std::string_view name, T &value)
 {
 	return attribute_nvp(name, value);
 }
 
-/* export */ template <typename T>
+export template <typename T>
 constexpr element_nvp<T> make_element_nvp(std::string_view name, T &value)
 {
 	return element_nvp(name, value);
@@ -510,7 +507,7 @@ constexpr element_nvp<T> make_element_nvp(std::string_view name, T &value)
 
 /// serializer is the class that initiates the serialization process.
 
-/* export */ struct serializer
+export struct serializer
 {
 	serializer(element_container &node)
 		: m_node(node)
@@ -543,7 +540,7 @@ constexpr element_nvp<T> make_element_nvp(std::string_view name, T &value)
 
 /// deserializer is the class that initiates the deserialization process.
 
-/* export */ struct deserializer
+export struct deserializer
 {
 	deserializer(const element_container &node)
 		: m_node(node)
@@ -574,7 +571,7 @@ constexpr element_nvp<T> make_element_nvp(std::string_view name, T &value)
 	const element_container &m_node;
 };
 
-/* export */ using type_map = std::map<std::string, element>;
+export using type_map = std::map<std::string, element>;
 
 // --------------------------------------------------------------------
 /// schema_creator is used by zeep::dispatcher to create schema files.
@@ -1140,28 +1137,28 @@ schema_creator &schema_creator::add_attribute(std::string_view name, const T & /
 // --------------------------------------------------------------------
 // Convenience routines
 
-/* export */ template <typename T>
+export template <typename T>
 void to_xml(mxml::element_container &e, const T &value)
 {
 	serializer sr(e);
 	sr.serialize_element(value);
 }
 
-/* export */ template <typename T>
+export template <typename T>
 void to_xml(mxml::element_container &e, std::string_view name, const T &value)
 {
 	serializer sr(e);
 	sr.serialize_element(name, value);
 }
 
-/* export */ template <typename T>
+export template <typename T>
 void from_xml(const mxml::element_container &e, T &value)
 {
 	deserializer dsr(e);
 	dsr.deserialize_element(value);
 }
 
-/* export */ template <typename T>
+export template <typename T>
 void from_xml(const mxml::element_container &e, std::string_view name, T &value)
 {
 	deserializer dsr(e);

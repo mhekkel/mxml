@@ -24,9 +24,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-// module;
-
-#pragma once
+module;
 
 /// \file
 /// the core of the libzeep XML library defining the main classes in the DOM API
@@ -42,27 +40,25 @@
 
 #include <cassert>
 
-// /* /* export */ */ module mxml:node;
+export module mxml:node;
 
-// import :error;
-// import :version;
-#include "mxml/error.ixx"
-#include "mxml/version.ixx"
+import :error;
+import :version;
 
 namespace mxml
 {
 
 // forward declarations
 
-/* export */ class node;
-/* export */ class element;
-/* export */ class text;
-/* export */ class attribute;
-/* export */ class name_space;
-/* export */ class comment;
-/* export */ class cdata;
-/* export */ class processing_instruction;
-/* export */ class document;
+export class node;
+export class element;
+export class text;
+export class attribute;
+export class name_space;
+export class comment;
+export class cdata;
+export class processing_instruction;
+export class document;
 class element_container;
 
 using node_set = std::vector<node *>;
@@ -73,7 +69,7 @@ concept NodeType = std::is_base_of_v<mxml::node, std::remove_cvref_t<T>>;
 
 // Instead of using RTTI and/or virtual clone methods, we use our
 // own runtime type info based on a node_type when needed
-/* export */ enum class node_type
+export enum class node_type
 {
 	element,
 	text,

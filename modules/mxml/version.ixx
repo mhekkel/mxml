@@ -25,7 +25,7 @@
  */
 // module;
 
-#pragma once
+module;
 
 /// \file
 /// the core of the libzeep XML library defining the main classes in the DOM API
@@ -33,7 +33,7 @@
 #include <compare>
 #include <stdint.h>
 
-// /* /* export */ */ module mxml:version;
+export module mxml:version;
 
 namespace mxml
 {
@@ -45,7 +45,7 @@ namespace mxml
  *
  */
 
-/* export */ struct version_type
+export struct version_type
 {
 	uint8_t major;
 	uint8_t minor;

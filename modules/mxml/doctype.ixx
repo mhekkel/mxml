@@ -24,9 +24,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-// module;
-
-#pragma once
+module;
 
 #include <functional>
 #include <memory>
@@ -35,13 +33,10 @@
 
 #include <cassert>
 
-// /* export */ module mxml:doctype;
+export module mxml:doctype;
 
-// import :error;
-// import :text;
-
-#include "mxml/error.ixx"
-#include "mxml/text.ixx"
+import :error;
+import :text;
 
 namespace mxml::doctype
 {

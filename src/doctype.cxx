@@ -24,18 +24,16 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-// module;
+module;
 #include <functional>
 #include <memory>
 #include <numeric>
 
 #include <cassert>
 
-// module mxml;
+module mxml;
 
-// import :doctype;
-
-#include "mxml.ixx"
+import :doctype;
 
 namespace mxml::doctype
 {

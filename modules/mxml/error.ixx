@@ -24,19 +24,18 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-// module;
-#pragma once
+module;
 
 #include <exception>
 #include <string>
 
-// /* export */ module mxml:error;
+export module mxml:error;
 
 namespace mxml
 {
 
 /// \brief base class of the exceptions thrown by libzeep
-/* export */ class exception : public std::exception
+export class exception : public std::exception
 {
   public:
 	/// \brief Create an exception with the message in \a message

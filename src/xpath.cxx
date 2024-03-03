@@ -24,7 +24,8 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-// module;
+module;
+
 #include <algorithm>
 #include <charconv>
 #include <functional>
@@ -33,14 +34,12 @@
 
 #include <cmath>
 
-// module mxml;
+module mxml;
 
-// import :document;
-// import :error;
-// import :node;
-// import :xpath;
-
-#include "mxml.ixx"
+import :document;
+import :error;
+import :node;
+import :xpath;
 
 namespace mxml
 {
