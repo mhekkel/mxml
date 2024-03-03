@@ -29,9 +29,9 @@
 #pragma once
 
 #include <functional>
-#include <list>
-#include <string>
+#include <memory>
 #include <numeric>
+#include <string>
 
 #include <cassert>
 
@@ -71,28 +71,29 @@ enum class content_spec_type
 // validation of elements is done by the validator classes
 
 struct content_spec_base;
-struct state_base;
+using content_spec_base_ptr = std::shared_ptr<content_spec_base>;
 
-using content_spec_list = std::list<content_spec_base *>;
+struct state_base;
+using state_base_ptr = std::shared_ptr<state_base>;
+
+using content_spec_list = std::vector<content_spec_base_ptr>;
 
 class validator
 {
   public:
-	validator(content_spec_base *allowed);
+	validator(content_spec_base &allowed);
 	validator(const element *e);
 
 	validator(const validator &other) = delete;
 	validator &operator=(const validator &other) = delete;
-
-	~validator();
 
 	bool allow(const std::string &name);
 	content_spec_type get_content_spec() const;
 	bool done();
 
   private:
-	state_base *m_state;
-	content_spec_base *m_allowed;
+	state_base_ptr m_state;
+	content_spec_type m_allowed;
 	bool m_done;
 };
 
@@ -105,7 +106,7 @@ struct content_spec_base
 
 	virtual ~content_spec_base() = default;
 
-	virtual state_base *create_state() const = 0;
+	virtual state_base_ptr create_state() const = 0;
 	virtual bool element_content() const { return false; }
 
 	content_spec_type get_content_spec() const { return m_content_spec; }
@@ -126,7 +127,7 @@ struct content_spec_any : public content_spec_base
 	{
 	}
 
-	state_base *create_state() const override;
+	state_base_ptr create_state() const override;
 };
 
 struct content_spec_empty : public content_spec_base
@@ -136,7 +137,7 @@ struct content_spec_empty : public content_spec_base
 	{
 	}
 
-	state_base *create_state() const override;
+	state_base_ptr create_state() const override;
 };
 
 struct content_spec_element : public content_spec_base
@@ -147,7 +148,7 @@ struct content_spec_element : public content_spec_base
 	{
 	}
 
-	state_base *create_state() const override;
+	state_base_ptr create_state() const override;
 	bool element_content() const override { return true; }
 
 	std::string m_name;
@@ -155,7 +156,7 @@ struct content_spec_element : public content_spec_base
 
 struct content_spec_repeated : public content_spec_base
 {
-	content_spec_repeated(content_spec_base *allowed, char repetion)
+	content_spec_repeated(content_spec_base_ptr allowed, char repetion)
 		: content_spec_base(allowed->get_content_spec())
 		, m_allowed(allowed)
 		, m_repetition(repetion)
@@ -163,27 +164,24 @@ struct content_spec_repeated : public content_spec_base
 		assert(allowed);
 	}
 
-	~content_spec_repeated();
-
-	state_base *create_state() const override;
+	state_base_ptr create_state() const override;
 	bool element_content() const override;
 
-	content_spec_base *m_allowed;
+	content_spec_base_ptr m_allowed;
 	char m_repetition;
 };
 
 struct content_spec_seq : public content_spec_base
 {
-	content_spec_seq(content_spec_base *a)
+	content_spec_seq(content_spec_base_ptr a)
 		: content_spec_base(a->get_content_spec())
 	{
 		add(a);
 	}
-	~content_spec_seq();
 
-	void add(content_spec_base *a);
+	void add(content_spec_base_ptr a);
 
-	state_base *create_state() const override;
+	state_base_ptr create_state() const override;
 	bool element_content() const override;
 
 	content_spec_list m_allowed;
@@ -196,17 +194,16 @@ struct content_spec_choice : public content_spec_base
 		, m_mixed(mixed)
 	{
 	}
-	content_spec_choice(content_spec_base *a, bool mixed)
+	content_spec_choice(content_spec_base_ptr a, bool mixed)
 		: content_spec_base(mixed ? content_spec_type::Mixed : a->get_content_spec())
 		, m_mixed(mixed)
 	{
 		add(a);
 	}
-	~content_spec_choice();
 
-	void add(content_spec_base *a);
+	void add(content_spec_base_ptr a);
 
-	state_base *create_state() const override;
+	state_base_ptr create_state() const override;
 	bool element_content() const override;
 
 	content_spec_list m_allowed;
@@ -312,8 +309,6 @@ class element
 	{
 	}
 
-	~element();
-
 	const attribute_list &get_attributes() const { return m_attlist; }
 
 	void add_attribute(attribute *attr);
@@ -326,13 +321,13 @@ class element
 
 	bool empty() const;
 
-	void set_allowed(content_spec_base *allowed);
-	content_spec_base *get_allowed() const { return m_allowed; }
+	void set_allowed(content_spec_base_ptr allowed);
+	content_spec_base_ptr get_allowed() const { return m_allowed; }
 
   private:
 	std::string m_name;
 	attribute_list m_attlist;
-	content_spec_base *m_allowed;
+	content_spec_base_ptr m_allowed;
 	bool m_declared, m_external;
 };
 

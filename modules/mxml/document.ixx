@@ -188,7 +188,7 @@ struct doc_type
 	/// \brief Set the doctype to write out
 	void set_doctype(const std::string &root, const std::string &pubid, const std::string &dtd)
 	{
-		set_doctype(root, pubid, dtd);
+		set_doctype({ root, pubid, dtd });
 	}
 
 	/// Set the doctype to write out
@@ -237,8 +237,8 @@ struct doc_type
 	encoding_type get_encoding() const;   ///< The text encoding as detected in the input.
 	void set_encoding(encoding_type enc); ///< The text encoding to use for output
 
-	float get_version() const; ///< XML version, should be either 1.0 or 1.1
-	void set_version(float v); ///< XML version, should be either 1.0 or 1.1
+	version_type get_version() const; ///< XML version, should be either 1.0 or 1.1
+	void set_version(version_type v); ///< XML version, should be either 1.0 or 1.1
 
 	node *root() override { return this; }
 	const node *root() const override { return this; }
@@ -263,7 +263,7 @@ struct doc_type
 
 	node *insert_impl(const node *p, node *n) override;
 
-	void XmlDeclHandler(encoding_type encoding, bool standalone, float version);
+	void XmlDeclHandler(encoding_type encoding, bool standalone, version_type version);
 	void StartElementHandler(const std::string &name, const std::string &uri, const parser::attr_list_type &atts);
 	void EndElementHandler(const std::string &name, const std::string &uri);
 	void CharacterDataHandler(const std::string &data);
@@ -297,7 +297,7 @@ struct doc_type
 	bool m_preserve_cdata;
 	bool m_has_xml_decl;
 	encoding_type m_encoding;
-	float m_version;
+	version_type m_version;
 	bool m_standalone;
 	bool m_wrap_prolog = true;
 	bool m_write_doctype = false;

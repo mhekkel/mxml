@@ -47,10 +47,11 @@
 
 // import :error;
 // import :text;
+// import :version;
 
 #include "mxml/error.ixx"
 #include "mxml/text.ixx"
-
+#include "mxml/version.ixx"
 
 namespace mxml
 {
@@ -108,7 +109,7 @@ struct attr
 
 	virtual ~parser();
 
-	std::function<void(encoding_type encoding, bool standalone, float version)> xml_decl_handler;
+	std::function<void(encoding_type encoding, bool standalone, version_type version)> xml_decl_handler;
 	std::function<void(const std::string &name, const std::string &uri, const attr_list_type &atts)> start_element_handler;
 	std::function<void(const std::string &name, const std::string &uri)> end_element_handler;
 	std::function<void(const std::string &data)> character_data_handler;
@@ -128,7 +129,7 @@ struct attr
   protected:
 	friend struct parser_imp;
 
-	virtual void xml_decl(encoding_type encoding, bool standalone, float version);
+	virtual void xml_decl(encoding_type encoding, bool standalone, version_type version);
 
 	virtual void doctype_decl(const std::string &root, const std::string &publicId, const std::string &uri);
 

@@ -47,10 +47,7 @@ namespace mxml::doctype
 // a refcounted state base class
 struct state_base : std::enable_shared_from_this<state_base>
 {
-	state_base()
-		: m_ref_count(1)
-	{
-	}
+	state_base() = default;
 
 	virtual std::tuple<bool, bool> allow(const std::string &name) = 0;
 	virtual bool allow_char_data() { return false; }
@@ -59,18 +56,8 @@ struct state_base : std::enable_shared_from_this<state_base>
 
 	virtual void reset() {}
 
-	void reference() { ++m_ref_count; }
-	void release()
-	{
-		if (--m_ref_count == 0)
-			delete this;
-	}
-
   protected:
-	virtual ~state_base() { assert(m_ref_count == 0); }
-
-  private:
-	int m_ref_count;
+	virtual ~state_base() = default;
 };
 
 struct state_any : public state_base
@@ -115,15 +102,10 @@ struct state_element : public state_base
 
 struct state_repeated : public state_base
 {
-	state_repeated(content_spec_base * sub)
+	state_repeated(content_spec_base_ptr sub)
 		: m_sub(sub->create_state())
 		, m_state(0)
 	{
-	}
-
-	~state_repeated()
-	{
-		m_sub->release();
 	}
 
 	virtual void reset()
@@ -134,7 +116,7 @@ struct state_repeated : public state_base
 
 	virtual bool allow_char_data() { return m_sub->allow_char_data(); }
 
-	state_base * m_sub;
+	state_base_ptr m_sub;
 	int m_state;
 };
 
@@ -142,7 +124,7 @@ struct state_repeated : public state_base
 
 struct state_repeated_zero_or_once : public state_repeated
 {
-	state_repeated_zero_or_once(content_spec_base * sub)
+	state_repeated_zero_or_once(content_spec_base_ptr sub)
 		: state_repeated(sub)
 	{
 	}
@@ -157,23 +139,23 @@ std::tuple<bool, bool> state_repeated_zero_or_once::allow(const std::string &nam
 	// use a state machine
 	enum State
 	{
-		state_Start = 0,
-		state_Loop
+		Start = 0,
+		Loop
 	};
 
 	bool result = false, done = false;
 
 	switch (m_state)
 	{
-		case state_Start:
+		case State::Start:
 			std::tie(result, done) = m_sub->allow(name);
 			if (result == true)
-				m_state = state_Loop;
+				m_state = State::Loop;
 			else
 				done = true;
 			break;
 
-		case state_Loop:
+		case State::Loop:
 			std::tie(result, done) = m_sub->allow(name);
 			if (result == false and done)
 				done = true;
@@ -185,7 +167,7 @@ std::tuple<bool, bool> state_repeated_zero_or_once::allow(const std::string &nam
 
 struct state_repeated_any : public state_repeated
 {
-	state_repeated_any(content_spec_base * sub)
+	state_repeated_any(content_spec_base_ptr sub)
 		: state_repeated(sub)
 	{
 	}
@@ -200,23 +182,23 @@ std::tuple<bool, bool> state_repeated_any::allow(const std::string &name)
 	// use a state machine
 	enum State
 	{
-		state_Start = 0,
-		state_Loop
+		Start = 0,
+		Loop
 	};
 
 	bool result = false, done = false;
 
 	switch (m_state)
 	{
-		case state_Start:
+		case State::Start:
 			std::tie(result, done) = m_sub->allow(name);
 			if (result == true)
-				m_state = state_Loop;
+				m_state = State::Loop;
 			else
 				done = true;
 			break;
 
-		case state_Loop:
+		case State::Loop:
 			std::tie(result, done) = m_sub->allow(name);
 			if (result == false and done)
 			{
@@ -233,7 +215,7 @@ std::tuple<bool, bool> state_repeated_any::allow(const std::string &name)
 
 struct state_repeated_at_least_once : public state_repeated
 {
-	state_repeated_at_least_once(content_spec_base * sub)
+	state_repeated_at_least_once(content_spec_base_ptr sub)
 		: state_repeated(sub)
 	{
 	}
@@ -248,33 +230,33 @@ std::tuple<bool, bool> state_repeated_at_least_once::allow(const std::string &na
 	// use a state machine
 	enum State
 	{
-		state_Start = 0,
-		state_FirstLoop,
-		state_NextLoop
+		Start = 0,
+		FirstLoop,
+		NextLoop
 	};
 
 	bool result = false, done = false;
 
 	switch (m_state)
 	{
-		case state_Start:
+		case State::Start:
 			std::tie(result, done) = m_sub->allow(name);
 			if (result == true)
-				m_state = state_FirstLoop;
+				m_state = State::FirstLoop;
 			break;
 
-		case state_FirstLoop:
+		case State::FirstLoop:
 			std::tie(result, done) = m_sub->allow(name);
 			if (result == false and done)
 			{
 				m_sub->reset();
 				std::tie(result, done) = m_sub->allow(name);
 				if (result == true)
-					m_state = state_NextLoop;
+					m_state = State::NextLoop;
 			}
 			break;
 
-		case state_NextLoop:
+		case State::NextLoop:
 			std::tie(result, done) = m_sub->allow(name);
 			if (result == false and done)
 			{
@@ -296,14 +278,8 @@ struct state_seq : public state_base
 	state_seq(const content_spec_list &allowed)
 		: m_state(0)
 	{
-		for (content_spec_base * a : allowed)
-			m_states.push_back(a->create_state());
-	}
-
-	~state_seq()
-	{
-		for (state_base * s : m_states)
-			s->release();
+		for (auto a : allowed)
+			m_states.emplace_back(a->create_state());
 	}
 
 	virtual std::tuple<bool, bool>
@@ -320,7 +296,7 @@ struct state_seq : public state_base
 	virtual bool allow_char_data()
 	{
 		bool result = false;
-		for (state_base * s : m_states)
+		for (auto s : m_states)
 		{
 			if (s->allow_char_data())
 			{
@@ -334,8 +310,8 @@ struct state_seq : public state_base
 
 	virtual bool allow_empty();
 
-	std::list<state_base *> m_states;
-	std::list<state_base *>::iterator m_next;
+	std::vector<state_base_ptr> m_states;
+	std::vector<state_base_ptr>::iterator m_next;
 	int m_state;
 };
 
@@ -345,23 +321,23 @@ std::tuple<bool, bool> state_seq::allow(const std::string &name)
 
 	enum State
 	{
-		state_Start,
-		state_Element
+		Start,
+		Element
 	};
 
 	switch (m_state)
 	{
-		case state_Start:
+		case State::Start:
 			m_next = m_states.begin();
 			if (m_next == m_states.end())
 			{
 				done = true;
 				break;
 			}
-			m_state = state_Element;
+			m_state = State::Element;
 			// fall through
 
-		case state_Element:
+		case State::Element:
 			std::tie(result, done) = (*m_next)->allow(name);
 			while (result == false and done)
 			{
@@ -383,15 +359,15 @@ std::tuple<bool, bool> state_seq::allow(const std::string &name)
 
 bool state_seq::allow_empty()
 {
-	bool result;
+	bool result = true;
 
-	if (m_states.empty())
-		result = true;
-	else
+	for (auto s : m_states)
 	{
-		result = accumulate(m_states.begin(), m_states.end(), true,
-			[](bool flag, auto &state)
-			{ return state->allow_empty() and flag; });
+		if (not s->allow_empty())
+		{
+			result = false;
+			break;
+		}
 	}
 
 	return result;
@@ -405,14 +381,8 @@ struct state_choice : public state_base
 		: m_mixed(mixed)
 		, m_state(0)
 	{
-		for (content_spec_base * a : allowed)
+		for (auto a : allowed)
 			m_states.push_back(a->create_state());
-	}
-
-	~state_choice()
-	{
-		for (state_base * s : m_states)
-			s->release();
 	}
 
 	virtual std::tuple<bool, bool>
@@ -429,10 +399,10 @@ struct state_choice : public state_base
 
 	virtual bool allow_empty();
 
-	std::list<state_base *> m_states;
+	std::vector<state_base_ptr> m_states;
 	bool m_mixed;
 	int m_state;
-	state_base * m_sub;
+	state_base_ptr m_sub;
 };
 
 std::tuple<bool, bool> state_choice::allow(const std::string &name)
@@ -441,26 +411,26 @@ std::tuple<bool, bool> state_choice::allow(const std::string &name)
 
 	enum State
 	{
-		state_Start,
-		state_Choice
+		Start,
+		Choice
 	};
 
 	switch (m_state)
 	{
-		case state_Start:
-			for (auto choice = m_states.begin(); choice != m_states.end(); ++choice)
+		case State::Start:
+			for (auto choice : m_states)
 			{
-				std::tie(result, done) = (*choice)->allow(name);
+				std::tie(result, done) = choice->allow(name);
 				if (result == true)
 				{
-					m_sub = *choice;
-					m_state = state_Choice;
+					m_sub = choice;
+					m_state = State::Choice;
 					break;
 				}
 			}
 			break;
 
-		case state_Choice:
+		case State::Choice:
 			std::tie(result, done) = m_sub->allow(name);
 			break;
 	}
@@ -470,37 +440,34 @@ std::tuple<bool, bool> state_choice::allow(const std::string &name)
 
 bool state_choice::allow_empty()
 {
+	using namespace std::placeholders;
 	return m_mixed or
-	       std::find_if(m_states.begin(), m_states.end(), std::bind(&state_base::allow_empty, std::placeholders::_1)) != m_states.end();
+	       std::find_if(m_states.begin(), m_states.end(), std::bind(&state_base::allow_empty, _1)) != m_states.end();
 }
 
 // --------------------------------------------------------------------
 
-validator::validator(content_spec_base * allowed)
-	: m_state(allowed->create_state())
-	, m_allowed(allowed)
+validator::validator(content_spec_base &allowed)
+	: m_state(allowed.create_state())
+	, m_allowed(allowed.get_content_spec())
 	, m_done(m_state->allow_empty())
 {
 }
 
 validator::validator(const element *e)
-	: m_allowed(e ? e->get_allowed() : nullptr)
 {
-	if (m_allowed == nullptr)
+	if (auto allowed = e ? e->get_allowed() : nullptr; allowed != nullptr)
 	{
-		m_state = new state_any();
-		m_done = true;
+		m_allowed = allowed->get_content_spec();
+		m_state = allowed->create_state();
+		m_done = m_state->allow_empty();
 	}
 	else
 	{
-		m_state = m_allowed->create_state();
-		m_done = m_state->allow_empty();
+		m_allowed = content_spec_type::Any;
+		m_state = std::make_shared<state_any>();
+		m_done = true;
 	}
-}
-
-validator::~validator()
-{
-	m_state->release();
 }
 
 bool validator::allow(const std::string &name)
@@ -517,47 +484,42 @@ bool validator::done()
 
 content_spec_type validator::get_content_spec() const
 {
-	return m_allowed ? m_allowed->get_content_spec() : content_spec_type::Any;
+	return m_allowed;
 }
 
 // --------------------------------------------------------------------
 
-state_base * content_spec_any::create_state() const
+state_base_ptr content_spec_any::create_state() const
 {
-	return new state_any();
+	return std::make_shared<state_any>();
 }
 
 // --------------------------------------------------------------------
 
-state_base * content_spec_empty::create_state() const
+state_base_ptr content_spec_empty::create_state() const
 {
-	return new state_empty();
+	return std::make_shared<state_empty>();
 }
 
 // --------------------------------------------------------------------
 
-state_base * content_spec_element::create_state() const
+state_base_ptr content_spec_element::create_state() const
 {
-	return new state_element(m_name);
+	return std::make_shared<state_element>(m_name);
 }
 
 // --------------------------------------------------------------------
 
-content_spec_repeated::~content_spec_repeated()
-{
-	delete m_allowed;
-}
-
-state_base * content_spec_repeated::create_state() const
+state_base_ptr content_spec_repeated::create_state() const
 {
 	switch (m_repetition)
 	{
 		case '?':
-			return new state_repeated_zero_or_once(m_allowed);
+			return std::make_shared<state_repeated_zero_or_once>(m_allowed);
 		case '*':
-			return new state_repeated_any(m_allowed);
+			return std::make_shared<state_repeated_any>(m_allowed);
 		case '+':
-			return new state_repeated_at_least_once(m_allowed);
+			return std::make_shared<state_repeated_at_least_once>(m_allowed);
 		default:
 			assert(false);
 			throw exception("illegal repetition character");
@@ -571,26 +533,20 @@ bool content_spec_repeated::element_content() const
 
 // --------------------------------------------------------------------
 
-content_spec_seq::~content_spec_seq()
-{
-	for (content_spec_base * a : m_allowed)
-		delete a;
-}
-
-void content_spec_seq::add(content_spec_base * a)
+void content_spec_seq::add(content_spec_base_ptr a)
 {
 	m_allowed.push_back(a);
 }
 
-state_base * content_spec_seq::create_state() const
+state_base_ptr content_spec_seq::create_state() const
 {
-	return new state_seq(m_allowed);
+	return std::make_shared<state_seq>(m_allowed);
 }
 
 bool content_spec_seq::element_content() const
 {
 	bool result = true;
-	for (content_spec_base * a : m_allowed)
+	for (auto a : m_allowed)
 	{
 		if (not a->element_content())
 		{
@@ -603,20 +559,14 @@ bool content_spec_seq::element_content() const
 
 // --------------------------------------------------------------------
 
-content_spec_choice::~content_spec_choice()
-{
-	for (content_spec_base * a : m_allowed)
-		delete a;
-}
-
-void content_spec_choice::add(content_spec_base * a)
+void content_spec_choice::add(content_spec_base_ptr a)
 {
 	m_allowed.push_back(a);
 }
 
-state_base * content_spec_choice::create_state() const
+state_base_ptr content_spec_choice::create_state() const
 {
-	return new state_choice(m_allowed, m_mixed);
+	return std::make_shared<state_choice>(m_allowed, m_mixed);
 }
 
 bool content_spec_choice::element_content() const
@@ -626,7 +576,7 @@ bool content_spec_choice::element_content() const
 		result = false;
 	else
 	{
-		for (content_spec_base * a : m_allowed)
+		for (auto a : m_allowed)
 		{
 			if (not a->element_content())
 			{
@@ -787,7 +737,7 @@ bool attribute::validate_value(std::string &value, const entity_list &entities) 
 
 				if (j == std::string::npos)
 					break;
-				
+
 				i = j + 1;
 				j = value.find(' ', i);
 			}
@@ -825,20 +775,9 @@ bool attribute::is_unparsed_entity(const std::string &s, const entity_list &l) c
 
 // --------------------------------------------------------------------
 
-element::~element()
+void element::set_allowed(content_spec_base_ptr allowed)
 {
-	for (attribute *attr : m_attlist)
-		delete attr;
-	delete m_allowed;
-}
-
-void element::set_allowed(content_spec_base * allowed)
-{
-	if (allowed != m_allowed)
-	{
-		delete m_allowed;
-		m_allowed = allowed;
-	}
+	m_allowed = allowed;
 }
 
 void element::add_attribute(attribute *attrib)
@@ -862,14 +801,6 @@ const attribute *element::get_attribute(const std::string &name) const
 
 	return result;
 }
-
-// validator element::get_validator() const
-// {
-// 	// validator valid;
-// 	// if (m_allowed)
-// 	// 	valid = validator(m_allowed);
-// 	return { m_allowed };
-// }
 
 bool element::empty() const
 {

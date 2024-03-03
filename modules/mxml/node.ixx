@@ -46,7 +46,9 @@
 // /* /* export */ */ module mxml:node;
 
 // import :error;
+// import :version;
 #include "mxml/error.ixx"
+#include "mxml/version.ixx"
 
 namespace mxml
 {
@@ -100,7 +102,7 @@ struct format_info
 	bool html = false; ///< This flag can be used to collapse only 'empty elements'
 	std::size_t indent_width = 0;
 	std::size_t indent_level = 0;
-	float version = 1.0f;
+	version_type version{1, 0};
 };
 
 // --------------------------------------------------------------------

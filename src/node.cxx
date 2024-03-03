@@ -54,7 +54,7 @@ const std::set<std::string> kEmptyHTMLElements{
 
 // --------------------------------------------------------------------
 
-void write_string(std::ostream &os, const std::string &s, bool escape_whitespace, bool escape_quot, bool trim, float version)
+void write_string(std::ostream &os, const std::string &s, bool escape_whitespace, bool escape_quot, bool trim, version_type version)
 {
 	bool last_is_space = false;
 
@@ -116,7 +116,7 @@ void write_string(std::ostream &os, const std::string &s, bool escape_whitespace
 				break;
 			case 0: throw exception("Invalid null character in XML content");
 			default:
-				if (c >= 0x0A0 or (version == 1.0 ? is_valid_xml_1_0_char(c) : is_valid_xml_1_1_char(c)))
+				if (c >= 0x0A0 or (version == version_type{ 1, 0 } ? is_valid_xml_1_0_char(c) : is_valid_xml_1_1_char(c)))
 					for (auto ci = sb; ci < sp; ++ci)
 						os << *ci;
 				else

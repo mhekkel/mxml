@@ -54,7 +54,7 @@ namespace mxml
 std::string to_hex(uint32_t i)
 {
 	char s[sizeof(i) * 2 + 3];
-	char* p = s + sizeof(s);
+	char *p = s + sizeof(s);
 	*--p = 0;
 
 	const char kHexChars[] = "0123456789abcdef";
@@ -74,7 +74,7 @@ std::string to_hex(uint32_t i)
 /// \brief our own implementation of iequals: compares \a a with \a b case-insensitive
 ///
 /// This is a limited use function, works only reliably with ASCII. But that's OK.
-bool iequals(const std::string& a, const std::string& b)
+bool iequals(const std::string &a, const std::string &b)
 {
 	bool equal = a.length() == b.length();
 
@@ -163,7 +163,7 @@ class data_source
 	virtual void encoding(encoding_type enc) { m_encoding = enc; }
 	virtual bool has_bom() { return false; }
 
-	void version(float v) { m_version = v; }
+	void version(version_type v) { m_version = v; }
 
 	int id() const { return m_id; }
 
@@ -173,7 +173,7 @@ class data_source
   protected:
 	std::string m_base;
 	encoding_type m_encoding;
-	float m_version = 1.0f;
+	version_type m_version{ 1, 0 };
 	int m_id;      // for nesting checks
 	int m_line_nr; // for reporting errors
 };
@@ -452,16 +452,16 @@ char32_t istream_data_source::get_next_char()
 	if (ch == '\r')
 	{
 		ch = (this->*m_next)();
-		if (ch != '\n' and (m_version == 1.0 or ch != 0x85 or m_encoding == encoding_type::ASCII))
+		if (ch != '\n' and (m_version == version_type{ 1, 0 } or ch != 0x85 or m_encoding == encoding_type::ASCII))
 			m_char_buffer = ch;
 		ch = '\n';
 	}
 
 	if (m_encoding != encoding_type::ASCII)
 	{
-		if (m_version > 1.0 and ch == 0x85)
+		if (m_version > version_type{ 1, 0 } and ch == 0x85)
 			ch = '\n';
-		else if (m_encoding != encoding_type::ISO88591 and m_version > 1.0 and ch == 0x2028)
+		else if (m_encoding != encoding_type::ISO88591 and m_version > version_type{ 1, 0 } and ch == 0x2028)
 			ch = '\n';
 	}
 
@@ -583,7 +583,7 @@ struct parser_imp
 	void markup_decl();
 	void element_decl();
 	void contentspec(doctype::element &element);
-	doctype::content_spec_base * cp();
+	doctype::content_spec_base_ptr cp();
 	void attlist_decl();
 	void notation_decl();
 	void entity_decl();
@@ -735,7 +735,7 @@ struct parser_imp
 	void match(XMLToken token);
 
 	// utility routine
-	float parse_version();
+	version_type parse_version();
 
 	// error handling routines
 	void not_well_formed(const std::string &msg) const;
@@ -906,7 +906,7 @@ struct parser_imp
 
 	bool is_char(char32_t uc)
 	{
-		return m_version == 1.0 ? is_valid_xml_1_0_char(uc) : is_valid_xml_1_1_char(uc);
+		return m_version == version_type{ 1, 0 } ? is_valid_xml_1_0_char(uc) : is_valid_xml_1_1_char(uc);
 	}
 
 	bool is_space(char32_t uc)
@@ -921,15 +921,15 @@ struct parser_imp
 
 	bool is_referrable_char(char32_t charref)
 	{
-		return m_version == 1.0 ? charref == 0x09 or
-		                              charref == 0x0A or
-		                              charref == 0x0D or
-		                              (charref > 0x01F and charref < 0x0D800) or
-		                              (charref > 0x0DFFF and charref < 0x0FFFE) or
-		                              (charref > 0x0FFFF and charref < 0x00110000)
-		                        :
+		return m_version == version_type{ 1, 0 } ? charref == 0x09 or
+		                                               charref == 0x0A or
+		                                               charref == 0x0D or
+		                                               (charref > 0x01F and charref < 0x0D800) or
+		                                               (charref > 0x0DFFF and charref < 0x0FFFE) or
+		                                               (charref > 0x0FFFF and charref < 0x00110000)
+		                                         :
 
-		                        // 1.1
+		                                         // 1.1
 		           (charref > 0x0 and charref < 0x0D800) or
 		               (charref > 0x0DFFF and charref < 0x0FFFE) or
 		               (charref > 0x0FFFF and charref < 0x00110000);
@@ -948,7 +948,7 @@ struct parser_imp
 	std::array<char32_t, 4> m_buffer;
 	std::array<char32_t, 4>::iterator m_buffer_ptr = m_buffer.begin();
 
-	float m_version = 1.0f;
+	version_type m_version{ 1, 0 };
 	encoding_type m_encoding = encoding_type::UTF8;
 	bool m_standalone;
 
@@ -1724,33 +1724,33 @@ parser_imp::XMLToken parser_imp::get_next_content()
 	return token;
 }
 
-float parser_imp::parse_version()
+version_type parser_imp::parse_version()
 {
-	float result = -1;
+	version_type result{ 0, 0 };
 
-	if (m_token.length() >= 3)
+	enum { major, minor } state = major;
+
+	for (char ch : m_token)
 	{
-		auto i = m_token.begin();
-		if (*i == '1' and *(i + 1) == '.')
+		if (state == major)
 		{
-			result = 1.0f;
-			float dec = 10;
-
-			for (i += 2; i != m_token.end(); ++i)
-			{
-				if (*i < '0' or *i > '9')
-				{
-					result = -1;
-					break;
-				}
-
-				result += (*i - '0') / dec;
-				dec += 10;
-			}
+			if (ch >= '0' and ch <= '9')
+				result.major = result.major * 10 + (ch - '0');
+			else if (ch == '.')
+				state = minor;
+			else
+				not_well_formed("Invalid XML version string");
+		}
+		else
+		{
+			if (ch >= '0' and ch <= '9')
+				result.minor = result.minor * 10 + (ch - '0');
+			else
+				not_well_formed("Invalid XML version string");
 		}
 	}
 
-	if (result < 1.0 or result >= 2.0)
+	if (result < version_type{ 1, 0 } or result >= version_type{ 2, 0 })
 		not_well_formed("Invalid version specified: '" + m_token + "'");
 
 	return result;
@@ -1773,14 +1773,14 @@ void parser_imp::parse(bool validate, bool validate_ns)
 	if (e)
 	{
 		doctype::content_spec_element allowed(m_root_element);
-		doctype::validator valid(&allowed);
+		doctype::validator valid(allowed);
 
 		element(valid);
 	}
 	else
 	{
 		doctype::content_spec_any allowed;
-		doctype::validator valid(&allowed);
+		doctype::validator valid(allowed);
 
 		element(valid);
 	}
@@ -1842,7 +1842,7 @@ void parser_imp::xml_decl()
 
 		m_version = version;
 
-		if (m_version >= 2.0f or m_version < 1.0f)
+		if (m_version >= version_type{ 2, 0 } or m_version < version_type{ 1, 0 })
 			not_well_formed("This library only supports XML version 1.0 or 1.1");
 
 		m_source.top()->version(version);
@@ -1922,12 +1922,12 @@ void parser_imp::text_decl()
 				not_well_formed("Version mismatch between document and external entity");
 
 			match(XMLToken::String);
-			s(m_version == 1.0);
+			s(m_version == version_type{ 1, 0 });
 		}
 
 		if (m_token != "encoding")
 		{
-			if (m_version == 1.0)
+			if (m_version == version_type{ 1, 0 })
 				not_well_formed("encoding attribute is mandatory in text declaration");
 		}
 		else
@@ -2387,9 +2387,9 @@ void parser_imp::contentspec(doctype::element &element)
 	if (m_lookahead == XMLToken::Name)
 	{
 		if (m_token == "EMPTY")
-			element.set_allowed(new doctype::content_spec_empty);
+			element.set_allowed(std::make_shared<doctype::content_spec_empty>());
 		else if (m_token == "ANY")
-			element.set_allowed(new doctype::content_spec_any);
+			element.set_allowed(std::make_shared<doctype::content_spec_any>());
 		else
 			not_well_formed("Invalid element content specification");
 		match(XMLToken::Name);
@@ -2400,7 +2400,7 @@ void parser_imp::contentspec(doctype::element &element)
 
 		match(XMLToken::OpenParenthesis);
 
-		std::unique_ptr<doctype::content_spec_base> allowed;
+		doctype::content_spec_base_ptr allowed;
 
 		s();
 
@@ -2431,21 +2431,21 @@ void parser_imp::contentspec(doctype::element &element)
 				s();
 			}
 
-			doctype::content_spec_choice *choice = new doctype::content_spec_choice(true);
+			auto choice = std::make_shared<doctype::content_spec_choice>(true);
 			for (auto &c : seen)
-				choice->add(new doctype::content_spec_element(c));
-			allowed.reset(choice);
+				choice->add(std::make_shared<doctype::content_spec_element>(c));
+			allowed = choice;
 		}
 		else // children
 		{
-			allowed.reset(cp());
+			allowed = cp();
 
 			s();
 
 			if (m_lookahead == XMLToken::Comma)
 			{
-				doctype::content_spec_seq *seq = new doctype::content_spec_seq(allowed.release());
-				allowed.reset(seq);
+				auto seq = std::make_shared<doctype::content_spec_seq>(allowed);
+				allowed = seq;
 
 				more = true;
 				do
@@ -2458,8 +2458,8 @@ void parser_imp::contentspec(doctype::element &element)
 			}
 			else if (m_lookahead == XMLToken::Pipe)
 			{
-				doctype::content_spec_choice *choice = new doctype::content_spec_choice(allowed.release(), false);
-				allowed.reset(choice);
+				auto choice = std::make_shared<doctype::content_spec_choice>(allowed, false);
+				allowed = choice;
 
 				more = true;
 				do
@@ -2480,35 +2480,35 @@ void parser_imp::contentspec(doctype::element &element)
 
 		if (m_lookahead == XMLToken::Asterisk)
 		{
-			allowed.reset(new doctype::content_spec_repeated(allowed.release(), '*'));
+			allowed = std::make_shared<doctype::content_spec_repeated>(allowed, '*');
 			match(XMLToken::Asterisk);
 		}
 		else if (more)
 		{
 			if (mixed)
 			{
-				allowed.reset(new doctype::content_spec_repeated(allowed.release(), '*'));
+				allowed = std::make_shared<doctype::content_spec_repeated>(allowed, '*');
 				match(XMLToken::Asterisk);
 			}
 			else if (m_lookahead == XMLToken::Plus)
 			{
-				allowed.reset(new doctype::content_spec_repeated(allowed.release(), '+'));
+				allowed = std::make_shared<doctype::content_spec_repeated>(allowed, '+');
 				match(XMLToken::Plus);
 			}
 			else if (m_lookahead == XMLToken::QuestionMark)
 			{
-				allowed.reset(new doctype::content_spec_repeated(allowed.release(), '?'));
+				allowed = std::make_shared<doctype::content_spec_repeated>(allowed, '?');
 				match(XMLToken::QuestionMark);
 			}
 		}
 
-		element.set_allowed(allowed.release());
+		element.set_allowed(allowed);
 	}
 }
 
-doctype::content_spec_base * parser_imp::cp()
+doctype::content_spec_base_ptr parser_imp::cp()
 {
-	std::unique_ptr<doctype::content_spec_base> result;
+	doctype::content_spec_base_ptr result;
 
 	if (m_lookahead == XMLToken::OpenParenthesis)
 	{
@@ -2517,12 +2517,12 @@ doctype::content_spec_base * parser_imp::cp()
 		match(XMLToken::OpenParenthesis);
 
 		s();
-		result.reset(cp());
+		result = cp();
 		s();
 		if (m_lookahead == XMLToken::Comma)
 		{
-			doctype::content_spec_seq *seq = new doctype::content_spec_seq(result.release());
-			result.reset(seq);
+			auto seq = std::make_shared<doctype::content_spec_seq>(result);
+			result = seq;
 
 			do
 			{
@@ -2534,8 +2534,8 @@ doctype::content_spec_base * parser_imp::cp()
 		}
 		else if (m_lookahead == XMLToken::Pipe)
 		{
-			doctype::content_spec_choice *choice = new doctype::content_spec_choice(result.release(), false);
-			result.reset(choice);
+			auto choice = std::make_shared<doctype::content_spec_choice>(result, false);
+			result = choice;
 
 			do
 			{
@@ -2561,21 +2561,21 @@ doctype::content_spec_base * parser_imp::cp()
 	switch (m_lookahead)
 	{
 		case XMLToken::Asterisk:
-			result.reset(new doctype::content_spec_repeated(result.release(), '*'));
+			result = std::make_shared<doctype::content_spec_repeated>(result, '*');
 			match(XMLToken::Asterisk);
 			break;
 		case XMLToken::Plus:
-			result.reset(new doctype::content_spec_repeated(result.release(), '+'));
+			result = std::make_shared<doctype::content_spec_repeated>(result, '+');
 			match(XMLToken::Plus);
 			break;
 		case XMLToken::QuestionMark:
-			result.reset(new doctype::content_spec_repeated(result.release(), '?'));
+			result = std::make_shared<doctype::content_spec_repeated>(result, '?');
 			match(XMLToken::QuestionMark);
 			break;
 		default:;
 	}
 
-	return result.release();
+	return result;
 }
 
 void parser_imp::entity_decl()
@@ -3620,10 +3620,10 @@ void parser_imp::element(doctype::validator &valid)
 		// had a crash suddenly here deep down in starts_with...
 		if (attr_name == "xmlns" or attr_name.starts_with("xmlns:")) // namespace support
 		{
-			if (not((m_version > 1.0f and attr_value.empty()) or is_valid_url(attr_value)))
+			if (not((m_version > version_type{ 1, 0 } and attr_value.empty()) or is_valid_url(attr_value)))
 				not_well_formed("Not a valid namespace URI: " + attr_value);
 
-			if (not(m_version > 1.0f and attr_value.empty()) and ns.is_known_uri(attr_value))
+			if (not(m_version > version_type{ 1, 0 } and attr_value.empty()) and ns.is_known_uri(attr_value))
 				not_well_formed("This uri is repeated: " + attr_value);
 
 			if (attr_value == "http://www.w3.org/XML/1998/namespace" or attr_value == "http://www.w3.org/2000/xmlns/")
@@ -3643,7 +3643,7 @@ void parser_imp::element(doctype::validator &valid)
 				if (iequals(prefix, "xml") or iequals(prefix, "xmlns"))
 					not_well_formed(prefix + " is a preserved prefix");
 
-				if (m_version > 1.0f and attr_value.empty())
+				if (m_version > version_type{ 1, 0 } and attr_value.empty())
 					ns.unbind(prefix);
 				else
 				{
@@ -4151,7 +4151,7 @@ void parser::parse(bool validate, bool validate_ns)
 	m_impl->parse(validate, validate_ns);
 }
 
-void parser::xml_decl(encoding_type encoding, bool standalone, float version)
+void parser::xml_decl(encoding_type encoding, bool standalone, version_type version)
 {
 	if (xml_decl_handler)
 		xml_decl_handler(encoding, standalone, version);

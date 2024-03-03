@@ -52,7 +52,7 @@ document::document()
 	, m_preserve_cdata(false)
 	, m_has_xml_decl(false)
 	, m_encoding(encoding_type::UTF8)
-	, m_version(1.0f)
+	, m_version({1, 0})
 	, m_standalone(false)
 {
 }
@@ -137,12 +137,12 @@ void document::set_encoding(encoding_type enc)
 	m_encoding = enc;
 }
 
-float document::get_version() const
+version_type document::get_version() const
 {
 	return m_version;
 }
 
-void document::set_version(float v)
+void document::set_version(version_type v)
 {
 	m_version = v;
 }
@@ -187,11 +187,11 @@ std::istream &operator>>(std::istream &is, document &doc)
 
 void document::write(std::ostream &os, format_info fmt) const
 {
-	if (m_version > 1.0f or m_write_xml_decl)
+	if (m_version > version_type{ 1, 0 } or m_write_xml_decl)
 	{
 		assert(m_encoding == encoding_type::UTF8);
 
-		os << "<?xml version=\"" << std::fixed << std::setprecision(1) << m_version << "\"";
+		os << "<?xml version=\"" << int(m_version.major) << '.' << int(m_version.minor) << "\"";
 
 		// os << " encoding=\"UTF-8\"";
 
@@ -257,7 +257,7 @@ node *document::insert_impl(const node *p, node *n)
 
 // --------------------------------------------------------------------
 
-void document::XmlDeclHandler(encoding_type /*encoding*/, bool standalone, float version)
+void document::XmlDeclHandler(encoding_type /*encoding*/, bool standalone, version_type version)
 {
 	m_has_xml_decl = true;
 	// m_encoding = encoding;

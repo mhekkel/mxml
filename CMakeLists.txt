@@ -29,6 +29,7 @@ target_sources(mxml
 	modules/mxml/parser.ixx
 	modules/mxml/serialize.ixx
 	modules/mxml/text.ixx
+	modules/mxml/version.ixx
 	modules/mxml/xpath.ixx
 
 
