@@ -48,15 +48,12 @@
 // import :node;
 // import :parser;
 // import :text;
-// import :serialize;
 
 #include "mxml/doctype.ixx"
 #include "mxml/error.ixx"
 #include "mxml/node.ixx"
 #include "mxml/parser.ixx"
 #include "mxml/text.ixx"
-#include "mxml/serialize.ixx"
-
 
 namespace mxml
 {
@@ -119,10 +116,10 @@ struct doc_type
 		return *this;
 	}
 
-	/// \brief Constructor that will parse the XML passed in argument using default settings \a s
+	/// \brief Constructor that will parse the XML passed in argument \a s using default settings
 	document(std::string_view s);
 
-	/// \brief Constructor that will parse the XML passed in argument using default settings \a is
+	/// \brief Constructor that will parse the XML passed in argument \a is using default settings
 	document(std::istream &is);
 
 	/// \brief Constructor that will parse the XML passed in argument \a is. This
@@ -222,14 +219,6 @@ struct doc_type
 	/// \brief Read in a document
 	friend std::istream &operator>>(std::istream &is, document &doc);
 
-	/// \brief Serialization support
-	template <typename T>
-	void serialize(const char *name, const T &data); ///< Serialize \a data into a document containing \a name as root node
-
-	/// \brief Serialization support
-	template <typename T>
-	void deserialize(const char *name, T &data); ///< Deserialize root node with name \a name into \a data.
-
 	/// Compare two xml documents
 	bool operator==(const document &doc) const;
 
@@ -290,12 +279,6 @@ struct doc_type
 	std::istream *external_entity_ref(const std::string &base, const std::string &pubid, const std::string &sysid);
 	void parse(std::istream &data);
 
-	// /// \brief To read a document and process elements on the go, use this streaming input function.
-	// /// If the \a proc callback retuns false, processing is terminated. The \a doc_root parameter of
-	// /// the callback is the leading xml up to the first element.
-	// void process_document_elements(std::istream& data, const std::string& element_xpath,
-	// 							std::function<bool(node* doc_root, element* e)> cb);
-
 	/// The default for libzeep is to locate the external reference based
 	/// on sysid and base_dir. Only local files are loaded this way.
 	/// You can specify a entity loader here if you want to be able to load
@@ -339,26 +322,6 @@ struct doc_type
 /* export */ namespace literals
 {
 	document operator""_xml(const char *text, size_t length);
-}
-
-template <typename T>
-void document::serialize(const char *name, const T &data)
-{
-	serializer sr(*this);
-	sr.serialize_element(name, data);
-}
-
-template <typename T>
-void document::deserialize(const char *name, T &data)
-{
-	if (child() == nullptr)
-		throw exception("empty document");
-
-	if (child()->name() != name)
-		throw exception("root mismatch");
-
-	deserializer sr(*this);
-	sr.deserialize_element(name, data);
 }
 
 } // namespace mxml

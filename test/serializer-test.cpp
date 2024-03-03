@@ -130,7 +130,7 @@ TEST_CASE("test_s_1")
 	st_1 s1{ 1, "aap" };
 
 	document doc;
-	doc.serialize("s1", s1);
+	to_xml(doc, "s1", s1);
 	CHECK((std::ostringstream() << doc).str() == "<s1><i>1</i><s>aap</s></s1>");
 
 	doc.clear();
@@ -139,7 +139,7 @@ TEST_CASE("test_s_1")
 	CHECK((std::ostringstream() << doc).str() == "<s1><i>1</i><s>aap</s></s1>");
 
 	st_1 s2;
-	doc.deserialize("s1", s2);
+	from_xml(doc, "s1", s2);
 
 	CHECK(s1 == s2);
 }
@@ -190,10 +190,10 @@ TEST_CASE("test_serialize_arrays2")
 	};
 
 	document doc;
-	doc.serialize("test", sa);
+	to_xml(doc, "test", sa);
 
 	S_arr sa2;
-	doc.deserialize("test", sa2);
+	from_xml(doc, "test", sa2);
 
 	CHECK(sa.vi == sa2.vi);
 	CHECK(sa.ds == sa2.ds);
@@ -262,7 +262,7 @@ TEST_CASE("test_s_2")
 
 	document doc;
 	// cannot create more than one root element in a doc:
-	CHECK_THROWS_AS(doc.serialize("test", e), mxml::exception);
+	CHECK_THROWS_AS(to_xml(doc, "test", e), mxml::exception);
 
 	element test("test");
 	serializer sr(test);
@@ -280,7 +280,7 @@ TEST_CASE("test_s_2")
 	Se se{ E::aap };
 
 	document doc2;
-	doc2.serialize("s", se);
+	to_xml(doc2, "s", se);
 
 	CHECK((std::ostringstream() << doc2).str() == "<s><e>aap</e></s>");
 }
@@ -325,13 +325,13 @@ TEST_CASE("test_optional")
 
 	s.emplace("aap");
 	doc.clear();
-	doc.serialize("test", s);
+	to_xml(doc, "test", s);
 
 	CHECK(doc == "<test>aap</test>"_xml);
 
 	s.reset();
 
-	doc.deserialize("test", s);
+	from_xml(doc, "test", s);
 
 	CHECK((bool)s);
 	CHECK(*s == "aap");
