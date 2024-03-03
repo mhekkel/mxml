@@ -28,11 +28,9 @@
 #include <algorithm>
 #include <charconv>
 #include <functional>
-#include <iostream>
 #include <list>
 #include <map>
 #include <memory>
-#include <sstream>
 
 #include <cmath>
 
@@ -440,20 +438,6 @@ bool object::operator<(const object o)
 	return result;
 }
 
-std::ostream &operator<<(std::ostream &lhs, object &rhs)
-{
-	switch (rhs.type())
-	{
-		case object_type::undef: lhs << "undef()"; break;
-		case object_type::number: lhs << "number(" << rhs.as<double>() << ')'; break;
-		case object_type::string: lhs << "string(" << rhs.as<std::string>() << ')'; break;
-		case object_type::boolean: lhs << "boolean(" << (rhs.as<bool>() ? "true" : "false") << ')'; break;
-		case object_type::node_set: lhs << "node_set(#" << rhs.as<const node_set &>().size() << ')'; break;
-	}
-
-	return lhs;
-}
-
 // --------------------------------------------------------------------
 // visiting (or better, collecting) other nodes in the hierarchy is done here.
 
@@ -605,17 +589,23 @@ void iterate_namespaces(element_container *e, node_set &s, PREDICATE pred)
 // context for the expressions
 // Need to add support for external variables here.
 
-struct context_imp
+struct context_imp_base
+{
+	virtual ~context_imp_base() = default;
+	virtual const object &get(const std::string &name) const = 0;
+};
+
+struct context_imp : public context_imp_base
 {
 	context_imp() = default;
 	context_imp(const context_imp &) = default;
 
-	virtual const object &get(const std::string &name) const
+	const object &get(const std::string &name) const override
 	{
 		return m_variables.at(name);
 	}
 
-	virtual void set(const std::string &name, const object &value)
+	void set(const std::string &name, const object &value)
 	{
 		m_variables[name] = value;
 	}
@@ -623,9 +613,9 @@ struct context_imp
 	std::map<std::string, object> m_variables;
 };
 
-struct expression_context : public context_imp
+struct expression_context : public context_imp_base
 {
-	expression_context(const context_imp &next, const node *n, const node_set &s)
+	expression_context(const context_imp_base &next, const node *n, const node_set &s)
 		: m_next(next)
 		, m_node(const_cast<node *>(n))
 		, m_node_set(s)
@@ -637,16 +627,10 @@ struct expression_context : public context_imp
 		return m_next.get(name);
 	}
 
-	void set(const std::string &name, const object &value) override
-	{
-		assert(false);
-		// m_next.set(name, value);
-	}
-
 	size_t position() const;
 	size_t last() const;
 
-	const context_imp &m_next;
+	const context_imp_base &m_next;
 	node *m_node;
 	const node_set &m_node_set;
 };
@@ -1876,46 +1860,45 @@ void xpath_parser::retract()
 
 std::string xpath_parser::describe_token(Token token)
 {
-	std::stringstream result;
+	std::string result;
 	switch (token)
 	{
-		case Token::Undef: result << "undefined"; break;
-		case Token::Eof: result << "end of expression"; break;
-		case Token::LeftParenthesis: result << "left parenthesis"; break;
-		case Token::RightParenthesis: result << "right parenthesis"; break;
-		case Token::LeftBracket: result << "left bracket"; break;
-		case Token::RightBracket: result << "right bracket"; break;
-		case Token::Slash: result << "forward slash"; break;
-		case Token::DoubleSlash: result << "double forward slash"; break;
-		case Token::Comma: result << "comma"; break;
-		case Token::Name: result << "name"; break;
-		case Token::AxisSpec: result << "axis specification"; break;
-		case Token::FunctionName: result << "function name"; break;
-		case Token::NodeType: result << "node type specification"; break;
-		case Token::OperatorUnion: result << "union operator"; break;
-		case Token::OperatorAdd: result << "addition operator"; break;
-		case Token::OperatorSubstract: result << "subtraction operator"; break;
-		case Token::OperatorEqual: result << "equals operator"; break;
-		case Token::OperatorNotEqual: result << "not-equals operator"; break;
-		case Token::OperatorLess: result << "less operator"; break;
-		case Token::OperatorLessOrEqual: result << "less-or-equal operator"; break;
-		case Token::OperatorGreater: result << "greater operator"; break;
+		case Token::Undef: result = "undefined"; break;
+		case Token::Eof: result = "end of expression"; break;
+		case Token::LeftParenthesis: result = "left parenthesis"; break;
+		case Token::RightParenthesis: result = "right parenthesis"; break;
+		case Token::LeftBracket: result = "left bracket"; break;
+		case Token::RightBracket: result = "right bracket"; break;
+		case Token::Slash: result = "forward slash"; break;
+		case Token::DoubleSlash: result = "double forward slash"; break;
+		case Token::Comma: result = "comma"; break;
+		case Token::Name: result = "name"; break;
+		case Token::AxisSpec: result = "axis specification"; break;
+		case Token::FunctionName: result = "function name"; break;
+		case Token::NodeType: result = "node type specification"; break;
+		case Token::OperatorUnion: result = "union operator"; break;
+		case Token::OperatorAdd: result = "addition operator"; break;
+		case Token::OperatorSubstract: result = "subtraction operator"; break;
+		case Token::OperatorEqual: result = "equals operator"; break;
+		case Token::OperatorNotEqual: result = "not-equals operator"; break;
+		case Token::OperatorLess: result = "less operator"; break;
+		case Token::OperatorLessOrEqual: result = "less-or-equal operator"; break;
+		case Token::OperatorGreater: result = "greater operator"; break;
 		case Token::OperatorGreaterOrEqual:
-			result << "greater-or-equal operator";
+			result = "greater-or-equal operator";
 			break;
-		case Token::OperatorAnd: result << "logical-and operator"; break;
-		case Token::OperatorOr: result << "logical-or operator"; break;
-		case Token::OperatorMod: result << "modulus operator"; break;
-		case Token::OperatorDiv: result << "division operator"; break;
-		case Token::Literal: result << "literal"; break;
-		case Token::Number: result << "number"; break;
-		case Token::Variable: result << "variable"; break;
-		case Token::Asterisk: result << "asterisk (or multiply)"; break;
-		case Token::Colon: result << "colon"; break;
+		case Token::OperatorAnd: result = "logical-and operator"; break;
+		case Token::OperatorOr: result = "logical-or operator"; break;
+		case Token::OperatorMod: result = "modulus operator"; break;
+		case Token::OperatorDiv: result = "division operator"; break;
+		case Token::Literal: result = "literal"; break;
+		case Token::Number: result = "number"; break;
+		case Token::Variable: result = "variable"; break;
+		case Token::Asterisk: result = "asterisk (or multiply)"; break;
+		case Token::Colon: result = "colon"; break;
 	}
-
-	result << " {" << m_token_string << '}';
-	return result.str();
+	
+	return result + " {" + m_token_string + '}';
 }
 
 Token xpath_parser::get_next_token()
@@ -2217,9 +2200,7 @@ void xpath_parser::match(Token token)
 
 		std::string expected = describe_token(token);
 
-		std::stringstream s;
-		s << "syntax error in xpath, expected " << expected << " but found " << found;
-		throw exception(s.str());
+		throw exception("syntax error in xpath, expected " + expected + " but found " + found);
 	}
 }
 
