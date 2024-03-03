@@ -44,7 +44,6 @@
 #include <functional>
 #include <iomanip>
 #include <iostream>
-#include <list>
 #include <locale>
 #include <map>
 #include <memory>

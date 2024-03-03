@@ -8,7 +8,6 @@
 #include <filesystem>
 #include <fstream>
 #include <iterator>
-#include <list>
 #include <regex>
 #include <set>
 #include <string>

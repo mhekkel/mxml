@@ -28,7 +28,6 @@
 #include <algorithm>
 #include <charconv>
 #include <functional>
-#include <list>
 #include <map>
 #include <memory>
 
@@ -655,7 +654,7 @@ class expression
 };
 
 using expression_ptr = std::shared_ptr<expression>;
-using expression_list = std::list<expression_ptr>;
+using expression_list = std::vector<expression_ptr>;
 
 // --------------------------------------------------------------------
 

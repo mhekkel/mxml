@@ -32,7 +32,6 @@
 /// the core of the libzeep XML library defining the main classes in the DOM API
 
 #include <iostream>
-#include <list>
 #include <map>
 #include <memory>
 #include <set>
@@ -66,8 +65,8 @@ namespace mxml
 /* export */ class document;
 class element_container;
 
-using node_set = std::list<node *>;
-using element_set = std::list<element *>;
+using node_set = std::vector<node *>;
+using element_set = std::vector<element *>;
 
 template <typename T>
 concept NodeType = std::is_base_of_v<mxml::node, std::remove_cvref_t<T>>;

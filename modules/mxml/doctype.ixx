@@ -53,9 +53,14 @@ class attlist;
 class entity;
 class attribute;
 
-using entity_list = std::vector<entity *>;
-using element_list = std::vector<element *>;
-using attribute_list = std::vector<attribute *>;
+using entity_ptr = std::shared_ptr<entity>;
+using entity_list = std::vector<entity_ptr>;
+
+using element_ptr = std::shared_ptr<element>;
+using element_list = std::vector<element_ptr>;
+
+using attribute_ptr = std::shared_ptr<attribute>;
+using attribute_list = std::vector<attribute_ptr>;
 
 // --------------------------------------------------------------------
 
@@ -82,7 +87,7 @@ class validator
 {
   public:
 	validator(content_spec_base &allowed);
-	validator(const element *e);
+	validator(element_ptr e);
 
 	validator(const validator &other) = delete;
 	validator &operator=(const validator &other) = delete;
@@ -311,9 +316,9 @@ class element
 
 	const attribute_list &get_attributes() const { return m_attlist; }
 
-	void add_attribute(attribute *attr);
+	void add_attribute(attribute_ptr attr);
 
-	const attribute *get_attribute(const std::string &name) const;
+	const attribute_ptr get_attribute(const std::string &name) const;
 
 	const std::string &name() const { return m_name; }
 

@@ -33,7 +33,6 @@
 #include <charconv>
 #include <functional>
 #include <iostream>
-#include <list>
 #include <map>
 #include <memory>
 #include <sstream>
@@ -121,7 +120,7 @@ namespace mxml
 	 */
 
 	template <typename T>
-	std::list<T *> evaluate(const node &root, const context &ctxt = {}) const;
+	std::vector<T *> evaluate(const node &root, const context &ctxt = {}) const;
 
 	/**
 	 * @brief Returns true if the \a n node matches the XPath

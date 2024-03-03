@@ -33,7 +33,6 @@
 #include <algorithm>
 #include <array>
 #include <functional>
-#include <list>
 #include <map>
 #include <set>
 #include <sstream>
@@ -103,7 +102,7 @@ struct attr
 {
   public:
 	using attr_type = attr;
-	using attr_list_type = std::list<attr>;
+	using attr_list_type = std::vector<attr>;
 
 	parser(std::istream &is);
 

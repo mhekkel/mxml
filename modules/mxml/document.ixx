@@ -35,7 +35,6 @@
 #include <fstream>
 #include <functional>
 #include <iomanip>
-#include <list>
 #include <sstream>
 #include <tuple>
 
@@ -315,7 +314,7 @@ struct doc_type
 	element_container *m_cur = nullptr; // construction
 	cdata *m_cdata = nullptr; // only defined in a CDATA section
 	std::vector<std::pair<std::string, std::string>> m_namespaces;
-	std::list<notation> m_notations;
+	std::vector<notation> m_notations;
 	size_t m_root_size_at_first_notation = 0; // for processing instructions that occur before a notation
 };
 

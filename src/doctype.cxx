@@ -26,7 +26,6 @@
 
 // module;
 #include <functional>
-#include <list>
 #include <memory>
 #include <numeric>
 
@@ -454,7 +453,7 @@ validator::validator(content_spec_base &allowed)
 {
 }
 
-validator::validator(const element *e)
+validator::validator(element_ptr e)
 {
 	if (auto allowed = e ? e->get_allowed() : nullptr; allowed != nullptr)
 	{
@@ -780,24 +779,25 @@ void element::set_allowed(content_spec_base_ptr allowed)
 	m_allowed = allowed;
 }
 
-void element::add_attribute(attribute *attrib)
+void element::add_attribute(attribute_ptr attrib)
 {
-	std::unique_ptr<attribute> attr(attrib);
 	if (find_if(m_attlist.begin(), m_attlist.end(), [attrib](auto a)
 			{ return a->name() == attrib->name(); }) == m_attlist.end())
-		m_attlist.push_back(attr.release());
+		m_attlist.push_back(attrib);
 }
 
-const attribute *element::get_attribute(const std::string &name) const
+const attribute_ptr element::get_attribute(const std::string &name) const
 {
-	attribute_list::const_iterator dta =
-		find_if(m_attlist.begin(), m_attlist.end(), [name](auto a)
-			{ return a->name() == name; });
+	attribute_ptr result;
 
-	const attribute *result = nullptr;
-
-	if (dta != m_attlist.end())
-		result = *dta;
+	for (auto dta : m_attlist)
+	{
+		if (dta->name() == name)
+		{
+			result = dta;
+			break;
+		}
+	}
 
 	return result;
 }
