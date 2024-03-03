@@ -55,11 +55,25 @@ namespace mxml
 /// you can define a context, add your variables to it and then pass it on
 /// in the xpath::evaluate method.
 
-/* export */ class context
+/* export */ class context final
 {
   public:
 	context();
-	virtual ~context();
+	context(const context &ctxt)
+		: m_impl(ctxt.m_impl)
+	{
+	}
+
+	context(context &&ctxt)
+	{
+		std::swap(m_impl, ctxt.m_impl);
+	}
+
+	context &operator=(context ctxt)
+	{
+		std::swap(m_impl, ctxt.m_impl);
+		return *this;
+	}
 
 	void set(const std::string &name, const std::string &value);
 	void set(const std::string &name, double value);
@@ -69,51 +83,54 @@ namespace mxml
 	T get(const std::string &name);
 
   private:
-	context(const context &) = delete;
-	context &operator=(const context &) = delete;
-
 	friend class xpath;
 
-	struct context_imp *m_impl;
+	std::shared_ptr<struct context_imp> m_impl;
 };
 
 // --------------------------------------------------------------------
 /// The actual xpath implementation. It expects an xpath in the constructor and
 /// this path _must_ be UTF-8 encoded.
 
-/* export */ class xpath
+/* export */ class xpath final
 {
   public:
 	xpath(std::string_view path);
 
-	xpath(const xpath &rhs);
-	xpath(xpath &&rhs);
-	xpath &operator=(const xpath &);
-	xpath &operator=(xpath &&);
-
-	virtual ~xpath();
-
-	/// evaluate returns a node_set. If you're only interested in mxml::element
-	/// results, you should call the evaluate<element>() instantiation.
-	template <typename T>
-	std::list<T *> evaluate(const node &root) const
+	xpath(const xpath &rhs)
+		: m_impl(rhs.m_impl)
 	{
-		context ctxt;
-		return evaluate<T>(root, ctxt);
 	}
 
-	/// The second evaluate method is used for xpaths that contain variables.
+	xpath(xpath &&rhs) noexcept
+	{
+		std::swap(m_impl, rhs.m_impl);
+	}
+
+	xpath &operator=(xpath xp)
+	{
+		std::swap(m_impl, xp.m_impl);
+		return *this;
+	}
+
+	/**
+	 * @brief Evaluate an XPath and return a node_set. If you're only interested
+	 * in mxml::element results, you should call the evaluate<element>()
+	 * instantiation.
+	 * Use @a ctxt to provide values for variables.
+	 */
+
 	template <typename T>
-	std::list<T *> evaluate(const node &root, context &ctxt) const;
+	std::list<T *> evaluate(const node &root, const context &ctxt = {}) const;
 
-	/// Returns true if the \a n node matches the XPath
-	bool matches(const node *n) const;
-
-	/// debug routine, dumps the parse tree to stdout
-	void dump();
+	/**
+	 * @brief Returns true if the \a n node matches the XPath
+	 * Use @a ctxt to provide values for variables.
+	 */
+	bool matches(const node *n, const context &ctxt = {}) const;
 
   private:
-	struct xpath_imp *m_impl;
+	std::shared_ptr<class expression> m_impl;
 };
 
 } // namespace mxml

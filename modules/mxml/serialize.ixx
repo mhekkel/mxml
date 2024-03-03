@@ -39,6 +39,8 @@
 #include <string>
 #include <system_error>
 
+#include <experimental/type_traits>
+
 // /* export */ module mxml:serialize;
 
 // import :node;

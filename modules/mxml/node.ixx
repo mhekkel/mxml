@@ -129,7 +129,7 @@ class node
   public:
 	virtual ~node();
 
-	virtual node_type type() const = 0;
+	virtual constexpr node_type type() const = 0;
 
 	/// content of a xml:lang attribute of this element, or its nearest ancestor
 	virtual std::string lang() const;
@@ -217,16 +217,10 @@ class node
 	{
 		if (a.m_next == &a)	// a empty?
 		{
-			if (b.m_next == &b)	// b empty?
-			{
-				a.init();
-				b.init();
-			}
-			else
+			if (b.m_next != &b)	// b empty?
 			{
 				a.m_next = b.m_next;
 				a.m_prev = b.m_prev;
-				a.m_next->m_prev = a.m_prev->m_next = &a;
 				b.init();
 			}
 		}
@@ -234,16 +228,16 @@ class node
 		{
 			b.m_next = a.m_next;
 			b.m_prev = a.m_prev;
-			b.m_next->m_prev = b.m_prev->m_next = &b;
 			a.init();
 		}
 		else
 		{
 			std::swap(a.m_next, b.m_next);
 			std::swap(a.m_prev, b.m_prev);
-			a.m_next->m_prev = a.m_prev->m_next = &a;
-			b.m_next->m_prev = b.m_prev->m_next = &b;	
 		}
+
+		a.m_next->m_prev = a.m_prev->m_next = &a;
+		b.m_next->m_prev = b.m_prev->m_next = &b;	
 	}
 
   protected:
@@ -265,7 +259,7 @@ class basic_node_list
   protected:
 	struct node_list_header : public node
 	{
-		node_type type() const override { return node_type::header; }
+		constexpr node_type type() const override { return node_type::header; }
 
 		void write(std::ostream &os, format_info fmt) const override {}
 		std::string str() const override { return {}; }
@@ -486,7 +480,7 @@ class node_list : public basic_node_list
 
 	node_list(const node_list &nl) = delete;
 
-	node_list(node_list &&nl)
+	node_list(node_list &&nl) noexcept
 	{
 		swap(*this, nl);
 	}
@@ -688,7 +682,7 @@ class node_list : public basic_node_list
 class element_container : public node, public node_list<element>
 {
   public:
-	node_type type() const override { return node_type::element_container; }
+	constexpr node_type type() const override { return node_type::element_container; }
 
 	element_container()
 		: node_list<element>(this)
@@ -813,7 +807,7 @@ class node_with_text : public node
 class comment final : public node_with_text
 {
   public:
-	node_type type() const override { return node_type::comment; }
+	constexpr node_type type() const override { return node_type::comment; }
 
 	comment() = default;
 
@@ -853,7 +847,7 @@ class comment final : public node_with_text
 class processing_instruction final : public node_with_text
 {
   public:
-	node_type type() const override { return node_type::processing_instruction; }
+	constexpr node_type type() const override { return node_type::processing_instruction; }
 
 	processing_instruction() = default;
 
@@ -919,7 +913,7 @@ class processing_instruction final : public node_with_text
 class text final : public node_with_text
 {
   public:
-	node_type type() const override { return node_type::text; }
+	constexpr node_type type() const override { return node_type::text; }
 
 	text() {}
 
@@ -964,7 +958,7 @@ class text final : public node_with_text
 class cdata final : public node_with_text
 {
   public:
-	node_type type() const override { return node_type::cdata; }
+	constexpr node_type type() const override { return node_type::cdata; }
 
 	cdata() = default;
 
@@ -1007,7 +1001,7 @@ class cdata final : public node_with_text
 class attribute final : public node
 {
   public:
-	node_type type() const override { return node_type::attribute; }
+	constexpr node_type type() const override { return node_type::attribute; }
 
 	attribute(const attribute &attr)
 		: m_qname(attr.m_qname)
@@ -1213,7 +1207,7 @@ class attribute_set : public node_list<attribute>
 class element final : public element_container
 {
   public:
-	node_type type() const override { return node_type::element; }
+	constexpr node_type type() const override { return node_type::element; }
 
 	element()
 		: m_attributes(this)

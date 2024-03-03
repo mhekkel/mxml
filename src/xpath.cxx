@@ -220,6 +220,7 @@ class object
 	object(bool b);
 	object(double n);
 	object(const std::string &s);
+	object(std::string_view s);
 	object(const object &o);
 	object &operator=(const object &o);
 
@@ -268,6 +269,12 @@ object::object(double n)
 }
 
 object::object(const std::string &s)
+	: m_type(object_type::string)
+	, m_string(s)
+{
+}
+
+object::object(std::string_view s)
 	: m_type(object_type::string)
 	, m_string(s)
 {
@@ -600,11 +607,12 @@ void iterate_namespaces(element_container *e, node_set &s, PREDICATE pred)
 
 struct context_imp
 {
-	virtual ~context_imp() {}
+	context_imp() = default;
+	context_imp(const context_imp &) = default;
 
-	virtual object &get(const std::string &name)
+	virtual const object &get(const std::string &name) const
 	{
-		return m_variables[name];
+		return m_variables.at(name);
 	}
 
 	virtual void set(const std::string &name, const object &value)
@@ -617,29 +625,28 @@ struct context_imp
 
 struct expression_context : public context_imp
 {
-	expression_context(context_imp &next, node *n, const node_set &s)
+	expression_context(const context_imp &next, const node *n, const node_set &s)
 		: m_next(next)
-		, m_node(n)
+		, m_node(const_cast<node *>(n))
 		, m_node_set(s)
 	{
 	}
 
-	virtual object &get(const std::string &name)
+	const object &get(const std::string &name) const override
 	{
 		return m_next.get(name);
 	}
 
-	virtual void set(const std::string &name, const object &value)
+	void set(const std::string &name, const object &value) override
 	{
-		m_next.set(name, value);
+		assert(false);
+		// m_next.set(name, value);
 	}
-
-	void dump();
 
 	size_t position() const;
 	size_t last() const;
 
-	context_imp &m_next;
+	const context_imp &m_next;
 	node *m_node;
 	const node_set &m_node_set;
 };
@@ -665,26 +672,6 @@ size_t expression_context::last() const
 	return m_node_set.size();
 }
 
-void expression_context::dump()
-{
-	// std::cout << "context node: " << *m_node << '\n'
-	// 	 << "context node-set: ";
-	// copy(m_node_set.begin(), m_node_set.end(), std::ostream_iterator<node*>(std::cout, ", "));
-	// std::cout << '\n';
-}
-
-std::ostream &operator<<(std::ostream &lhs, expression_context &rhs)
-{
-	rhs.dump();
-	return lhs;
-}
-
-void indent(int level)
-{
-	while (level-- > 0)
-		std::cout << ' ';
-}
-
 // --------------------------------------------------------------------
 
 class expression
@@ -692,19 +679,10 @@ class expression
   public:
 	virtual ~expression() {}
 	virtual object evaluate(expression_context &context) = 0;
-
-	// 					// print exists only for debugging purposes
-	// virtual void		print(int level) = 0;
 };
 
-typedef std::shared_ptr<expression> expression_ptr;
-typedef std::list<expression_ptr> expression_list;
-
-// needed for CLang/libc++ on FreeBSD 10
-expression *get_pointer(std::shared_ptr<expression> const &p)
-{
-	return p.get();
-}
+using expression_ptr = std::shared_ptr<expression>;
+using expression_list = std::list<expression_ptr>;
 
 // --------------------------------------------------------------------
 
@@ -808,16 +786,14 @@ object step_expression::evaluate(expression_context &context, T pred, bool eleme
 class name_test_step_expression : public step_expression
 {
   public:
-	name_test_step_expression(AxisType axis, const std::string &name)
+	name_test_step_expression(AxisType axis, std::string_view name)
 		: step_expression(axis)
 		, m_name(name)
 	{
 		m_test = std::bind(&name_test_step_expression::name_matches, this, std::placeholders::_1);
 	}
 
-	virtual object evaluate(expression_context &context);
-
-	// virtual void		print(int level) { indent(level); std::cout << "name test step " << m_name << '\n'; }
+	object evaluate(expression_context &context) override;
 
   protected:
 	bool name_matches(const node *n)
@@ -847,9 +823,7 @@ class node_type_expression : public step_expression
 		m_test = std::bind(&node_type_expression::test, std::placeholders::_1);
 	}
 
-	virtual object evaluate(expression_context &context);
-
-	// virtual void		print(int level) { indent(level); std::cout << "node type step " << boost::core::demangle(typeid(T).name()) << '\n'; }
+	object evaluate(expression_context &context) override;
 
   private:
 	static bool test(const node *n) { return typeid(*n) == typeid(T); }
@@ -880,9 +854,7 @@ object node_type_expression<T>::evaluate(expression_context &context)
 class root_expression : public expression
 {
   public:
-	virtual object evaluate(expression_context &context);
-
-	// virtual void		print(int level) { indent(level); std::cout << "root\n"; }
+	object evaluate(expression_context &context) override;
 };
 
 object root_expression::evaluate(expression_context &context)
@@ -904,15 +876,7 @@ class operator_expression : public expression
 	{
 	}
 
-	virtual object evaluate(expression_context &context);
-
-	// virtual void		print(int level)
-	// 					{
-	// 						indent(level);
-	// 						std::cout << "operator " << boost::core::demangle(typeid(OP).name()) << '\n';
-	// 						m_lhs->print(level + 1);
-	// 						m_rhs->print(level + 1);
-	// 					}
+	object evaluate(expression_context &context) override;
 
   private:
 	expression_ptr m_lhs, m_rhs;
@@ -1045,9 +1009,7 @@ class negate_expression : public expression
 	{
 	}
 
-	virtual object evaluate(expression_context &context);
-
-	// virtual void		print(int level) { indent(level); std::cout << "negate\n"; m_expr->print(level + 1); }
+	object evaluate(expression_context &context) override;
 
   private:
 	expression_ptr m_expr;
@@ -1070,15 +1032,7 @@ class path_expression : public expression
 	{
 	}
 
-	virtual object evaluate(expression_context &context);
-
-	// virtual void		print(int level)
-	// 					{
-	// 						indent(level);
-	// 						std::cout << "path\n";
-	// 						m_lhs->print(level + 1);
-	// 						m_rhs->print(level + 1);
-	// 					}
+	object evaluate(expression_context &context) override;
 
   private:
 	expression_ptr m_lhs, m_rhs;
@@ -1114,15 +1068,7 @@ class predicate_expression : public expression
 	{
 	}
 
-	virtual object evaluate(expression_context &context);
-
-	// virtual void		print(int level)
-	// 					{
-	// 						indent(level);
-	// 						std::cout << "predicate\n";
-	// 						m_path->print(level + 1);
-	// 						m_pred->print(level + 1);
-	// 					}
+	object evaluate(expression_context &context) override;
 
   private:
 	expression_ptr m_path, m_pred;
@@ -1157,14 +1103,12 @@ object predicate_expression::evaluate(expression_context &context)
 class variable_expression : public expression
 {
   public:
-	variable_expression(const std::string &name)
+	variable_expression(std::string_view name)
 		: m_var(name)
 	{
 	}
 
-	virtual object evaluate(expression_context &context);
-
-	// virtual void		print(int level) { indent(level); std::cout << "variable " << m_var << '\n'; }
+	object evaluate(expression_context &context) override;
 
   private:
 	std::string m_var;
@@ -1180,14 +1124,12 @@ object variable_expression::evaluate(expression_context &context)
 class literal_expression : public expression
 {
   public:
-	literal_expression(const std::string &lit)
+	literal_expression(std::string_view lit)
 		: m_lit(lit)
 	{
 	}
 
-	virtual object evaluate(expression_context &context);
-
-	// virtual void		print(int level) { indent(level); std::cout << "literal " << m_lit << '\n'; }
+	object evaluate(expression_context &context) override;
 
   private:
 	std::string m_lit;
@@ -1208,9 +1150,7 @@ class number_expression : public expression
 	{
 	}
 
-	virtual object evaluate(expression_context &context);
-
-	// virtual void		print(int level) { indent(level); std::cout << "number " << m_number << '\n'; }
+	object evaluate(expression_context &context) override;
 
   private:
 	double m_number;
@@ -1232,15 +1172,7 @@ class core_function_expression : public expression
 	{
 	}
 
-	virtual object evaluate(expression_context &context);
-
-	// virtual void		print(int level)
-	// 					{
-	// 						indent(level);
-	// 						std::cout << "function call " << boost::core::demangle(typeid(CF).name()) << '\n';
-	// 						for_each(m_args.begin(), m_args.end(),
-	// 							std::bind(&expression::print, std::placeholders::_1, level + 1));
-	// 					}
+	object evaluate(expression_context &context) override;
 
   private:
 	expression_list m_args;
@@ -1373,7 +1305,7 @@ template <>
 object core_function_expression<CoreFunction::Concat>::evaluate(expression_context &context)
 {
 	std::string result;
-	for (expression_ptr &e : m_args)
+	for (expression_ptr&e : m_args)
 	{
 		object v = e->evaluate(context);
 		result += v.as<std::string>();
@@ -1673,15 +1605,7 @@ class union_expression : public expression
 	{
 	}
 
-	virtual object evaluate(expression_context &context);
-
-	// virtual void		print(int level)
-	// 					{
-	// 						indent(level);
-	// 						std::cout << "union\n";
-	// 						m_lhs->print(level + 1);
-	// 						m_rhs->print(level + 1);
-	// 					}
+	object evaluate(expression_context &context) override;
 
   private:
 	expression_ptr m_lhs, m_rhs;
@@ -1705,23 +1629,11 @@ object union_expression::evaluate(expression_context &context)
 
 // --------------------------------------------------------------------
 
-struct xpath_imp
+struct xpath_parser
 {
-	xpath_imp();
+	xpath_parser();
 
-	void reference();
-	void release();
-
-	node_set evaluate(node &root, context_imp &context);
-
-	void parse(std::string_view path);
-	// void				dump()
-	// {
-	// 	if (m_expr)
-	// 		m_expr->print(0);
-	// 	else
-	// 		std::cout << "xpath is null\n";
-	// }
+	expression_ptr parse(std::string_view path);
 
 	void preprocess(std::string_view path);
 
@@ -1766,39 +1678,15 @@ struct xpath_imp
 	double m_token_number;
 	AxisType m_token_axis;
 	CoreFunction m_token_function;
-
-	// the generated expression
-	expression_ptr m_expr;
-
-  private:
-	~xpath_imp();
-
-	long m_refcount;
 };
 
 // --------------------------------------------------------------------
 
-xpath_imp::xpath_imp()
-	: m_refcount(1)
+xpath_parser::xpath_parser()
 {
 }
 
-xpath_imp::~xpath_imp()
-{
-}
-
-void xpath_imp::reference()
-{
-	++m_refcount;
-}
-
-void xpath_imp::release()
-{
-	if (--m_refcount <= 0)
-		delete this;
-}
-
-void xpath_imp::parse(std::string_view path)
+expression_ptr xpath_parser::parse(std::string_view path)
 {
 	// start by expanding the abbreviations in the path
 	preprocess(path);
@@ -1807,21 +1695,20 @@ void xpath_imp::parse(std::string_view path)
 	m_end = m_path.end();
 
 	m_lookahead = get_next_token();
-	m_expr = location_path();
+	auto result = location_path();
 
 	while (m_lookahead == Token::OperatorUnion)
 	{
 		match(Token::OperatorUnion);
-		m_expr.reset(new union_expression(m_expr, location_path()));
+		result.reset(new union_expression(result, location_path()));
 	}
 
-	//	if (VERBOSE)
-	//		m_expr->print(0);
-
 	match(Token::Eof);
+
+	return result;
 }
 
-void xpath_imp::preprocess(std::string_view path)
+void xpath_parser::preprocess(std::string_view path)
 {
 	// preprocessing consists of expanding abbreviations
 	// replacements are:
@@ -1915,7 +1802,7 @@ void xpath_imp::preprocess(std::string_view path)
 	}
 }
 
-unsigned char xpath_imp::next_byte()
+unsigned char xpath_parser::next_byte()
 {
 	char result = 0;
 
@@ -1931,7 +1818,7 @@ unsigned char xpath_imp::next_byte()
 }
 
 // We assume all paths are in valid UTF-8 encoding
-char32_t xpath_imp::get_next_char()
+char32_t xpath_parser::get_next_char()
 {
 	char32_t result = 0;
 	unsigned char ch[5];
@@ -1971,7 +1858,7 @@ char32_t xpath_imp::get_next_char()
 	return result;
 }
 
-void xpath_imp::retract()
+void xpath_parser::retract()
 {
 	std::string::iterator c = m_token_string.end();
 
@@ -1987,7 +1874,7 @@ void xpath_imp::retract()
 	m_token_string.erase(c, m_token_string.end());
 }
 
-std::string xpath_imp::describe_token(Token token)
+std::string xpath_parser::describe_token(Token token)
 {
 	std::stringstream result;
 	switch (token)
@@ -2031,7 +1918,7 @@ std::string xpath_imp::describe_token(Token token)
 	return result.str();
 }
 
-Token xpath_imp::get_next_token()
+Token xpath_parser::get_next_token()
 {
 	enum State
 	{
@@ -2311,7 +2198,7 @@ Token xpath_imp::get_next_token()
 	return token;
 }
 
-void xpath_imp::match(Token token)
+void xpath_parser::match(Token token)
 {
 	if (m_lookahead == token)
 		m_lookahead = get_next_token();
@@ -2336,7 +2223,7 @@ void xpath_imp::match(Token token)
 	}
 }
 
-expression_ptr xpath_imp::location_path()
+expression_ptr xpath_parser::location_path()
 {
 	bool absolute = false;
 	if (m_lookahead == Token::Slash)
@@ -2353,7 +2240,7 @@ expression_ptr xpath_imp::location_path()
 	return result;
 }
 
-expression_ptr xpath_imp::relative_location_path()
+expression_ptr xpath_parser::relative_location_path()
 {
 	expression_ptr result(step());
 
@@ -2366,7 +2253,7 @@ expression_ptr xpath_imp::relative_location_path()
 	return result;
 }
 
-expression_ptr xpath_imp::step()
+expression_ptr xpath_parser::step()
 {
 	expression_ptr result;
 
@@ -2389,7 +2276,7 @@ expression_ptr xpath_imp::step()
 	return result;
 }
 
-expression_ptr xpath_imp::node_test(AxisType axis)
+expression_ptr xpath_parser::node_test(AxisType axis)
 {
 	expression_ptr result;
 
@@ -2423,7 +2310,7 @@ expression_ptr xpath_imp::node_test(AxisType axis)
 	return result;
 }
 
-expression_ptr xpath_imp::expr()
+expression_ptr xpath_parser::expr()
 {
 	expression_ptr result(and_expr());
 
@@ -2436,7 +2323,7 @@ expression_ptr xpath_imp::expr()
 	return result;
 }
 
-expression_ptr xpath_imp::primary_expr()
+expression_ptr xpath_parser::primary_expr()
 {
 	expression_ptr result;
 
@@ -2474,7 +2361,7 @@ expression_ptr xpath_imp::primary_expr()
 	return result;
 }
 
-expression_ptr xpath_imp::function_call()
+expression_ptr xpath_parser::function_call()
 {
 	using namespace std::literals;
 
@@ -2549,7 +2436,7 @@ expression_ptr xpath_imp::function_call()
 	return result;
 }
 
-expression_ptr xpath_imp::union_expr()
+expression_ptr xpath_parser::union_expr()
 {
 	expression_ptr result(path_expr());
 
@@ -2562,7 +2449,7 @@ expression_ptr xpath_imp::union_expr()
 	return result;
 }
 
-expression_ptr xpath_imp::path_expr()
+expression_ptr xpath_parser::path_expr()
 {
 	expression_ptr result;
 
@@ -2583,7 +2470,7 @@ expression_ptr xpath_imp::path_expr()
 	return result;
 }
 
-expression_ptr xpath_imp::filter_expr()
+expression_ptr xpath_parser::filter_expr()
 {
 	expression_ptr result(primary_expr());
 
@@ -2597,7 +2484,7 @@ expression_ptr xpath_imp::filter_expr()
 	return result;
 }
 
-expression_ptr xpath_imp::and_expr()
+expression_ptr xpath_parser::and_expr()
 {
 	expression_ptr result(equality_expr());
 
@@ -2610,7 +2497,7 @@ expression_ptr xpath_imp::and_expr()
 	return result;
 }
 
-expression_ptr xpath_imp::equality_expr()
+expression_ptr xpath_parser::equality_expr()
 {
 	expression_ptr result(relational_expr());
 
@@ -2627,7 +2514,7 @@ expression_ptr xpath_imp::equality_expr()
 	return result;
 }
 
-expression_ptr xpath_imp::relational_expr()
+expression_ptr xpath_parser::relational_expr()
 {
 	expression_ptr result(additive_expr());
 
@@ -2664,7 +2551,7 @@ expression_ptr xpath_imp::relational_expr()
 	return result;
 }
 
-expression_ptr xpath_imp::additive_expr()
+expression_ptr xpath_parser::additive_expr()
 {
 	expression_ptr result(multiplicative_expr());
 
@@ -2681,7 +2568,7 @@ expression_ptr xpath_imp::additive_expr()
 	return result;
 }
 
-expression_ptr xpath_imp::multiplicative_expr()
+expression_ptr xpath_parser::multiplicative_expr()
 {
 	expression_ptr result(unary_expr());
 
@@ -2714,7 +2601,7 @@ expression_ptr xpath_imp::multiplicative_expr()
 	return result;
 }
 
-expression_ptr xpath_imp::unary_expr()
+expression_ptr xpath_parser::unary_expr()
 {
 	expression_ptr result;
 
@@ -2731,23 +2618,9 @@ expression_ptr xpath_imp::unary_expr()
 
 // --------------------------------------------------------------------
 
-node_set xpath_imp::evaluate(node &root, context_imp &ctxt)
-{
-	node_set empty;
-	expression_context context(ctxt, &root, empty);
-	return m_expr->evaluate(context).as<const node_set &>();
-}
-
-// --------------------------------------------------------------------
-
 context::context()
 	: m_impl(new context_imp)
 {
-}
-
-context::~context()
-{
-	delete m_impl;
 }
 
 void context::set(const std::string &name, double value)
@@ -2775,47 +2648,24 @@ std::string context::get<std::string>(const std::string &name)
 // --------------------------------------------------------------------
 
 xpath::xpath(std::string_view path)
-	: m_impl(new xpath_imp())
+	: m_impl(xpath_parser().parse(path))
 {
-	m_impl->parse(path);
-}
-
-xpath::xpath(const xpath &rhs)
-	: m_impl(rhs.m_impl)
-{
-	m_impl->reference();
-}
-
-xpath &xpath::operator=(const xpath &rhs)
-{
-	if (this != &rhs)
-	{
-		m_impl->release();
-		m_impl = rhs.m_impl;
-		m_impl->reference();
-	}
-
-	return *this;
-}
-
-xpath::~xpath()
-{
-	m_impl->release();
 }
 
 template <>
-node_set xpath::evaluate<node>(const node &root, context &ctxt) const
+node_set xpath::evaluate<node>(const node &root, const context &ctxt) const
 {
-	return m_impl->evaluate(const_cast<node &>(root), *ctxt.m_impl);
+	node_set empty;
+	expression_context context(*ctxt.m_impl, &root, empty);
+	return m_impl->evaluate(context).as<const node_set &>();
 }
 
 template <>
-element_set xpath::evaluate<element>(const node &root, context &ctxt) const
+element_set xpath::evaluate<element>(const node &root, const context &ctxt) const
 {
 	element_set result;
 
-	object s(m_impl->evaluate(const_cast<node &>(root), *ctxt.m_impl));
-	for (node *n : s.as<const node_set &>())
+	for (node *n : evaluate<node>(root, ctxt))
 	{
 		if (n->type() == node_type::element)
 			result.push_back(static_cast<element *>(n));
@@ -2824,16 +2674,14 @@ element_set xpath::evaluate<element>(const node &root, context &ctxt) const
 	return result;
 }
 
-bool xpath::matches(const node *n) const
+bool xpath::matches(const node *n, const context &ctxt) const
 {
 	bool result = false;
 	if (n != nullptr)
 	{
 		const node *root = n->root();
 
-		context ctxt;
-		object s(m_impl->evaluate(const_cast<node &>(*root), *ctxt.m_impl));
-		for (node *e : s.as<const node_set &>())
+		for (node *e : evaluate<node>(*root, ctxt))
 		{
 			if (e == n)
 			{
@@ -2844,11 +2692,6 @@ bool xpath::matches(const node *n) const
 	}
 
 	return result;
-}
-
-void xpath::dump()
-{
-	// m_impl->dump();
 }
 
 } // namespace mxml
