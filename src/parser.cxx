@@ -588,7 +588,6 @@ struct parser_imp
 	void entity_decl();
 	void parameter_entity_decl();
 	void general_entity_decl();
-	void entity_value();
 
 	// at several locations we need to parse out entity references from strings:
 	void parse_parameter_entity_declaration(std::string &s);
@@ -889,9 +888,13 @@ struct parser_imp
 
 		bool is_known_uri(const std::string &uri)
 		{
-			return find_if(m_known.begin(), m_known.end(), [uri](auto k)
-					   { return k.second == uri; }) != m_known.end() or
-			       (m_next != nullptr and m_next->is_known_uri(uri));
+			for (auto k : m_known)
+			{
+				if (k.second == uri)
+					return true;
+			}
+
+			return m_next != nullptr and m_next->is_known_uri(uri);
 		}
 
 	  private:
@@ -1026,38 +1029,38 @@ parser_imp::~parser_imp()
 
 const doctype::entity &parser_imp::get_general_entity(const std::string &name) const
 {
-	auto e = std::find_if(m_general_entities.begin(), m_general_entities.end(),
-		[name](auto e)
-		{ return e->name() == name; });
-
-	if (e == m_general_entities.end())
+	for (auto e : m_general_entities)
 	{
-		if (m_is_html5)
+		if (e->name() == name)
 		{
-			auto c = doctype::get_named_character(name);
-			if (c != nullptr)
-				return *c;
-		}
+			if (e->is_external() and m_standalone)
+				not_valid("Document cannot be standalone since entity " + std::string{ name } + " is defined externally");
 
-		not_well_formed("undefined entity reference '" + std::string{ name } + "'");
+			return *e;
+		}
 	}
 
-	if ((*e)->is_external() and m_standalone)
-		not_valid("Document cannot be standalone since entity " + std::string{ name } + " is defined externally");
+	if (m_is_html5)
+	{
+		auto c = doctype::get_named_character(name);
+		if (c != nullptr)
+			return *c;
+	}
 
-	return **e;
+	not_well_formed("undefined entity reference '" + std::string{ name } + "'");
+	throw 0;
 }
 
 const doctype::entity &parser_imp::get_parameter_entity(const std::string &name) const
 {
-	auto e = find_if(m_parameter_entities.begin(), m_parameter_entities.end(),
-		[name](auto e)
-		{ return e->name() == name; });
+	for (auto e : m_parameter_entities)
+	{
+		if (e->name() == name)
+			return *e;
+	}
 
-	if (e == m_parameter_entities.end())
-		not_well_formed("Undefined parameter entity '" + m_token + '\'');
-
-	return **e;
+	not_well_formed("Undefined parameter entity '" + m_token + '\'');
+	throw 0;
 }
 
 const doctype::element_ptr parser_imp::get_element(const std::string &name) const

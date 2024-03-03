@@ -322,9 +322,6 @@ node *basic_node_list::erase_impl(node *n)
 
 void comment::write(std::ostream &os, format_info fmt) const
 {
-	// if (fmt.indent_width != 0)
-	// 	os << '\n' << std::string(fmt.indent_width, ' ');
-
 	if (not fmt.suppress_comments)
 	{
 		os << "<!--";
@@ -337,12 +334,6 @@ void comment::write(std::ostream &os, format_info fmt) const
 
 			os << ch;
 			lastWasHyphen = ch == '-';
-
-			// if (ch == '\n')
-			// {
-			// 	for (size_t i = 0; i < indent; ++i)
-			// 		os << ' ';
-			// }
 		}
 
 		os << "-->";
