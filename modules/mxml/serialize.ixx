@@ -67,7 +67,7 @@ struct value_serializer;
 template <>
 struct value_serializer<bool>
 {
-	static constexpr std::string type_name() { return "xsd:boolean"; }
+	static std::string type_name() { return "xsd:boolean"; }
 	static constexpr std::string_view to_string(bool value) { return value ? "true" : "false"; }
 	static constexpr bool from_string(std::string_view value) { return value == "true" or value == "1" or value == "yes"; }
 };
@@ -76,7 +76,7 @@ struct value_serializer<bool>
 template <>
 struct value_serializer<std::string>
 {
-	static constexpr std::string type_name() { return "xsd:string"; }
+	static std::string type_name() { return "xsd:string"; }
 	static std::string_view to_string(std::string_view value) { return value; }
 	static const std::string &to_string(const std::string &value) { return value; }
 	static std::string_view from_string(std::string_view value) { return value; }
@@ -119,70 +119,70 @@ struct char_conv_serializer
 template <>
 struct value_serializer<int8_t> : char_conv_serializer<int8_t>
 {
-	static constexpr std::string type_name() { return "xsd:byte"; }
+	static std::string type_name() { return "xsd:byte"; }
 };
 
 /// @ref value_serializer implementation for uint8_t
 template <>
 struct value_serializer<uint8_t> : char_conv_serializer<uint8_t>
 {
-	static constexpr std::string type_name() { return "xsd:unsignedByte"; }
+	static std::string type_name() { return "xsd:unsignedByte"; }
 };
 
 /// @ref value_serializer implementation for int16_t
 template <>
 struct value_serializer<int16_t> : char_conv_serializer<int16_t>
 {
-	static constexpr std::string type_name() { return "xsd:short"; }
+	static std::string type_name() { return "xsd:short"; }
 };
 
 /// @ref value_serializer implementation for uint16_t
 template <>
 struct value_serializer<uint16_t> : char_conv_serializer<uint16_t>
 {
-	static constexpr std::string type_name() { return "xsd:unsignedShort"; }
+	static std::string type_name() { return "xsd:unsignedShort"; }
 };
 
 /// @ref value_serializer implementation for int32_t
 template <>
 struct value_serializer<int32_t> : char_conv_serializer<int32_t>
 {
-	static constexpr std::string type_name() { return "xsd:int"; }
+	static std::string type_name() { return "xsd:int"; }
 };
 
 /// @ref value_serializer implementation for uint32_t
 template <>
 struct value_serializer<uint32_t> : char_conv_serializer<uint32_t>
 {
-	static constexpr std::string type_name() { return "xsd:unsignedInt"; }
+	static std::string type_name() { return "xsd:unsignedInt"; }
 };
 
 /// @ref value_serializer implementation for int64_t
 template <>
 struct value_serializer<int64_t> : char_conv_serializer<int64_t>
 {
-	static constexpr std::string type_name() { return "xsd:long"; }
+	static std::string type_name() { return "xsd:long"; }
 };
 
 /// @ref value_serializer implementation for uint64_t
 template <>
 struct value_serializer<uint64_t> : char_conv_serializer<uint64_t>
 {
-	static constexpr std::string type_name() { return "xsd:unsignedLong"; }
+	static std::string type_name() { return "xsd:unsignedLong"; }
 };
 
 /// @ref value_serializer implementation for float
 template <>
 struct value_serializer<float> : char_conv_serializer<float>
 {
-	static constexpr std::string type_name() { return "xsd:float"; }
+	static std::string type_name() { return "xsd:float"; }
 };
 
 /// @ref value_serializer implementation for double
 template <>
 struct value_serializer<double> : char_conv_serializer<double>
 {
-	static constexpr std::string type_name() { return "xsd:double"; }
+	static std::string type_name() { return "xsd:double"; }
 };
 
 /// \brief value_serializer for enum values
@@ -281,7 +281,7 @@ struct value_serializer<std::chrono::system_clock::time_point>
 {
 	using time_type = std::chrono::system_clock::time_point;
 
-	static constexpr std::string type_name() { return "xsd:dateTime"; }
+	static std::string type_name() { return "xsd:dateTime"; }
 
 	/// to_string the time as YYYY-MM-DDThh:mm:ssZ (zero UTC offset)
 	static std::string to_string(const time_type &v)
@@ -328,7 +328,7 @@ struct value_serializer<std::chrono::system_clock::time_point>
 template <>
 struct value_serializer<date::sys_days>
 {
-	static constexpr std::string type_name() { return "xsd:date"; }
+	static std::string type_name() { return "xsd:date"; }
 
 	/// to_string the date as YYYY-MM-DD
 	static std::string to_string(const date::sys_days &v)
@@ -615,7 +615,7 @@ struct type_serializer<T[N]>
 	using value_type = std::remove_cvref_t<T>;
 	using type_serializer_type = type_serializer<value_type>;
 
-	static constexpr std::string type_name() { return type_serializer_type::type_name(); }
+	static std::string type_name() { return type_serializer_type::type_name(); }
 
 	static void serialize_child(element_container &n, std::string_view name, const value_type (&value)[N])
 	{
@@ -821,7 +821,7 @@ struct type_serializer<std::optional<T>>
 	using container_type = std::optional<value_type>;
 	using type_serializer_type = type_serializer<value_type>;
 
-	static constexpr std::string type_name() { return type_serializer_type::type_name(); }
+	static std::string type_name() { return type_serializer_type::type_name(); }
 
 	static void serialize_child(element_container &n, std::string_view name, const container_type &value)
 	{
@@ -877,7 +877,7 @@ struct type_serializer<T>
 	using value_type = value_type_t<container_type>;
 	using type_serializer_type = type_serializer<value_type>;
 
-	static constexpr std::string type_name() { return type_serializer_type::type_name(); }
+	static std::string type_name() { return type_serializer_type::type_name(); }
 
 	static void serialize_child(element_container &n, std::string_view name, const container_type &value)
 	{
@@ -969,7 +969,7 @@ struct type_serializer
 	using value_type = std::remove_cvref_t<T>;
 	using value_serializer_type = value_serializer<value_type>;
 
-	static constexpr std::string type_name() { return value_serializer_type::type_name(); }
+	static std::string type_name() { return value_serializer_type::type_name(); }
 
 	static std::string serialize_value(const T &value)
 	{

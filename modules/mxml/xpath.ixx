@@ -95,7 +95,7 @@ namespace mxml
 /* export */ class xpath final
 {
   public:
-	xpath(std::string_view path);
+	xpath(const std::string &path);
 
 	xpath(const xpath &rhs)
 		: m_impl(rhs.m_impl)

@@ -738,15 +738,15 @@ class element_container : public node, public node_list<element>
 	/// If you need to find other classes than xml::element, of if your XPath
 	/// contains variables, you should create a mxml::xpath object and use
 	/// its evaluate method.
-	element_set find(std::string_view path) const;
+	element_set find(const std::string &path) const;
 
 	/// \brief return the first element that matches XPath \a path.
 	///
 	/// If you need to find other classes than xml::element, of if your XPath
 	/// contains variables, you should create a mxml::xpath object and use
 	/// its evaluate method.
-	iterator find_first(std::string_view path);
-	const_iterator find_first(std::string_view path) const;
+	iterator find_first(const std::string &path);
+	const_iterator find_first(const std::string &path) const;
 
   protected:
 

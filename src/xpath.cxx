@@ -1289,7 +1289,7 @@ template <>
 object core_function_expression<CoreFunction::Concat>::evaluate(expression_context &context)
 {
 	std::string result;
-	for (expression_ptr&e : m_args)
+	for (expression_ptr &e : m_args)
 	{
 		object v = e->evaluate(context);
 		result += v.as<std::string>();
@@ -1617,12 +1617,10 @@ struct xpath_parser
 {
 	xpath_parser();
 
-	expression_ptr parse(std::string_view path);
+	expression_ptr parse(const std::string &path);
 
-	void preprocess(std::string_view path);
+	void preprocess(const std::string &path);
 
-	unsigned char next_byte();
-	char32_t get_next_char();
 	void retract();
 	Token get_next_token();
 	std::string describe_token(Token token);
@@ -1653,8 +1651,8 @@ struct xpath_parser
 	expression_ptr unary_expr();
 
 	// abbreviated steps are expanded like macros by the scanner
-	std::string m_path;
-	std::string::const_iterator
+	std::u32string m_path;
+	std::u32string::const_iterator
 		m_begin,
 		m_next, m_end;
 	Token m_lookahead;
@@ -1670,7 +1668,7 @@ xpath_parser::xpath_parser()
 {
 }
 
-expression_ptr xpath_parser::parse(std::string_view path)
+expression_ptr xpath_parser::parse(const std::string &path)
 {
 	// start by expanding the abbreviations in the path
 	preprocess(path);
@@ -1692,7 +1690,7 @@ expression_ptr xpath_parser::parse(std::string_view path)
 	return result;
 }
 
-void xpath_parser::preprocess(std::string_view path)
+void xpath_parser::preprocess(const std::string &path)
 {
 	// preprocessing consists of expanding abbreviations
 	// replacements are:
@@ -1715,31 +1713,37 @@ void xpath_parser::preprocess(std::string_view path)
 	state = pp_Step;
 	char32_t quoteChar = 0;
 
-	for (auto ch = path.begin(); ch != path.end(); ++ch)
+	auto pb = path.begin();
+	auto pe = path.end();
+
+	while (pb != pe)
 	{
+		auto pbb = pb;
+		char32_t ch = pop_front_char(pb, pe);
+
 		switch (state)
 		{
 			case pp_Step:
 				state = pp_Data;
-				switch (*ch)
+				switch (ch)
 				{
-					case '@': m_path += "attribute::"; break;
+					case '@': m_path += U"attribute::"; break;
 					case '.': state = pp_Dot; break;
 					case '/': state = pp_Slash; break;
 					case '\'':
 					case '\"':
-						m_path += *ch;
-						quoteChar = *ch;
+						m_path += ch;
+						quoteChar = ch;
 						state = pp_String;
 						break;
-					default: m_path += *ch; break;
+					default: m_path += ch; break;
 				}
 				break;
 
 			case pp_Data:
-				switch (*ch)
+				switch (ch)
 				{
-					case '@': m_path += "attribute::"; break;
+					case '@': m_path += U"attribute::"; break;
 					case '/': state = pp_Slash; break;
 					case '[':
 						m_path += '[';
@@ -1747,115 +1751,49 @@ void xpath_parser::preprocess(std::string_view path)
 						break;
 					case '\'':
 					case '\"':
-						m_path += *ch;
-						quoteChar = *ch;
+						m_path += ch;
+						quoteChar = ch;
 						state = pp_String;
 						break;
-					default: m_path += *ch; break;
+					default: m_path += ch; break;
 				}
 				break;
 
 			case pp_Dot:
-				if (*ch == '.')
-					m_path += "parent::node()";
+				if (ch == '.')
+					m_path += U"parent::node()";
 				else
 				{
-					--ch;
-					m_path += "self::node()";
+					pb = pbb;
+					m_path += U"self::node()";
 				}
 				state = pp_Step;
 				break;
 
 			case pp_Slash:
-				if (*ch == '/')
-					m_path += "/descendant-or-self::node()/";
+				if (ch == '/')
+					m_path += U"/descendant-or-self::node()/";
 				else
 				{
-					--ch;
+					pb = pbb;
 					m_path += '/';
 				}
 				state = pp_Step;
 				break;
 
 			case pp_String:
-				m_path += *ch;
-				if (static_cast<unsigned char>(*ch) == quoteChar)
+				m_path += ch;
+				if (ch == quoteChar)
 					state = pp_Data;
 				break;
 		}
 	}
 }
 
-unsigned char xpath_parser::next_byte()
-{
-	char result = 0;
-
-	if (m_next < m_end)
-	{
-		result = *m_next;
-		++m_next;
-	}
-
-	m_token_string += result;
-
-	return static_cast<unsigned char>(result);
-}
-
-// We assume all paths are in valid UTF-8 encoding
-char32_t xpath_parser::get_next_char()
-{
-	char32_t result = 0;
-	unsigned char ch[5];
-
-	ch[0] = next_byte();
-
-	if ((ch[0] & 0x080) == 0)
-		result = ch[0];
-	else if ((ch[0] & 0x0E0) == 0x0C0)
-	{
-		ch[1] = next_byte();
-		if ((ch[1] & 0x0c0) != 0x080)
-			throw exception("Invalid utf-8");
-		result = ((ch[0] & 0x01F) << 6) | (ch[1] & 0x03F);
-	}
-	else if ((ch[0] & 0x0F0) == 0x0E0)
-	{
-		ch[1] = next_byte();
-		ch[2] = next_byte();
-		if ((ch[1] & 0x0c0) != 0x080 or (ch[2] & 0x0c0) != 0x080)
-			throw exception("Invalid utf-8");
-		result = ((ch[0] & 0x00F) << 12) | ((ch[1] & 0x03F) << 6) | (ch[2] & 0x03F);
-	}
-	else if ((ch[0] & 0x0F8) == 0x0F0)
-	{
-		ch[1] = next_byte();
-		ch[2] = next_byte();
-		ch[3] = next_byte();
-		if ((ch[1] & 0x0c0) != 0x080 or (ch[2] & 0x0c0) != 0x080 or (ch[3] & 0x0c0) != 0x080)
-			throw exception("Invalid utf-8");
-		result = ((ch[0] & 0x007) << 18) | ((ch[1] & 0x03F) << 12) | ((ch[2] & 0x03F) << 6) | (ch[3] & 0x03F);
-	}
-
-	if (result > 0x10ffff)
-		throw exception("invalid utf-8 character (out of range)");
-
-	return result;
-}
-
 void xpath_parser::retract()
 {
-	std::string::iterator c = m_token_string.end();
-
-	// skip one valid character back in the input buffer
-	// since we've arrived here, we can safely assume input
-	// is valid UTF-8
-	do
-		--c;
-	while ((*c & 0x0c0) == 0x080);
-
-	if (m_next != m_end or *c != 0)
-		m_next -= m_token_string.end() - c;
-	m_token_string.erase(c, m_token_string.end());
+	--m_next;
+	pop_back_char(m_token_string);
 }
 
 std::string xpath_parser::describe_token(Token token)
@@ -1897,8 +1835,8 @@ std::string xpath_parser::describe_token(Token token)
 		case Token::Asterisk: result = "asterisk (or multiply)"; break;
 		case Token::Colon: result = "colon"; break;
 	}
-	
-	return result + " {" + m_token_string + '}';
+
+	return result;
 }
 
 Token xpath_parser::get_next_token()
@@ -1927,7 +1865,9 @@ Token xpath_parser::get_next_token()
 
 	while (token == Token::Undef)
 	{
-		char32_t ch = get_next_char();
+		char32_t ch = m_next < m_end ? *m_next : 0;
+		++m_next;
+		append(m_token_string, ch);
 
 		switch (state)
 		{
@@ -2119,7 +2059,7 @@ Token xpath_parser::get_next_token()
 		else
 		{
 			// look forward and see what's ahead
-			for (std::string::const_iterator c = m_next; c != m_end; ++c)
+			for (std::u32string::const_iterator c = m_next; c != m_end; ++c)
 			{
 				if (isspace(*c))
 					continue;
@@ -2175,9 +2115,6 @@ Token xpath_parser::get_next_token()
 		}
 	}
 
-	//	if (VERBOSE)
-	//		std::cout << "get_next_token: " << describe_token(token) << '\n';
-
 	return token;
 }
 
@@ -2187,16 +2124,11 @@ void xpath_parser::match(Token token)
 		m_lookahead = get_next_token();
 	else
 	{
-		// aargh... syntax error
-
+		// syntax error
 		std::string found = describe_token(m_lookahead);
 
 		if (m_lookahead != Token::Eof and m_lookahead != Token::Undef)
-		{
-			found += " (\"";
-			found += m_token_string;
-			found += "\")";
-		}
+			found += " (\"" + m_token_string + "\"";
 
 		std::string expected = describe_token(token);
 
@@ -2628,7 +2560,7 @@ std::string context::get<std::string>(const std::string &name)
 
 // --------------------------------------------------------------------
 
-xpath::xpath(std::string_view path)
+xpath::xpath(const std::string &path)
 	: m_impl(xpath_parser().parse(path))
 {
 }

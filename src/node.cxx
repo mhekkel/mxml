@@ -58,8 +58,8 @@ void write_string(std::ostream &os, const std::string &s, bool escape_whitespace
 {
 	bool last_is_space = false;
 
-	auto sp = s.begin();
-	auto se = s.end();
+	auto sp = s.cbegin();
+	auto se = s.cend();
 
 	while (sp < se)
 	{
@@ -467,19 +467,19 @@ void element_container::write(std::ostream &os, format_info fmt) const
 {
 }
 
-element_set element_container::find(std::string_view path) const
+element_set element_container::find(const std::string &path) const
 {
 	return xpath(path).evaluate<element>(*this);
 }
 
-element_container::iterator element_container::find_first(std::string_view path)
+element_container::iterator element_container::find_first(const std::string &path)
 {
 	element_set s = xpath(path).evaluate<element>(*this);
 
 	return s.empty() ? end() : iterator(s.front());
 }
 
-element_container::const_iterator element_container::find_first(std::string_view path) const
+element_container::const_iterator element_container::find_first(const std::string &path) const
 {
 	return const_cast<element_container *>(this)->find_first(path);
 }
