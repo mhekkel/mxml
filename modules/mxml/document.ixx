@@ -61,34 +61,38 @@
 namespace mxml
 {
 
-/// struct containing the doctype information
+/**
+ * @brief struct containing the doctype information
+ */
+
 struct doc_type
 {
 	std::string m_root;
-	std::string m_pubid; /// pubid is empty for SYSTEM DOCTYPE
+	std::string m_pubid; // pubid is empty for SYSTEM DOCTYPE
 	std::string m_dtd;
 };
 
-/// mxml::document is the class that contains a parsed XML file.
-/// You can create an empty document and add nodes to it, or you can
-/// create it by specifying a string containing XML or an std::istream
-/// to parse.
-///
-/// If you use an std::fstream to read a file, be sure to open the file
-/// ios::binary. Otherwise, the detection of text encoding might go wrong
-/// or the content can become corrupted.
-///
-/// Default is to parse CDATA sections into mxml::text nodes. If you
-/// want to preserve CDATA sections in the DOM tree, you have to call
-/// set_preserve_cdata before reading the file.
-///
-/// By default a document is not validated. But you can turn on validation
-/// by using the appropriate constructor or read method, or by setting
-/// set_validating explicitly. The DTD's will be loaded from the base dir
-/// specified, but you can change this by assigning a external_entity_ref_handler.
-///
-/// A document has one mxml::root_node element. This root element
-/// can have only one mxml::element child node.
+/**
+ * mxml::document is the class that contains a parsed XML file.
+ * You can create an empty document and add nodes to it, or you can
+ * create it by parsing a string or an std::istream containing XML.
+ *
+ * If you use an std::fstream to read a file, be sure to open the file
+ * ios::binary. Otherwise, the detection of text encoding might go wrong
+ * or the content can become corrupted.
+ *
+ * Default is to parse CDATA sections into mxml::text nodes. If you
+ * want to preserve CDATA sections in the DOM tree, you have to call
+ * set_preserve_cdata before reading the file.
+ *
+ * By default a document is not validated. But you can turn on validation
+ * by using the appropriate constructor or read method, or by setting
+ * set_validating explicitly. The DTD's will be loaded from the base dir
+ * specified, but you can change this by assigning a external_entity_ref_handler.
+ *
+ * A document can have only one mxml::element child node. The document
+ * object itself is the so-called root-node.
+ */
 
 /* export */ class document final : public element_container
 {

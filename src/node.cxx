@@ -557,19 +557,24 @@ bool element::equals(const node *n) const
 				continue;
 			}
 
-			const text *t = dynamic_cast<const text *>((const node *)a);
-
-			if (t != nullptr and t->is_space())
+			if (a->type() == node_type::text)
 			{
-				++a;
-				continue;
+				auto t = static_cast<const text *>(&*a);
+				if (t->is_space())
+				{
+					++a;
+					continue;
+				}
 			}
 
-			t = dynamic_cast<const text *>((const node *)b);
-			if (t != nullptr and t->is_space())
+			if (b->type() == node_type::text)
 			{
-				++b;
-				continue;
+				auto t = static_cast<const text *>(&*b);
+				if (t->is_space())
+				{
+					++b;
+					continue;
+				}
 			}
 
 			result = false;
@@ -629,9 +634,8 @@ std::string element::get_content() const
 
 	for (auto &n : nodes())
 	{
-		auto t = dynamic_cast<const node_with_text *>(&n);
-		if (t != nullptr)
-			result += t->get_text();
+		if (n.type() == node_type::text or n.type() == node_type::cdata)
+			result += static_cast<const node_with_text &>(n).get_text();
 	}
 
 	return result;
@@ -643,7 +647,7 @@ void element::set_content(const std::string &s)
 	auto nn = nodes();
 	for (auto n = nn.begin(); n != nn.end(); ++n)
 	{
-		if (auto &t = *n; (typeid(t) == typeid(text)) or (typeid(t) == typeid(cdata)))
+		if (n->type() == node_type::text or n->type() == node_type::cdata)
 			n = nn.erase(n);
 	}
 
@@ -655,7 +659,7 @@ void element::add_text(const std::string &s)
 {
 	auto nn = nodes();
 
-	if (auto &t = nn.back(); typeid(t) == typeid(text))
+	if (nn.back().type() == node_type::text)
 		static_cast<text &>(nn.back()).append(s);
 	else
 		nn.emplace_back(text(s));
@@ -672,19 +676,14 @@ void element::flatten_text()
 	auto n = nn.begin();
 	while (n != nn.end())
 	{
-		auto tn = dynamic_cast<text *>(&*n);
-		if (tn == nullptr)
+		if (n->type() != node_type::text or n->m_next->type() != node_type::text)
 		{
 			n = n->m_next;
 			continue;
 		}
 
-		auto ntn = dynamic_cast<text *>(n->m_next);
-		if (ntn == nullptr)
-		{
-			n = n->m_next;
-			continue;
-		}
+		auto tn = static_cast<text *>(&*n);
+		auto ntn = static_cast<text *>(n->m_next);
 
 		tn->append(ntn->get_text());
 		nn.erase(n->m_next);
@@ -717,8 +716,8 @@ std::string element::namespace_for_prefix(const std::string &prefix) const
 		}
 	}
 
-	if (result.empty() and dynamic_cast<element_container *>(m_parent) != nullptr)
-		result = static_cast<element_container *>(m_parent)->namespace_for_prefix(prefix);
+	if (result.empty() and m_parent != nullptr)
+		result = m_parent->namespace_for_prefix(prefix);
 
 	return result;
 }
@@ -742,8 +741,8 @@ std::pair<std::string, bool> element::prefix_for_namespace(const std::string &ur
 		}
 	}
 
-	if (not found and dynamic_cast<element_container *>(m_parent) != nullptr)
-		std::tie(result, found) = static_cast<element_container *>(m_parent)->prefix_for_namespace(uri);
+	if (not found and m_parent != nullptr)
+		std::tie(result, found) = m_parent->prefix_for_namespace(uri);
 
 	return make_pair(result, found);
 }
@@ -859,7 +858,7 @@ void element::write(std::ostream &os, format_info fmt) const
 		for (auto &n : nodes())
 		{
 			n.write(os, sub_fmt);
-			wrote_element = dynamic_cast<const element_container *>(&n) != nullptr;
+			wrote_element = n.type() == node_type::element;
 		}
 
 		if (wrote_element and fmt.indent != 0)
@@ -928,10 +927,10 @@ void fix_namespaces(element &e, element &source, element &dest)
 			}
 		}
 
-		auto el = dynamic_cast<element *>(n);
-		if (el == nullptr)
+		if (n->type() != node_type::element)
 			continue;
 
+		auto el = static_cast<element *>(n);
 		for (auto &c : *el)
 			s.push(&c);
 

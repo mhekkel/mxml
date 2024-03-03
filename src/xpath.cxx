@@ -470,9 +470,8 @@ void iterate_child_nodes(element_container *context, node_set &s, bool deep, PRE
 
 		if (deep)
 		{
-			element_container *child_element = dynamic_cast<element_container *>(&child);
-			if (child_element != nullptr)
-				iterate_child_nodes(child_element, s, true, pred);
+			if (child.type() == node_type::element)
+				iterate_child_nodes(static_cast<element_container *>(&child), s, true, pred);
 		}
 	}
 }
@@ -489,7 +488,7 @@ inline void iterate_children(element_container *context, node_set &s, bool deep,
 template <typename PREDICATE>
 void iterate_ancestor(element_container *e, node_set &s, PREDICATE pred)
 {
-	auto n = dynamic_cast<node *>(e)->parent();
+	auto n = e->parent();
 	while (n != nullptr and n->type() != node_type::document)
 	{
 		if (pred(n))
@@ -514,15 +513,14 @@ void iterate_preceding(node *n, node_set &s, bool sibling, PREDICATE pred, bool 
 
 		n = n->prev();
 
-		element_container *e = dynamic_cast<element_container *>(n);
-		if (e == nullptr)
+		if (n->type() != node_type::element)
 			continue;
 
 		if (pred(n))
 			s.push_back(n);
 
 		if (sibling == false)
-			iterate_children(e, s, true, pred, elementsOnly);
+			iterate_children(static_cast<element *>(n), s, true, pred, elementsOnly);
 	}
 }
 
@@ -542,46 +540,37 @@ void iterate_following(node *n, node_set &s, bool sibling, PREDICATE pred, bool 
 
 		n = n->next();
 
-		element_container *e = dynamic_cast<element_container *>(n);
-		if (e == nullptr)
+		if (n->type() != node_type::element)
 			continue;
 
 		if (pred(n))
 			s.push_back(n);
 
 		if (sibling == false)
-			iterate_children(e, s, true, pred, elementsOnly);
+			iterate_children(static_cast<element *>(n), s, true, pred, elementsOnly);
 	}
 }
 
 template <typename PREDICATE>
-void iterate_attributes(element_container *e, node_set &s, PREDICATE pred)
+void iterate_attributes(element *e, node_set &s, PREDICATE pred)
 {
-	auto el = dynamic_cast<element *>(e);
-	if (el != nullptr)
+	for (auto &a : e->attributes())
 	{
-		for (auto &a : el->attributes())
-		{
-			if (pred(&a))
-				s.push_back(&a);
-		}
+		if (pred(&a))
+			s.push_back(&a);
 	}
 }
 
 template <typename PREDICATE>
-void iterate_namespaces(element_container *e, node_set &s, PREDICATE pred)
+void iterate_namespaces(element *e, node_set &s, PREDICATE pred)
 {
-	auto el = dynamic_cast<element *>(e);
-	if (el != nullptr)
+	for (auto &a : e->attributes())
 	{
-		for (auto &a : el->attributes())
-		{
-			if (not a.is_namespace())
-				continue;
+		if (not a.is_namespace())
+			continue;
 
-			if (pred(&a))
-				s.push_back(&a);
-		}
+		if (pred(&a))
+			s.push_back(&a);
 	}
 }
 
@@ -690,9 +679,9 @@ object step_expression::evaluate(expression_context &context, T pred, bool eleme
 {
 	node_set result;
 
-	element_container *context_element = dynamic_cast<element_container *>(context.m_node);
-	if (context_element != nullptr)
+	if (context.m_node->type() == node_type::element or context.m_node->type() == node_type::document)
 	{
+		element_container *context_element = static_cast<element_container *>(context.m_node);
 		switch (m_axis)
 		{
 			case AxisType::Parent:
@@ -749,13 +738,13 @@ object step_expression::evaluate(expression_context &context, T pred, bool eleme
 				break;
 
 			case AxisType::Attribute:
-				if (auto c = dynamic_cast<element_container *>(context_element); c != nullptr)
-					iterate_attributes(c, result, pred);
+				if (context_element->type() == node_type::element)
+					iterate_attributes(static_cast<element *>(context_element), result, pred);
 				break;
 
 			case AxisType::Namespace:
-				if (auto c = dynamic_cast<element_container *>(context_element); c != nullptr)
-					iterate_namespaces(c, result, pred);
+				if (context_element->type() == node_type::element)
+					iterate_namespaces(static_cast<element *>(context_element), result, pred);
 				break;
 
 			case AxisType::AxisTypeCount:;
@@ -1192,21 +1181,21 @@ object core_function_expression<CoreFunction::Count>::evaluate(expression_contex
 template <>
 object core_function_expression<CoreFunction::Id>::evaluate(expression_context &context)
 {
-	element *e = nullptr;
+	node *n = nullptr;
 
 	if (m_args.empty())
-		e = dynamic_cast<element *>(context.m_node);
+		n = context.m_node;
 	else
 	{
 		object v = m_args.front()->evaluate(context);
 		if (not v.as<const node_set &>().empty())
-			e = dynamic_cast<element *>(v.as<const node_set &>().front());
+			n = v.as<const node_set &>().front();
 	}
 
-	if (e == nullptr)
+	if (n == nullptr or n->type() != node_type::element)
 		throw exception("argument is not an element in function 'id()'");
 
-	return e->id();
+	return static_cast<element *>(n)->id();
 }
 
 template <>

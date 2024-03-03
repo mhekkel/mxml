@@ -793,8 +793,8 @@ class node_with_text : public node
 
 	bool equals(const node *n) const override
 	{
-		auto nt = dynamic_cast<const node_with_text *>(n);
-		return nt != nullptr and nt->m_text == m_text;
+		return type() == n->type() and
+			static_cast<const node_with_text *>(n)->m_text == m_text;
 	}
 
   protected:
@@ -835,7 +835,7 @@ class comment final : public node_with_text
 	/// \brief compare nodes for equality
 	bool equals(const node *n) const override
 	{
-		return this == n or (typeid(*n) == typeid(comment) and node_with_text::equals(n));
+		return this == n or (n->type() == node_type::comment and node_with_text::equals(n));
 	}
 
 	void write(std::ostream &os, format_info fmt) const override;
@@ -898,7 +898,7 @@ class processing_instruction final : public node_with_text
 	/// \brief compare nodes for equality
 	bool equals(const node *n) const override
 	{
-		return this == n or (typeid(*n) == typeid(processing_instruction) and node_with_text::equals(n));
+		return this == n or (n->type() == node_type::processing_instruction and node_with_text::equals(n));
 	}
 
 	void write(std::ostream &os, format_info fmt) const override;
@@ -989,7 +989,7 @@ class cdata final : public node_with_text
 	/// \brief compare nodes for equality
 	bool equals(const node *n) const override
 	{
-		return this == n or (typeid(*n) == typeid(cdata) and node_with_text::equals(n));
+		return this == n or (n->type() == node_type::cdata and node_with_text::equals(n));
 	}
 
 	void write(std::ostream &os, format_info fmt) const override;
@@ -1068,8 +1068,13 @@ class attribute final : public node
 	/// \brief compare nodes for equality
 	bool equals(const node *n) const override
 	{
-		auto an = dynamic_cast<const attribute *>(n);
-		return an != nullptr and an->m_id == m_id and an->m_qname == m_qname and an->m_value == m_value;
+		bool result = false;
+		if (type() == n->type())
+		{
+			auto an = static_cast<const attribute *>(n);
+			result = an->m_id == m_id and an->m_qname == m_qname and an->m_value == m_value;
+		}
+		return result;
 	}
 
 	bool operator==(const attribute &rhs) const
