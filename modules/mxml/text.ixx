@@ -1,17 +1,17 @@
 /*-
  * SPDX-License-Identifier: BSD-2-Clause
- * 
+ *
  * Copyright (c) 2024 Maarten L. Hekkelman
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- * 
+ *
  * 1. Redistributions of source code must retain the above copyright notice, this
  *    list of conditions and the following disclaimer
  * 2. Redistributions in binary form must reproduce the above copyright notice,
  *    this list of conditions and the following disclaimer in the documentation
  *    and/or other materials provided with the distribution.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
  * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -26,8 +26,10 @@
 
 module;
 
-/// \file
-/// various definitions of data types and routines used to work with Unicode encoded text
+/**
+ * \file
+ * various definitions of data types and routines used to work with Unicode encoded text
+ */
 
 #include <string>
 
@@ -38,37 +40,36 @@ namespace mxml
 
 /// some character classification routines
 
-export bool is_name_start_char(char32_t uc);
-export bool is_name_char(char32_t uc);
-export bool is_valid_xml_1_0_char(char32_t uc);
-export bool is_valid_xml_1_1_char(char32_t uc);
-export bool is_valid_system_literal_char(char32_t uc);
-export bool is_valid_system_literal(const std::string& s);
-export bool is_valid_public_id_char(char32_t uc);
-export bool is_valid_public_id(const std::string& s);
+export bool is_name_start_char(char32_t uc);               ///< is the character a 'name_start_char'?
+export bool is_name_char(char32_t uc);                     ///< is the character a 'name_char'?
+export bool is_valid_xml_1_0_char(char32_t uc);            ///< is the character a 'valid_xml_1_0_char'?
+export bool is_valid_xml_1_1_char(char32_t uc);            ///< is the character a 'valid_xml_1_1_char'?
+export bool is_valid_system_literal_char(char32_t uc);     ///< is the character a 'valid_system_literal_char'?
+export bool is_valid_system_literal(const std::string &s); ///< is the character a 'valid_system_literal'?
+export bool is_valid_public_id_char(char32_t uc);          ///< is the character a 'valid_public_id_char'?
+export bool is_valid_public_id(const std::string &s);      ///< is the character a 'valid_public_id'?
 
 /// \brief the (admittedly limited) set of supported text encodings in libmxml
-/// 
+///
 /// these are the supported encodings. Perhaps we should extend this list a bit?
-export enum class encoding_type
-{
-	ASCII,			///< 7-bit ascii 
-	UTF8,			///< UTF-8
-	UTF16BE,		///< UTF-16 Big Endian
-	UTF16LE,		///< UTF 16 Little Endian
-	ISO88591		///< Default single byte encoding, is a subset of utf-8
+export enum class encoding_type {
+	ASCII,   ///< 7-bit ascii
+	UTF8,    ///< UTF-8
+	UTF16BE, ///< UTF-16 Big Endian
+	UTF16LE, ///< UTF 16 Little Endian
+	ISO88591 ///< Default single byte encoding, is a subset of utf-8
 };
 
 /// \brief Append a single unicode character to an utf-8 string
-export void append(std::string& s, char32_t uc);
+export void append(std::string &s, char32_t uc);
 
 /// \brief remove the last unicode character from an utf-8 string
-export char32_t pop_back_char(std::string& s);
+export char32_t pop_back_char(std::string &s);
 
 /// \brief return the first unicode and advance the pointer @a ptr from a string
 export char32_t pop_front_char(std::string::const_iterator &ptr, std::string::const_iterator end);
 
 /// \brief A simple implementation of trim, removing white space from start and end of \a s
-export void trim(std::string& s);
+export void trim(std::string &s);
 
-} // namespace xml
+} // namespace mxml

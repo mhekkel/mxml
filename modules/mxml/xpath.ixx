@@ -26,8 +26,10 @@
 
 module;
 
-/// \file
-/// definition of the mxml::xpath class, implementing a XPath 1.0 compatible search facility
+/**
+ * \file
+ * definition of the mxml::xpath class, implementing a XPath 1.0 compatible search facility
+ */
 
 #include <memory>
 #include <string>
@@ -46,58 +48,83 @@ namespace mxml
 /// you can define a context, add your variables to it and then pass it on
 /// in the xpath::evaluate method.
 
+/**
+ * @brief The context class, containing named variables to use in XPaths
+ * 
+ */
+
 export class context final
 {
   public:
+	/// @brief constructor
 	context();
+
+	/// @brief Constructor to create a new scope
 	context(const context &ctxt)
 		: m_impl(ctxt.m_impl)
 	{
 	}
 
+	/// @brief move constructor
 	context(context &&ctxt)
 	{
 		std::swap(m_impl, ctxt.m_impl);
 	}
 
+	/// @brief assignment operator
 	context &operator=(context ctxt)
 	{
 		std::swap(m_impl, ctxt.m_impl);
 		return *this;
 	}
 
+	/// @brief Store a new variable in this context with name \a name and value \a value
 	void set(const std::string &name, const std::string &value);
+
+	/// @brief Store a new variable in this context with name \a name and value \a value
 	void set(const std::string &name, double value);
 
+	/// @brief Get a variable stored in this context or further up the scopes
 	template <typename T>
 		requires std::is_same_v<T, std::string> or std::is_same_v<T, double>
 	T get(const std::string &name);
 
+	/** @cond */
   private:
 	friend class xpath;
 
 	std::shared_ptr<struct context_imp> m_impl;
+	/** @endcond */
 };
 
 // --------------------------------------------------------------------
 /// The actual xpath implementation. It expects an xpath in the constructor and
 /// this path _must_ be UTF-8 encoded.
 
+/**
+ * @brief Class encapsulating an XPath
+ * 
+ */
+
 export class xpath final
 {
   public:
+	/// @brief constructor taking a UTF-8 encoded xpath in \a path
 	xpath(const std::string &path);
 
+	/// @brief copy constructor
 	xpath(const xpath &rhs)
 		: m_impl(rhs.m_impl)
 	{
 	}
 
+	/// @brief move constructor
 	xpath(xpath &&rhs) noexcept
 	{
 		std::swap(m_impl, rhs.m_impl);
 	}
 
+	/// @brief assignment operator
 	xpath &operator=(xpath xp)
 	{
 		std::swap(m_impl, xp.m_impl);

@@ -61,8 +61,11 @@ using element_set = std::vector<element *>;
 template <typename T>
 concept NodeType = std::is_base_of_v<mxml::node, std::remove_cvref_t<T>>;
 
-// Instead of using RTTI and/or virtual clone methods, we use our
-// own runtime type info based on a node_type when needed
+/**
+ * @brief An enum used as a poor mans RTTI, i.e. you can use this type
+ * to find out the actual type of a node
+ */
+
 export enum class node_type {
 	element,
 	text,
@@ -72,7 +75,6 @@ export enum class node_type {
 	document,
 	processing_instruction,
 
-	element_container,
 	header
 };
 
@@ -95,48 +97,73 @@ struct format_info
 
 // --------------------------------------------------------------------
 
-/// Node is the abstract base class for all data contained in zeep XML documents.
-/// The DOM tree consists of nodes that are linked to each other, each
-/// node can have a parent and siblings pointed to by the next and
-/// previous members. All nodes in a DOM tree share a common root node.
-///
-/// Nodes can have a name, and the XPath specification requires that a node can
-/// have a so-called expanded-name. This name consists of a local-name and a
-/// namespace which is a URI. And we can have a QName which is a concatenation of
-/// a prefix (that points to a namespace URI) and a local-name separated by a colon.
-///
-/// To reduce storage requirements, names are stored in nodes as qnames, if at all.
-/// the convenience functions name() and prefix() parse the qname(). ns() returns
-/// the namespace URI for the node, if it can be resolved.
-///
-/// Nodes inherit the namespace of their parent unless they override it which means
-/// resolving prefixes and namespaces is done hierarchically
-///
-/// Nodes are stored in a node_list, a generic list class that resembles std::list
+/**
+ * \brief The node base class
+ *
+ * Node is the abstract base class for all data contained in zeep XML documents.
+ * The DOM tree consists of nodes that are linked to each other, each
+ * node can have a parent and siblings pointed to by the next and
+ * previous members. All nodes in a DOM tree share a common root node.
+ *
+ * Nodes can have a name, and the XPath specification requires that a node can
+ * have a so-called expanded-name. This name consists of a local-name and a
+ * namespace which is a URI. And we can have a QName which is a concatenation of
+ * a prefix (that points to a namespace URI) and a local-name separated by a colon.
+ *
+ * To reduce storage requirements, names are stored in nodes as qnames, if at all.
+ * the convenience functions name() and prefix() parse the qname(). ns() returns
+ * the namespace URI for the node, if it can be resolved.
+ *
+ * Nodes inherit the namespace of their parent unless they override it which means
+ * resolving prefixes and namespaces is done hierarchically
+ *
+ * Nodes are stored in a node_list, a generic list class that resembles std::list
+ */
 
 class node
 {
   public:
+	/** @cond */
 	virtual ~node();
+	/** @endcond */
 
+	/// \brief node_type to be returned by each implementation of this node class
 	virtual constexpr node_type type() const = 0;
 
 	/// content of a xml:lang attribute of this element, or its nearest ancestor
 	virtual std::string lang() const;
 
-	/// Nodes can have a name, and the XPath specification requires that a node can
-	/// have a so-called expanded-name. This name consists of a local-name and a
-	/// namespace which is a URI. And we can have a QName which is a concatenation of
-	/// a prefix (that points to a namespace URI) and a local-name separated by a colon.
-	///
-	/// To reduce storage requirements, names are stored in nodes as qnames, if at all.
+	/**
+	 * @brief Get the qualified name
+	 *
+	 * Nodes can have a name, and the XPath specification requires that a node can
+	 * have a so-called expanded-name. This name consists of a local-name and a
+	 * namespace which is a URI. And we can have a QName which is a concatenation of
+	 * a prefix (that points to a namespace URI) and a local-name separated by a colon.
+	 *
+	 * To reduce storage requirements, names are stored in nodes as qnames, if at all.
+	 *
+	 * @return std::string
+	 */
 	virtual std::string get_qname() const;
+
+	/**
+	 * @brief Set the qualified name to @a qn
+	 *
+	 * This is only meaningful in attributes and elements.
+	 *
+	 * @param qn
+	 */
 	virtual void set_qname(std::string qn) {}
 
-	/// \brief set the qname with two parameters, if \a prefix is empty the qname will be simply \a name
-	/// otherwise the name will be `prefix:name`
-	/// \param prefix	The namespace prefix to use
-	/// \param name		The actual name to use
+	/**
+	 * \brief set the qname with two parameters, if \a prefix is empty the qname will be simply \a name
+	 * otherwise the name will be `prefix:name`
+	 *
+	 * \param prefix	The namespace prefix to use
+	 * \param name		The actual name to use
+	 */
+
 	void set_qname(const std::string &prefix, const std::string &name)
 	{
 		set_qname(prefix.empty() ? name : prefix + ':' + name);
@@ -167,17 +194,17 @@ class node
 	virtual node *root();             ///< The root node for this node
 	virtual const node *root() const; ///< The root node for this node
 
-	void parent(element_container *p) noexcept { m_parent = p; }
+	void parent(element_container *p) noexcept { m_parent = p; } ///< Set parent to \a p
 	element_container *parent() { return m_parent; }             ///< The parent node for this node
 	const element_container *parent() const { return m_parent; } ///< The parent node for this node
 
-	void next(const node *n) noexcept { m_next = const_cast<node *>(n); }
-	node *next() { return m_next; }             ///< The next sibling
-	const node *next() const { return m_next; } ///< The next sibling
+	void next(const node *n) noexcept { m_next = const_cast<node *>(n); } ///< Set next to \a n
+	node *next() { return m_next; }                                       ///< The next sibling
+	const node *next() const { return m_next; }                           ///< The next sibling
 
-	void prev(const node *n) noexcept { m_prev = const_cast<node *>(n); }
-	node *prev() { return m_prev; }             ///< The previous sibling
-	const node *prev() const { return m_prev; } ///< The previous sibling
+	void prev(const node *n) noexcept { m_prev = const_cast<node *>(n); } ///< Set prev to \a n
+	node *prev() { return m_prev; }                                       ///< The previous sibling
+	const node *prev() const { return m_prev; }                           ///< The previous sibling
 
 	/// Compare the node with \a n
 	virtual bool equals(const node *n) const;
@@ -188,6 +215,8 @@ class node
 	virtual void write(std::ostream &os, format_info fmt) const = 0;
 
   protected:
+	/** @cond */
+
 	friend class basic_node_list;
 	template <typename>
 	friend class node_list;
@@ -239,9 +268,15 @@ class node
 	element_container *m_parent = nullptr;
 	node *m_next;
 	node *m_prev;
+
+	/** @endcond */
 };
 
 // --------------------------------------------------------------------
+// Basic node list is a private class, it is the base class
+// for node_list
+
+/** @cond */
 
 class basic_node_list
 {
@@ -312,20 +347,32 @@ class basic_node_list
 	node *erase_impl(node *n);
 };
 
+/** @endcond */
+
 // --------------------------------------------------------------------
-/// \brief generic iterator class.
-///
-/// We can have iterators that point to nodes, elements and attributes.
-/// Iterating over nodes is simply following next/prev. But iterating
-/// elements is a bit more difficult, since you then have to skip nodes
-/// in between that are not an element, like comments or text.
+
+/**
+ * \brief generic iterator class.
+ *
+ * We can have iterators that point to nodes, elements and attributes.
+ * Iterating over nodes is simply following next/prev. But iterating
+ * elements is a bit more difficult, since you then have to skip nodes
+ * in between that are not an element, like comments or text.
+ * 
+ * This iterator is used for iterators over elements, attributes and
+ * simply all nodes
+ */
 
 template <typename T>
 class iterator_impl
 {
   public:
+	/** @cond */
+
 	template <typename T2>
 	friend class iterator_impl;
+
+	/** @endcond */
 
 	using iterator_category = std::bidirectional_iterator_tag;
 	using value_type = T;
@@ -343,20 +390,18 @@ class iterator_impl
 
 	iterator_impl(const iterator_impl &i) = default;
 
-	/// \brief copy constructor, kind of
-	template <NodeType T2>
-	// requires std::is_same_v<pointer, std::remove_const_t<typename T2::pointer>>
-	iterator_impl(const iterator_impl<T2> &i)
-		: m_current(const_cast<node *>(i.m_current))
-	{
-		skip();
-	}
-
+	/**
+	 * @brief Copy constructor
+	 * 
+	 * This copy constructor allows to copy from the same value_type
+	 * and from derived types. That means that you can assign an
+	 * iterator pointing to an element to a new iterator pointing
+	 * to nodes. But vice versa is not possible.
+	 */
 	template <typename Iterator>
-		requires(not std::is_same_v<std::remove_const_t<typename Iterator::value_type>, element> and
-				 std::is_base_of_v<value_type, typename Iterator::value_type>)
+		requires(std::is_base_of_v<value_type, typename Iterator::value_type>)
 	iterator_impl(const Iterator &i)
-		: m_current(i.m_current)
+		: m_current(const_cast<node *>(i.m_current))
 	{
 		skip();
 	}
@@ -445,6 +490,29 @@ class iterator_impl
 
 // --------------------------------------------------------------------
 
+/**
+ * @brief An abstract base class for lists of type \a T
+ * 
+ * This base class should offer all methods required for a 
+ * SequenceContainer.
+ * 
+ * This class is not exported.
+ * 
+ * Note that this class can act as a real container, which
+ * stores data, or it can act as a view on another node_list
+ * optionally changing what is made visible.
+ * 
+ * An element derives from node_list<element>, so it exposes
+ * access to all its children of type element. However, since
+ * node_lists store pointers to nodes, the list can contain
+ * more than just element nodes. To access these other nodes
+ * you can use a node_list<node> constructed with an element
+ * as parameter. This node_list<node> will expose all nodes
+ * in the element.
+ * 
+ * @tparam T The type of node contained, either element, attribute or node
+ */
+
 template <typename T = node>
 class node_list : public basic_node_list
 {
@@ -458,30 +526,22 @@ class node_list : public basic_node_list
 	using pointer = value_type *;
 	using const_pointer = const value_type *;
 
+	/**
+	 * @brief Construct a new node list for an element_container \a e
+	 * 
+	 * @param e The element_container
+	 */
 	node_list(element_container *e);
 
-	template <typename T2>
-		requires(std::is_same_v<value_type, node> and std::is_same_v<T2, element>)
-	node_list(node_list<T2> *e)
-		: basic_node_list(e->m_header->m_parent)
-	{
-		m_header = e->m_header->m_parent;
-	}
-
+	/** @cond */
 	node_list(const node_list &nl) = delete;
+	node_list &operator=(const node_list &) = delete;
+	/** @endcond */
 
-	node_list(node_list &&nl) noexcept
-	{
-		swap(*this, nl);
-	}
-
-	node_list &operator=(node_list nl)
-	{
-		swap(*this, nl);
-		return *this;
-	}
-
+	/// @brief The iterator class
 	using iterator = iterator_impl<value_type>;
+
+	/// @brief The const iterator class
 	using const_iterator = iterator_impl<const value_type>;
 
 	iterator begin() { return iterator(m_header->m_next); }
@@ -499,6 +559,8 @@ class node_list : public basic_node_list
 	value_type &back() { return *std::prev(end()); }
 	const value_type &back() const { return *std::prev(end()); }
 
+	/// @brief The size of the visible items
+	/// @return The count of items visible
 	size_t size() const { return std::distance(begin(), end()); }
 	bool empty() const { return size() == 0; }
 	explicit operator bool() const { return not empty(); }
@@ -560,6 +622,7 @@ class node_list : public basic_node_list
 		insert(begin(), first, last);
 	}
 
+	/// \brief emplace an element at position \a p using arguments \a args
 	template <typename... Args>
 		requires std::is_same_v<value_type, attribute> or std::is_same_v<value_type, element> or std::is_base_of_v<node, std::remove_cvref_t<Args>...>
 	iterator emplace(const_iterator p, Args &&...args)
@@ -639,6 +702,7 @@ class node_list : public basic_node_list
 		emplace(end(), e);
 	}
 
+	/// \brief delete all nodes, but only if this a self containing list
 	void clear() override
 	{
 		if constexpr (not std::is_same_v<value_type, node>)
@@ -646,39 +710,33 @@ class node_list : public basic_node_list
 	}
 };
 
-// // --------------------------------------------------------------------
-
-// template<>
-// inline node_list<node>::iterator node_list<node>::end()
-// {
-// 	return iterator(m_header->m_next->m_prev);
-// }
-
-// template<>
-// inline node_list<node>::const_iterator node_list<node>::cend()
-// {
-// 	return iterator(m_header->m_next->m_prev);
-// }
-
-// template<>
-// inline node_list<node>::const_iterator node_list<node>::end() const
-// {
-// 	return iterator(m_header->m_next->m_prev);
-// }
-
 // --------------------------------------------------------------------
-// internal class as base class for element and document
+
+/**
+ * @brief internal class as base class for element and document
+ * 
+ * Both element and document can have a list of child nodes and
+ * both are nodes implementing the namespace routines e.g.
+ * 
+ * However, element has attributes whereas document does not.
+ * And document has the constraint that it can have at most
+ * one child element. But since the rest is so similar they
+ * have a common base class: element_container.
+ * 
+ * element_container is not exported.
+ */
 
 class element_container : public node, public node_list<element>
 {
   public:
-	constexpr node_type type() const override { return node_type::element_container; }
 
+	/// @brief Default constructor
 	element_container()
 		: node_list<element>(this)
 	{
 	}
 
+	/// @brief Copy constructor
 	element_container(const element_container &e)
 		: node_list<element>(this)
 	{
@@ -687,18 +745,7 @@ class element_container : public node, public node_list<element>
 		a.assign(b.begin(), b.end());
 	}
 
-	element_container(element_container &&e) noexcept
-		: node_list<element>(this)
-	{
-		swap(*this, e);
-	}
-
-	element_container &operator=(element_container e) noexcept
-	{
-		swap(*this, e);
-		return *this;
-	}
-
+	/// @brief Destructor
 	~element_container()
 	{
 		clear();
@@ -706,22 +753,34 @@ class element_container : public node, public node_list<element>
 
 	// --------------------------------------------------------------------
 
+	/** @cond */
 	friend void swap(element_container &a, element_container &b) noexcept
 	{
 		swap(static_cast<node_list<element> &>(a), static_cast<node_list<element> &>(b));
 	}
+	/** @endcond */
 
 	// --------------------------------------------------------------------
 	// children
 
+	/**
+	 * @brief This method allows access to the nodes not visible using 
+	 * the regular interface of this class itself.
+	 * 
+	 * @return node_list<> The node_list for nodes of all types
+	 */
 	node_list<> nodes() { return node_list<node>(this); }
+
+	/**
+	 * @brief This method allows read access to the nodes not visible using 
+	 * the regular interface of this class itself.
+	 * 
+	 * @return node_list<> The node_list for nodes of all types
+	 */
 	const node_list<> nodes() const { return node_list<node>(const_cast<element_container *>(this)); }
 
 	/// \brief will return the concatenation of str() from all child nodes
 	std::string str() const override;
-
-	/// xpath wrappers
-	/// TODO: create recursive iterator and use it as return type here
 
 	/// \brief return the elements that match XPath \a path.
 	///
@@ -739,15 +798,24 @@ class element_container : public node, public node_list<element>
 	const_iterator find_first(const std::string &path) const;
 
   protected:
+	/** @cond */
 	void write(std::ostream &os, format_info fmt) const override;
+	/** @endcond */
 };
 
 // --------------------------------------------------------------------
 // internal node base class for storing text
 
+/**
+ * @brief An abstract base class for nodes that contain text
+ * 
+ */
+
 class node_with_text : public node
 {
   protected:
+	/** @cond */
+
 	node_with_text() = default;
 
 	node_with_text(const std::string &s)
@@ -760,16 +828,13 @@ class node_with_text : public node
 	{
 	}
 
-	node_with_text(node_with_text &&n) noexcept
-	{
-		swap(*this, n);
-	}
-
   public:
 	friend void swap(node_with_text &a, node_with_text &b) noexcept
 	{
 		std::swap(a.m_text, b.m_text);
 	}
+
+	/** @endcond */
 
 	/// \brief return the text content
 	std::string str() const override { return m_text; }
@@ -780,6 +845,7 @@ class node_with_text : public node
 	/// \brief set the text content
 	virtual void set_text(std::string text) { m_text = std::move(text); }
 
+	/// @brief Compare two nodes with text for equality
 	bool equals(const node *n) const override
 	{
 		return type() == n->type() and
@@ -787,34 +853,42 @@ class node_with_text : public node
 	}
 
   protected:
+	/** @cond */
 	std::string m_text;
+	/** @endcond */
 };
 
 // --------------------------------------------------------------------
-/// A node containing a XML comment
+
+/**
+ * @brief A node containing a XML comment
+ * 
+ */
 
 class comment final : public node_with_text
 {
   public:
 	constexpr node_type type() const override { return node_type::comment; }
 
-	comment() = default;
+	/// @brief default constructor
+	comment(const std::string &text = {})
+		: node_with_text(text)
+	{
+	}
 
+	/// @brief copy constructor
 	comment(const comment &c)
 		: node_with_text(c)
 	{
 	}
 
-	comment(const std::string &text)
-		: node_with_text(text)
-	{
-	}
-
+	/// @brief move constructor
 	comment(comment &&c) noexcept
 	{
 		swap(*this, c);
 	}
 
+	/// @brief assignment operator
 	comment &operator=(comment c) noexcept
 	{
 		swap(*this, c);
@@ -827,17 +901,23 @@ class comment final : public node_with_text
 		return this == n or (n->type() == node_type::comment and node_with_text::equals(n));
 	}
 
+	/** @cond */
 	void write(std::ostream &os, format_info fmt) const override;
+	/** @endcond */
 };
 
 // --------------------------------------------------------------------
-/// A node containing a XML processing instruction (like e.g. \<?php ?\>)
+/**
+ * @brief A node containing a XML processing instruction (like e.g. \<?php ?\>)
+ * 
+ */
 
 class processing_instruction final : public node_with_text
 {
   public:
 	constexpr node_type type() const override { return node_type::processing_instruction; }
 
+	/// @brief default constructor
 	processing_instruction() = default;
 
 	/// \brief constructor with parameters
@@ -851,29 +931,34 @@ class processing_instruction final : public node_with_text
 	{
 	}
 
+	/// @brief copy constructor
 	processing_instruction(const processing_instruction &pi)
 		: node_with_text(pi)
 		, m_target(pi.m_target)
 	{
 	}
 
+	/// @brief move constructor
 	processing_instruction(processing_instruction &&pi) noexcept
 		: node_with_text(std::move(pi))
 		, m_target(std::move(pi.m_target))
 	{
 	}
 
+	/// @brief assignment operator
 	processing_instruction &operator=(processing_instruction pi) noexcept
 	{
 		swap(*this, pi);
 		return *this;
 	}
 
+	/** @cond */
 	friend void swap(processing_instruction &a, processing_instruction &b) noexcept
 	{
 		swap(static_cast<node_with_text &>(a), static_cast<node_with_text &>(b));
 		std::swap(a.m_target, b.m_target);
 	}
+	/** @endcond */
 
 	/// \brief return the qname which is the same as the target in this case
 	std::string get_qname() const override { return m_target; }
@@ -890,37 +975,45 @@ class processing_instruction final : public node_with_text
 		return this == n or (n->type() == node_type::processing_instruction and node_with_text::equals(n));
 	}
 
+	/** @cond */
 	void write(std::ostream &os, format_info fmt) const override;
 
   private:
 	std::string m_target;
+
+	/** @endcond */
 };
 
 // --------------------------------------------------------------------
-/// A node containing text.
+/**
+ * @brief A node containing text.
+ * 
+ */
 
 class text final : public node_with_text
 {
   public:
 	constexpr node_type type() const override { return node_type::text; }
 
-	text() {}
-
-	text(const std::string &text)
+	/// @brief default constructor
+	text(const std::string &text = {})
 		: node_with_text(text)
 	{
 	}
 
+	/// @brief copy constructor
 	text(const text &t)
 		: node_with_text(t)
 	{
 	}
 
+	/// @brief move constructor
 	text(text &&t) noexcept
 		: node_with_text(std::move(t.m_text))
 	{
 	}
 
+	/// @brief assignment operator
 	text &operator=(text txt) noexcept
 	{
 		swap(*this, txt);
@@ -936,36 +1029,42 @@ class text final : public node_with_text
 	/// \brief returns true if this text contains only whitespace characters
 	bool is_space() const;
 
+	/** @cond */
 	void write(std::ostream &os, format_info fmt) const override;
+	/** @endcond */
 };
 
 // --------------------------------------------------------------------
-/// A node containing the contents of a CDATA section. Normally, these nodes are
-/// converted to text nodes but you can specify to preserve them when parsing a
-/// document.
+/**
+ * @brief A node containing the contents of a CDATA section. Normally, these nodes are
+ * converted to text nodes but you can specify to preserve them when parsing a document.
+ * 
+ */
 
 class cdata final : public node_with_text
 {
   public:
 	constexpr node_type type() const override { return node_type::cdata; }
 
-	cdata() = default;
+	/// @brief default constructor
+	cdata(const std::string &s = {})
+		: node_with_text(s)
+	{
+	}
 
+	/// @brief copy constructor
 	cdata(const cdata &cd)
 		: node_with_text(cd)
 	{
 	}
 
+	/// @brief move constructor
 	cdata(cdata &&cd) noexcept
 		: node_with_text(std::move(cd))
 	{
 	}
 
-	cdata(const std::string &s)
-		: node_with_text(s)
-	{
-	}
-
+	/// @brief assignment operator
 	cdata &operator=(cdata cd) noexcept
 	{
 		swap(*this, cd);
@@ -981,31 +1080,26 @@ class cdata final : public node_with_text
 		return this == n or (n->type() == node_type::cdata and node_with_text::equals(n));
 	}
 
+	/** @cond */
 	void write(std::ostream &os, format_info fmt) const override;
+	/** @endcond */
 };
 
 // --------------------------------------------------------------------
-/// An attribute is a node, has an element as parent, but is not a child of this parent (!)
+/**
+ * @brief An attribute is a node, has an element as parent, but is not a child of this parent (!)
+ * 
+ */
 
 class attribute final : public node
 {
   public:
 	constexpr node_type type() const override { return node_type::attribute; }
 
-	attribute(const attribute &attr)
-		: m_qname(attr.m_qname)
-		, m_value(attr.m_value)
-		, m_id(attr.m_id)
-	{
-	}
-
-	attribute(attribute &&attr) noexcept
-		: m_qname(std::move(attr.m_qname))
-		, m_value(std::move(attr.m_value))
-		, m_id(attr.m_id)
-	{
-	}
-
+	/// @brief constructor
+	/// @param qname The qualified name
+	/// @param value The value
+	/// @param id Flag to indicate if this is an ID attribute
 	attribute(std::string_view qname, std::string_view value, bool id = false)
 		: m_qname(qname)
 		, m_value(value)
@@ -1013,19 +1107,39 @@ class attribute final : public node
 	{
 	}
 
+	/// @brief copy constructor
+	attribute(const attribute &attr)
+		: m_qname(attr.m_qname)
+		, m_value(attr.m_value)
+		, m_id(attr.m_id)
+	{
+	}
+
+	/// @brief move constructor
+	attribute(attribute &&attr) noexcept
+		: m_qname(std::move(attr.m_qname))
+		, m_value(std::move(attr.m_value))
+		, m_id(attr.m_id)
+	{
+	}
+
+	/// @brief assignment operator
 	attribute &operator=(attribute attr) noexcept
 	{
 		swap(*this, attr);
 		return *this;
 	}
 
+	/** @cond */
 	friend void swap(attribute &a, attribute &b) noexcept
 	{
 		std::swap(a.m_qname, b.m_qname);
 		std::swap(a.m_value, b.m_value);
 		std::swap(a.m_id, b.m_id);
 	}
+	/** @endcond */
 
+	/// @brief Attributes can be sorted
 	std::strong_ordering operator<=>(const attribute &a) const
 	{
 		if (auto cmp = m_qname <=> a.m_qname; cmp != 0)
@@ -1035,7 +1149,16 @@ class attribute final : public node
 		return m_value <=> a.m_value;
 	}
 
+	/// @brief Compare two attributes for equality
+	bool operator==(const attribute &rhs) const
+	{
+		return equals(&rhs);
+	}
+
+	/// @brief Get the qualified name for this attribute
 	std::string get_qname() const override { return m_qname; }
+
+	/// @brief Set the qualified name to \a qn
 	void set_qname(std::string qn) override { m_qname = std::move(qn); }
 
 	using node::set_qname;
@@ -1046,12 +1169,16 @@ class attribute final : public node
 		return m_qname.compare(0, 5, "xmlns") == 0 and (m_qname[5] == 0 or m_qname[5] == ':');
 	}
 
+	/// @brief Return the value of this attribute
 	std::string value() const { return m_value; }
+
+	/// @brief Set the value of this attribute to \a v
 	void set_value(const std::string &v) { m_value = v; }
 
 	/// \brief same as value, but checks to see if this really is a namespace attribute
 	std::string uri() const;
 
+	/// @brief Returns the value of this attribute
 	std::string str() const override { return m_value; }
 
 	/// \brief compare nodes for equality
@@ -1064,11 +1191,6 @@ class attribute final : public node
 			result = an->m_id == m_id and an->m_qname == m_qname and an->m_value == m_value;
 		}
 		return result;
-	}
-
-	bool operator==(const attribute &rhs) const
-	{
-		return equals(&rhs);
 	}
 
 	/// \brief returns whether this attribute is an ID attribute, as defined in an accompanying DTD
@@ -1084,45 +1206,42 @@ class attribute final : public node
 			return value();
 	}
 
+	/** @cond */
 	void write(std::ostream &os, format_info fmt) const override;
 
   private:
 	std::string m_qname, m_value;
 	bool m_id;
+	/** @endcond */
 };
 
 // --------------------------------------------------------------------
-/// \brief set of attributes and name_spaces. Is a node_list but with a set interface
+/**
+ * @brief set of attributes and name_spaces. Is a node_list but with a set interface
+ * 
+ */
 
 export class attribute_set : public node_list<attribute>
 {
   public:
-	using iterator = typename node_list::iterator;
-	using const_iterator = typename node_list::const_iterator;
-	using size_type = std::size_t;
-
+	/// @brief constructor to create an attribute_set for an element
 	attribute_set(element_container *el)
 		: node_list(el)
 	{
 	}
 
-	attribute_set(element *el, const attribute_set &as);
-
-	attribute_set &operator=(attribute_set as) noexcept
-	{
-		swap(*this, as);
-		return *this;
-	}
-
+	/// @brief destructor
 	~attribute_set()
 	{
 		clear();
 	}
 
+	/** @cond */
 	friend void swap(attribute_set &a, attribute_set &b) noexcept
 	{
 		swap(static_cast<node_list<attribute> &>(a), static_cast<node_list<attribute> &>(b));
 	}
+	/** @endcond */
 
 	/// \brief return true if the attribute with name \a key is defined
 	bool contains(std::string_view key) const
@@ -1192,33 +1311,42 @@ export class attribute_set : public node_list<attribute>
 };
 
 // --------------------------------------------------------------------
-/// \brief the element class modelling a XML element
-///
-/// element is the most important mxml::node object. It encapsulates a
-/// XML element as found in the XML document. It has a qname, can have children,
-/// attributes and a namespace.
+/**
+ * @brief the element class modelling a XML element
+ * 
+ * element is the most important mxml::node object. It encapsulates a
+ * XML element as found in the XML document. It has a qname, can have children,
+ * attributes and a namespace.
+ */
 
 class element final : public element_container
 {
   public:
 	constexpr node_type type() const override { return node_type::element; }
 
+	/// @brief default constructor
 	element()
 		: m_attributes(this)
 	{
 	}
 
-	// 	/// \brief constructor taking a \a qname and a list of \a attributes
+	/// @brief constructor taking a \a qname and a list of \a attributes
 	element(std::string_view qname, std::initializer_list<attribute> attributes = {})
-		: element_container()
-		, m_qname(qname)
+		: m_qname(qname)
 		, m_attributes(this)
 	{
 		m_attributes.assign(attributes.begin(), attributes.end());
 	}
 
-	element(std::initializer_list<element> il);
+	/// @brief constructor taking a \a qname and a list of child elements
+	element(std::string_view qname, std::initializer_list<element> il)
+		: m_qname(qname)
+		, m_attributes(this)
+	{
+		assign(il.begin(), il.end());
+	}
 
+	/// @brief copy constructor
 	element(const element &e)
 		: element_container(e)
 		, m_qname(e.m_qname)
@@ -1227,18 +1355,21 @@ class element final : public element_container
 		m_attributes.assign(e.m_attributes.begin(), e.m_attributes.end());
 	}
 
+	/// @brief move constructor
 	element(element &&e) noexcept
 		: m_attributes(this)
 	{
 		swap(*this, e);
 	}
 
+	/// @brief assignment operator
 	element &operator=(element e) noexcept
 	{
 		swap(*this, e);
 		return *this;
 	}
 
+	/** @cond */
 	friend void swap(element &a, element &b) noexcept
 	{
 		// swap(static_cast<node&>(a), static_cast<node&>(b));
@@ -1247,24 +1378,30 @@ class element final : public element_container
 		std::swap(a.m_qname, b.m_qname);
 		swap(a.m_attributes, b.m_attributes);
 	}
+	/** @endcond */
 
 	using node::set_qname;
 
+	/// @brief Return the qualified name
 	std::string get_qname() const override { return m_qname; }
+
+	/// @brief Set the qualified name to \a qn
 	void set_qname(std::string qn) override { m_qname = std::move(qn); }
 
-	/// content of a xml:lang attribute of this element, or its nearest ancestor
+	/// \brief content of a xml:lang attribute of this element, or its nearest ancestor
 	std::string lang() const override;
 
-	/// content of the xml:id attribute, or the attribute that was defined to be
+	/// \brief content of the xml:id attribute, or the attribute that was defined to be
 	/// of type ID by the DOCTYPE.
 	std::string id() const;
 
+	/// @brief Compare two elements for equality
 	bool operator==(const element &e) const
 	{
 		return equals(&e);
 	}
 
+	/// @brief Compare two elements for equality
 	bool equals(const node *n) const override;
 
 	// --------------------------------------------------------------------
@@ -1326,15 +1463,17 @@ class element final : public element_container
 	/// To combine all adjacent child text nodes into one
 	void flatten_text();
 
+	/** @cond */
 	void write(std::ostream &os, format_info fmt) const override;
 
   private:
 	std::string m_qname;
 	attribute_set m_attributes;
+	/** @endcond */
 };
 
 // --------------------------------------------------------------------
-
+/** @cond */
 template <typename T>
 inline node_list<T>::node_list(element_container *e)
 	: basic_node_list(e)
@@ -1399,18 +1538,21 @@ inline auto node_list<node>::insert(const_iterator pos, value_type &&e) -> itera
 			throw exception("internal error");
 	}
 }
+/** @endcond */
 
 // --------------------------------------------------------------------
 
-/// \brief This method fixes namespace attribute when transferring an element
-/// 	   from one document to another (replaces prefixes e.g.)
-///
-/// When moving an element from one document to another, we need to fix the
-/// namespaces, make sure the destination has all the namespace specifications
-/// required by the element and make sure the prefixes used are correct.
-/// \param e		The element that is being transferred
-/// \param source	The (usually) document element that was the source
-/// \param dest		The (usually) document element that is the destination
+/**
+ * \brief This method fixes namespace attribute when transferring an element
+ * 	   from one document to another (replaces prefixes e.g.)
+ *
+ * When moving an element from one document to another, we need to fix the
+ * namespaces, make sure the destination has all the namespace specifications
+ * required by the element and make sure the prefixes used are correct.
+ * \param e		The element that is being transferred
+ * \param source	The (usually) document element that was the source
+ * \param dest		The (usually) document element that is the destination
+ */
 
 void fix_namespaces(element &e, element &source, element &dest);
 
@@ -1418,6 +1560,7 @@ void fix_namespaces(element &e, element &source, element &dest);
 
 // --------------------------------------------------------------------
 // structured binding support
+/** @cond */
 
 namespace std
 {
@@ -1439,5 +1582,7 @@ struct tuple_element<1, ::mxml::attribute>
 {
 	using type = decltype(std::declval<::mxml::attribute>().value());
 };
+
+/** @endcond */
 
 } // namespace std

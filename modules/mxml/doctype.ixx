@@ -29,7 +29,9 @@ module;
 /** @file
  * File containing code to support DOCTYPE handling. This is private code
  * to the mxml library. 
-*/
+ * 
+ * @cond
+ */
 
 #include <cassert>
 #include <memory>
@@ -413,3 +415,5 @@ class parameter_entity : public entity
 const general_entity *get_named_character(std::string_view name);
 
 } // namespace mxml::doctype
+
+/** @endcond */

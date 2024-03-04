@@ -26,8 +26,10 @@
 
 module;
 
-/// \file
-/// definition of the mxml XML parser, a recursive descent parser
+/**
+ * \file
+ * definition of the mxml XML parser, a recursive descent parser
+ */
 
 #include <functional>
 #include <istream>
@@ -41,14 +43,6 @@ import :version;
 
 namespace mxml
 {
-
-struct attr
-{
-	std::string m_ns;
-	std::string m_name;
-	std::string m_value;
-	bool m_id; // whether the attribute is defined as type ID in its ATTLIST decl
-};
 
 /// If an invalid_exception is thrown, it means the XML document is not valid: it does
 /// not conform the DTD specified in the XML document.
@@ -82,18 +76,40 @@ export class not_wf_exception : public exception
 	~not_wf_exception() noexcept {}
 };
 
-/// mxml::parser is a SAX parser. After construction, you should assign
-/// call back handlers for the SAX events and then call parse().
+/**
+ * @brief A SAX parser
+ *
+ * mxml::parser is a SAX parser. After construction, you should assign
+ * call back handlers for the SAX events and then call parse().
+ */
 
 export class parser
 {
   public:
-	using attr_type = attr;
+	/**
+	 * @brief Struct containing information about a parsed attribute
+	 *
+	 */
+	struct attr
+	{
+		std::string m_ns;    ///< The namespace for this attribute
+		std::string m_name;  ///< The name of the attribute
+		std::string m_value; ///< The value of the attribute
+		bool m_id;           ///< Flag indicating the attribute is defined as type ID in its ATTLIST decl
+	};
+
 	using attr_list_type = std::vector<attr>;
 
+	/// @brief constructor taking a std::istream in \a is
 	parser(std::istream &is);
 
+	/// @brief destructor
 	virtual ~parser();
+
+	/**
+	 * The callbacks can be set by assinging a callback to each of
+	 * the following callback function variables.
+	 */
 
 	std::function<void(encoding_type encoding, bool standalone, version_type version)> xml_decl_handler;
 	std::function<void(const std::string &name, const std::string &uri, const attr_list_type &atts)> start_element_handler;
@@ -110,9 +126,11 @@ export class parser
 	std::function<std::istream *(const std::string &base, const std::string &pubid, const std::string &uri)> external_entity_ref_handler;
 	std::function<void(const std::string &msg)> report_invalidation_handler;
 
+	/** @brief Start the actual parsing, optionally validating content and namespaces */
 	void parse(bool validate, bool validate_ns);
 
   protected:
+	/** @cond */
 	friend struct parser_imp;
 
 	virtual void xml_decl(encoding_type encoding, bool standalone, version_type version);
@@ -148,6 +166,8 @@ export class parser
 
 	struct parser_imp *m_impl;
 	std::istream *m_istream;
+
+	/** @endcond */
 };
 
 } // namespace mxml

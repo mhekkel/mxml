@@ -12,33 +12,36 @@ set(DOXYGEN_INDEX_FILE ${DOXYGEN_OUTPUT_DIR}/index.xml)
 set(DOXYFILE_IN ${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile.in)
 set(DOXYFILE_OUT ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile)
 
-#Replace variables inside @@ with the current values
+# Replace variables inside @@ with the current values
 configure_file(${DOXYFILE_IN} ${DOXYFILE_OUT} @ONLY)
 
 add_custom_command(
 	OUTPUT ${DOXYGEN_OUTPUT_DIR}
-    COMMAND ${CMAKE_COMMAND} -E make_directory ${DOXYGEN_OUTPUT_DIR})
+	COMMAND ${CMAKE_COMMAND} -E make_directory ${DOXYGEN_OUTPUT_DIR})
 
 add_custom_command(OUTPUT ${DOXYGEN_INDEX_FILE}
-                   DEPENDS ${MXML_PUBLIC_HEADERS}  ${DOXYGEN_OUTPUT_DIR} ${DOXYFILE_OUT}
-                   COMMAND ${DOXYGEN_EXECUTABLE} ${DOXYFILE_OUT}
-                   MAIN_DEPENDENCY ${DOXYFILE_OUT} ${DOXYFILE_IN}
-                   COMMENT "Generating docs")
+	DEPENDS ${MXML_PUBLIC_HEADERS} ${DOXYGEN_OUTPUT_DIR} ${DOXYFILE_OUT}
+	COMMAND ${DOXYGEN_EXECUTABLE} ${DOXYFILE_OUT}
+	MAIN_DEPENDENCY ${DOXYFILE_OUT} ${DOXYFILE_IN}
+	COMMENT "Generating docs")
 
-add_custom_target("Doxygen-mxml" ALL DEPENDS ${DOXYGEN_INDEX_FILE})
+add_custom_target(Doxygen-mxml ALL DEPENDS ${DOXYGEN_INDEX_FILE})
+set_property(TARGET Doxygen-mxml APPEND PROPERTY ADDITIONAL_CLEAN_FILES ${DOXYGEN_OUTPUT_DIR})
 
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/conf.py.in ${CMAKE_CURRENT_SOURCE_DIR}/conf.py @ONLY)
 
 set(SPHINX_SOURCE ${CMAKE_CURRENT_SOURCE_DIR})
 set(SPHINX_BUILD ${CMAKE_CURRENT_BINARY_DIR}/sphinx)
 
-add_custom_target("Sphinx-mxml" ALL
-                  COMMAND ${SPHINX_EXECUTABLE} -b html
-				  -Dbreathe_projects.mxml=${DOXYGEN_OUTPUT_DIR}
-                  ${SPHINX_SOURCE} ${SPHINX_BUILD}
-				  DEPENDS ${DOXYGEN_INDEX_FILE}
-				  BYPRODUCTS ${CMAKE_CURRENT_SOURCE_DIR}/api
-                  WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-                  COMMENT "Generating documentation with Sphinx")
+add_custom_target(Sphinx-mxml ALL
+	COMMAND ${SPHINX_EXECUTABLE} -b html
+	-Dbreathe_projects.mxml=${DOXYGEN_OUTPUT_DIR}
+	${SPHINX_SOURCE} ${SPHINX_BUILD}
+	DEPENDS ${DOXYGEN_INDEX_FILE}
+	BYPRODUCTS ${CMAKE_CURRENT_SOURCE_DIR}/api
+	WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+	COMMENT "Generating documentation with Sphinx")
+
+set_property(TARGET Sphinx-mxml APPEND PROPERTY ADDITIONAL_CLEAN_FILES ${CMAKE_CURRENT_SOURCE_DIR}/api)
 
 install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/sphinx/ DESTINATION ${CMAKE_INSTALL_DOCDIR} PATTERN .doctrees EXCLUDE)

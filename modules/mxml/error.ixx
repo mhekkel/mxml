@@ -24,6 +24,11 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+/**
+ * \file
+ * definition of the mxml::exception class
+ */
+
 module;
 
 #include <exception>

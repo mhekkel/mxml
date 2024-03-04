@@ -26,8 +26,10 @@
 
 module;
 
-/// \file
-/// definition of the serializer classes used to (de-)serialize XML data.
+/**
+ * @file
+ * definition of the serializer classes used to (de-)serialize XML data.
+ */
 
 #include <algorithm>
 #include <charconv>
@@ -48,8 +50,6 @@ import :node;
 
 namespace mxml
 {
-
-// --------------------------------------------------------------------
 
 // --------------------------------------------------------------------
 /// \brief A template boilerplate for conversion of basic types to or
@@ -80,6 +80,7 @@ struct value_serializer<std::string>
 	static std::string_view from_string(std::string_view value) { return value; }
 };
 
+/// @ref value_serializer implementation for numbers
 template <typename T>
 struct char_conv_serializer
 {
@@ -183,15 +184,17 @@ struct value_serializer<double> : char_conv_serializer<double>
 	static std::string type_name() { return "xsd:double"; }
 };
 
-/// \brief value_serializer for enum values
-///
-/// This class is used to (de-)serialize enum values. To map enum
-/// values to a string you should use the singleton instance
-/// accessible through instance() and then call the operator()
-/// members assinging each of the enum values with their respective
-/// string.
-///
-/// A recent addition is the init() call to initialize the instance
+/**
+ * \brief value_serializer for enum values
+ *
+ * This class is used to (de-)serialize enum values. To map enum
+ * values to a string you should use the singleton instance
+ * accessible through instance() and then call the operator()
+ * members assinging each of the enum values with their respective
+ * string.
+ *
+ * A recent addition is the init() call to initialize the instance
+ */
 
 template <typename T>
 	requires std::is_enum_v<T>
@@ -353,6 +356,7 @@ struct value_serializer<date::sys_days>
 
 #endif
 
+/** @cond */
 // --------------------------------------------------------------------
 // start type checking templates with our own version of is_detected_v
 
@@ -440,36 +444,46 @@ struct is_serializable_array_type<T, S,
 export template <typename T, typename S>
 inline constexpr bool is_serializable_array_type_v = is_serializable_array_type<T, S>::value;
 
+/** @endcond */
 // --------------------------------------------------------------------
 
 export struct serializer;
 export struct deserializer;
 
+/**
+ * @brief base struct to capture named values in a structure for serializing
+ */
 template <typename T>
 class name_value_pair
 {
   public:
+	/// @brief constructor
 	name_value_pair(std::string_view name, T &value)
 		: m_name(name)
 		, m_value(value)
 	{
 	}
 
+	/** @cond */
 	name_value_pair(const name_value_pair &) = default;
 	name_value_pair(name_value_pair &&) = default;
 	name_value_pair &operator=(const name_value_pair &) = default;
 	name_value_pair &operator=(name_value_pair &&) = default;
+	/** @endcond */
 
 	const std::string &name() const { return m_name; }
 
 	// T &value() { return m_value; }
 	T &value() const { return m_value; }
 
+	/** @cond */
   private:
 	std::string m_name;
 	T &m_value;
+	/** @endcond */
 };
 
+/// @brief name value pair to create elements
 template <typename T>
 class element_nvp : public name_value_pair<T>
 {
@@ -479,6 +493,8 @@ class element_nvp : public name_value_pair<T>
 	{
 	}
 };
+
+/// @brief name value pair to create attributes
 template <typename T>
 class attribute_nvp : public name_value_pair<T>
 {
@@ -489,31 +505,44 @@ class attribute_nvp : public name_value_pair<T>
 	}
 };
 
+/**
+ * @brief Create a name/value pair for serializing to and from an XML element
+ */
 export template <typename T>
 constexpr attribute_nvp<T> make_attribute_nvp(std::string_view name, T &value)
 {
 	return attribute_nvp(name, value);
 }
 
+/**
+ * @brief Create a name/value pair for serializing to and from an XML attribute
+ */
 export template <typename T>
 constexpr element_nvp<T> make_element_nvp(std::string_view name, T &value)
 {
 	return element_nvp(name, value);
 }
 
-/// serializer and deserializer are classes that can be used
-/// to initiate the serialization. They are the Archive classes that are
-/// the first parameter to the templated function 'serialize' in the classes
-/// that can be serialized. (See boost::serialization for more info).
+/**
+ * serializer and deserializer are classes that can be used
+ * to initiate the serialization. They are the Archive classes that are
+ * the first parameter to the templated function 'serialize' in the classes
+ * that can be serialized. (See boost::serialization for more info).
+ */
 
-/// serializer is the class that initiates the serialization process.
+/**
+ * @brief serializer is the class that initiates the serialization process.
+ */
 
 export struct serializer
 {
+	/// @brief constructor, write to \a node
 	serializer(element_container &node)
 		: m_node(node)
 	{
 	}
+
+	/** @cond */
 
 	template <typename T>
 	serializer &operator&(const element_nvp<T> &rhs)
@@ -537,16 +566,24 @@ export struct serializer
 	serializer &serialize_attribute(std::string_view name, const T &data);
 
 	element_container &m_node;
+
+	/** @endcond */
 };
 
-/// deserializer is the class that initiates the deserialization process.
+/**
+ * @brief deserializer is the class that initiates the deserialization process.
+ * 
+ */
 
 export struct deserializer
 {
+	/// @brief constructor, read from \a node
 	deserializer(const element_container &node)
 		: m_node(node)
 	{
 	}
+
+	/** @cond */
 
 	template <typename T>
 	deserializer &operator&(const element_nvp<T> &rhs)
@@ -570,12 +607,21 @@ export struct deserializer
 	deserializer &deserialize_attribute(std::string_view name, T &data);
 
 	const element_container &m_node;
+
+	/** @endcond */
 };
 
 // --------------------------------------------------------------------
 
+/**
+ * @brief Type serializer objects can serialize various types,
+ * each has its own template specialization. 
+ */
+
 template <typename T>
 struct type_serializer;
+
+/** @cond */
 
 template <typename T, size_t N>
 struct type_serializer<T[N]>
@@ -951,8 +997,14 @@ deserializer &deserializer::deserialize_attribute(std::string_view name, T &valu
 	return *this;
 }
 
+/** @endcond */
+
 // --------------------------------------------------------------------
 // Convenience routines
+
+/**
+ * @brief Write out \a value into XML into document or element \a e
+ */
 
 export template <typename T>
 void to_xml(mxml::element_container &e, const T &value)
@@ -961,6 +1013,11 @@ void to_xml(mxml::element_container &e, const T &value)
 	sr.serialize_element(value);
 }
 
+/**
+ * @brief Write out \a value into XML into document or element \a e
+ * using \a name as name for the element to create.
+ */
+
 export template <typename T>
 void to_xml(mxml::element_container &e, std::string_view name, const T &value)
 {
@@ -968,12 +1025,21 @@ void to_xml(mxml::element_container &e, std::string_view name, const T &value)
 	sr.serialize_element(name, value);
 }
 
+/**
+ * @brief Read in \a value from the XML in document or element \a e
+ */
+
 export template <typename T>
 void from_xml(const mxml::element_container &e, T &value)
 {
 	deserializer dsr(e);
 	dsr.deserialize_element(value);
 }
+
+/**
+ * @brief Read in \a value from the XML in document or element \a e
+ * using \a name as name for the element to use.
+ */
 
 export template <typename T>
 void from_xml(const mxml::element_container &e, std::string_view name, T &value)

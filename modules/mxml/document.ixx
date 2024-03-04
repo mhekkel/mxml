@@ -26,8 +26,10 @@
 
 module;
 
-/// \file
-/// definition of the mxml::document class
+/**
+ * \file
+ * definition of the mxml::document class
+ */
 
 #include <functional>
 #include <string>
@@ -79,6 +81,7 @@ struct doc_type
 export class document final : public element_container
 {
   public:
+	/// \brief node_type of a document
 	node_type type() const override { return node_type::document; }
 
 	/// \brief Constructor for an empty document.
@@ -211,8 +214,15 @@ export class document final : public element_container
 	/// the document.
 	void set_base_dir(const std::string &path);
 
-	/// If you want to be able to load external documents other than trying to read them from disk
-	/// you can set a callback here.
+	/**
+	 * @brief Set a callback for loading external entities
+	 * 
+	 * The default for MXML is to locate the external reference based
+	 * on sysid and base_dir. Only local files are loaded this way.
+	 * 
+	 * You can specify a entity loader here if you want to be able to load
+	 * DTD files from another source.
+	 */
 	template <typename Callback>
 	void set_entity_loader(Callback &&cb)
 	{
@@ -225,27 +235,31 @@ export class document final : public element_container
 	version_type get_version() const; ///< XML version, should be either 1.0 or 1.1
 	void set_version(version_type v); ///< XML version, should be either 1.0 or 1.1
 
-	node *root() override { return this; }
-	const node *root() const override { return this; }
+	node *root() override { return this; }             ///< The root node, which is the document of course
+	const node *root() const override { return this; } ///< The root node, which is the document of course
 
+	/// @brief Return the single child, or nullptr in case the document is empty
 	element *child()
 	{
 		return empty() ? nullptr : &front();
 	}
 
+	/// @brief Return the single child, or nullptr in case the document is empty
 	const element *child() const { return const_cast<document *>(this)->child(); }
 
-	std::string str() const override;
-
-	template <typename ...Args>
+	/// @brief Emplace a single element using \a args for the construction
+	template <typename... Args>
 		requires std::is_constructible_v<element, Args...>
-	auto emplace(Args &&... args)
+	auto emplace(Args &&...args)
 	{
 		return emplace_back(std::forward<Args>(args)...);
 	}
 
-  protected:
+	/// @brief Return the concatenation of all contained text nodes
+	std::string str() const override;
 
+  protected:
+	/** @cond */
 	node *insert_impl(const node *p, node *n) override;
 
 	void XmlDeclHandler(encoding_type encoding, bool standalone, version_type version);
@@ -264,10 +278,6 @@ export class document final : public element_container
 	std::istream *external_entity_ref(const std::string &base, const std::string &pubid, const std::string &sysid);
 	void parse(std::istream &data);
 
-	/// The default for MXML is to locate the external reference based
-	/// on sysid and base_dir. Only local files are loaded this way.
-	/// You can specify a entity loader here if you want to be able to load
-	/// DTD files from another source.
 	std::function<std::istream *(const std::string &base, const std::string &pubid, const std::string &sysid)>
 		m_external_entity_ref_loader;
 
@@ -298,14 +308,27 @@ export class document final : public element_container
 	};
 
 	element_container *m_cur = nullptr; // construction
-	cdata *m_cdata = nullptr; // only defined in a CDATA section
+	cdata *m_cdata = nullptr;           // only defined in a CDATA section
 	std::vector<std::pair<std::string, std::string>> m_namespaces;
 	std::vector<notation> m_notations;
 	size_t m_root_size_at_first_notation = 0; // for processing instructions that occur before a notation
+
+	/** @endcond */
 };
+
 
 export namespace literals
 {
+	/**
+	 * @brief This operator allows you to construct static XML
+	 * documents from strings. As in this example:
+	 * 
+	 * @code{.cpp}
+	 * using namespace mxml::literals;
+	 * 
+	 * mxml::document doc = "<text>Hello, world!</text>"_xml;"
+	 * @endcode
+	 */
 	document operator""_xml(const char *text, size_t length);
 }
 

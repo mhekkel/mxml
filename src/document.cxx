@@ -303,7 +303,7 @@ void document::StartElementHandler(const std::string &name, const std::string &u
 			static_cast<element *>(m_cur)->attributes().emplace("xmlns:"s + prefix, uri);
 	}
 
-	for (const parser::attr_type &a : atts)
+	for (auto &a : atts)
 	{
 		qname = a.m_name;
 		if (not a.m_ns.empty())

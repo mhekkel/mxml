@@ -27,8 +27,10 @@
 
 module;
 
-/// \file
-/// the core of the mxml XML library defining the main classes in the DOM API
+/**
+ * \file
+ * File containing the version_type struct
+ */
 
 #include <compare>
 #include <cstdint>
@@ -47,8 +49,8 @@ namespace mxml
 
 export struct version_type
 {
-	uint8_t major;
-	uint8_t minor;
+	uint8_t major; ///< major, usually 1
+	uint8_t minor; ///< minor, usually 0 or 1
 
 	constexpr auto operator<=>(const version_type &) const = default;
 };

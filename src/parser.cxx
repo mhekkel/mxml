@@ -3567,7 +3567,7 @@ void parser_imp::element(doctype::validator &valid)
 
 	doctype::validator sub_valid(dte);
 
-	std::vector<attr> attrs;
+	std::vector<parser::attr> attrs;
 
 	ns_state ns(this);
 	std::set<std::string> seen;
@@ -3720,7 +3720,7 @@ void parser_imp::element(doctype::validator &valid)
 				}
 			}
 
-			attr a;
+			parser::attr a;
 			a.m_name = attr_name;
 			a.m_value = attr_value;
 			a.m_id = id;
@@ -3789,7 +3789,7 @@ void parser_imp::element(doctype::validator &valid)
 				if (m_validating and m_standalone and dta->is_external())
 					not_valid("default value for attribute defined in external declaration which is not allowed in a standalone document");
 
-				attr def_attr;
+				parser::attr def_attr;
 				def_attr.m_name = attr_name;
 				def_attr.m_value = normalize_attribute_value(defValue, dta->get_type() == doctype::attribute_type::CDATA);
 				def_attr.m_id = false;
