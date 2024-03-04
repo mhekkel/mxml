@@ -337,17 +337,6 @@ TEST_CASE("test_optional")
 	CHECK(*s == "aap");
 }
 
-TEST_CASE("test_schema")
-{
-	using namespace mxml;
-	using namespace mxml::literals;
-
-	element schema;
-	type_map types;
-
-	// schema_creator
-}
-
 // struct date_t1
 // {
 // 	date::sys_days sd;
