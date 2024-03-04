@@ -26,6 +26,11 @@
 
 module;
 
+/** @file
+ * File containing code to support DOCTYPE handling. This is private code
+ * to the mxml library. 
+*/
+
 #include <cassert>
 #include <memory>
 #include <vector>

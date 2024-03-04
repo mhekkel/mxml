@@ -71,8 +71,9 @@ struct doc_type
  * set_validating explicitly. The DTD's will be loaded from the base dir
  * specified, but you can change this by assigning a external_entity_ref_handler.
  *
- * A document can have only one mxml::element child node. The document
- * object itself is the so-called root-node.
+ * A document can have only one mxml::element child node even though it is
+ * derived from mxml::element_container. The document object itself is the
+ * so-called root-node.
  */
 
 export class document final : public element_container

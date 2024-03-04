@@ -26,6 +26,10 @@
 
 module;
 
+/** @file 
+ * Main module definition for mxml.
+*/
+
 export module mxml;
 
 export import :text;

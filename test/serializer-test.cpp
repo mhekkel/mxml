@@ -7,8 +7,8 @@
 #endif
 
 #include <array>
-#include <exception>
 #include <deque>
+#include <exception>
 #include <filesystem>
 #include <iostream>
 #include <system_error>
@@ -479,16 +479,18 @@ TEST_CASE("test_schema")
 // 	CHECK(v1 == v2);
 // }
 
-// struct st_2
-// {
-// 	vector<string>	s;
+struct st_2
+{
+	std::vector<std::string> s;
 
-// 	template<class Archive>
-// 	void serialize(Archive& ar, unsigned long v)
-// 	{
-// 		ar & mxml::make_element_nvp("i", s);
-// 	}
-// };
+	template <class Archive>
+	void serialize(Archive &ar, unsigned long v)
+	{
+		// clang-format off
+		ar & mxml::make_element_nvp("i", s);
+		// clang-format on
+	}
+};
 
 // TEST_CASE("test_s_4")
 // {
@@ -508,4 +510,12 @@ TEST_CASE("test_schema")
 // 	doc.deserialize("st2", s2);
 
 // 	CHECK(s1.s == s2.s);
+// }
+
+// TEST_CASE("type-1")
+// {
+// 	using namespace mxml;
+
+// 	type_map types;
+// 	schema_creator sc(types, )
 // }

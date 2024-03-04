@@ -32,6 +32,7 @@ module;
 #include <functional>
 #include <map>
 #include <memory>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -784,41 +785,33 @@ object name_test_step_expression::evaluate(expression_context &context)
 
 // --------------------------------------------------------------------
 
-template <typename T>
 class node_type_expression : public step_expression
 {
   public:
+	node_type_expression(AxisType axis, node_type test)
+		: step_expression(axis)
+		, m_node_type(test)
+	{
+	}
+
 	node_type_expression(AxisType axis)
 		: step_expression(axis)
 	{
-		m_test = std::bind(&node_type_expression::test, std::placeholders::_1);
 	}
 
-	object evaluate(expression_context &context) override;
+	object evaluate(expression_context &context) override
+	{
+		if (m_node_type.has_value())
+			return step_expression::evaluate(context, [](const node *n) { return true; }, false);
+		else if (*m_node_type == node_type::text)
+			return step_expression::evaluate(context, [](const node *n) { return n->type() == node_type::text or n->type() == node_type::cdata; }, false);
+		else
+			return step_expression::evaluate(context, [t=*m_node_type](const node *n) { return n->type() == t; }, false);
+	}
 
   private:
-	static bool test(const node *n) { return typeid(*n) == typeid(T); }
-
-	std::function<bool(const node *)> m_test;
+	std::optional<node_type> m_node_type;
 };
-
-template <>
-bool node_type_expression<node>::test(const node *n)
-{
-	return true;
-}
-
-template <>
-bool node_type_expression<text>::test(const node *n)
-{
-	return n->type() == node_type::text or n->type() == node_type::cdata;
-}
-
-template <typename T>
-object node_type_expression<T>::evaluate(expression_context &context)
-{
-	return step_expression::evaluate(context, m_test, false);
-}
 
 // --------------------------------------------------------------------
 
@@ -2191,13 +2184,13 @@ expression_ptr xpath_parser::node_test(AxisType axis)
 		match(Token::NodeType);
 
 		if (name == "comment")
-			result.reset(new node_type_expression<comment>(axis));
+			result.reset(new node_type_expression(axis, node_type::comment));
 		else if (name == "text")
-			result.reset(new node_type_expression<text>(axis));
+			result.reset(new node_type_expression(axis, node_type::text));
 		else if (name == "processing-instruction")
-			result.reset(new node_type_expression<processing_instruction>(axis));
+			result.reset(new node_type_expression(axis, node_type::processing_instruction));
 		else if (name == "node")
-			result.reset(new node_type_expression<node>(axis));
+			result.reset(new node_type_expression(axis, {}));
 		else
 			throw exception("invalid node type specified: " + name);
 	}
