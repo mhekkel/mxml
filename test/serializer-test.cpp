@@ -337,136 +337,127 @@ TEST_CASE("test_optional")
 	CHECK(*s == "aap");
 }
 
-// struct date_t1
-// {
-// 	date::sys_days sd;
+#if __has_include(<date/date.h>)
 
-// 	template <typename Archive>
-// 	void serialize(Archive &ar, unsigned long)
-// 	{
-// 		ar &make_nvp("d", sd);
-// 	}
-// };
+#include <date/date.h>
 
-// TEST_CASE("test_date_1")
-// {
-// 	using namespace mxml::literals;
-// 	using namespace date;
+struct date_t1
+{
+	date::sys_days sd;
 
-// 	auto doc = "<d>2022-12-06</d>"_xml;
+	template <typename Archive>
+	void serialize(Archive &ar, unsigned long)
+	{
+		ar &mxml::make_element_nvp("d", sd);
+	}
+};
 
-// 	mxml::deserializer ds(*doc.root());
+TEST_CASE("test_date_1")
+{
+	using namespace mxml::literals;
+	using namespace date;
 
-// 	date_t1 t1;
-// 	ds.deserialize_element(t1);
+	auto doc = "<d>2022-12-06</d>"_xml;
 
-// 	CHECK(t1.sd == 2022_y / 12 / 6);
-// }
+	date_t1 t1;
+	from_xml(doc, t1);
 
-// TEST_CASE("test_date_2")
-// {
-// 	using namespace mxml::literals;
-// 	using namespace date;
+	CHECK(t1.sd == 2022_y / 12 / 6);
+}
 
-// 	date_t1 t1{ 1966_y / 6 / 27 };
+TEST_CASE("test_date_2")
+{
+	using namespace mxml::literals;
+	using namespace date;
 
-// 	mxml::document doc;
-// 	mxml::serializer s(doc);
+	date_t1 t1{ 1966_y / 6 / 27 };
 
-// 	s.serialize_element(t1);
+	mxml::document doc;
+	to_xml(doc, t1);
 
-// 	CHECK(doc == "<d>1966-06-27</d>"_xml);
-// 	if (not(doc == "<d>1966-06-27</d>"_xml))
-// 		std::cout << std::setw(2) << doc << '\n';
-// }
+	CHECK(doc == "<d>1966-06-27</d>"_xml);
+}
 
-// struct time_t1
-// {
-// 	std::chrono::system_clock::time_point st;
+struct time_t1
+{
+	std::chrono::system_clock::time_point st;
 
-// 	template <typename Archive>
-// 	void serialize(Archive &ar, unsigned long)
-// 	{
-// 		ar &make_nvp("t", st);
-// 	}
-// };
+	template <typename Archive>
+	void serialize(Archive &ar, unsigned long)
+	{
+		ar &mxml::make_element_nvp("t", st);
+	}
+};
 
-// TEST_CASE("test_time_1")
-// {
-// 	using namespace mxml::literals;
-// 	using namespace date;
+TEST_CASE("test_time_1")
+{
+	using namespace mxml::literals;
+	using namespace date;
+	using namespace std::literals;
 
-// 	auto doc = "<t>2022-12-06T00:01:02.34Z</t>"_xml;
+	auto doc = "<t>2022-12-06T00:01:02.34Z</t>"_xml;
 
-// 	mxml::deserializer ds(*doc.root());
+	time_t1 t1;
+	from_xml(doc, t1);
 
-// 	time_t1 t1;
-// 	ds.deserialize_element(t1);
+	CHECK((t1.st == sys_days{ 2022_y / 12 / 6 } + 0h + 1min + 2.34s) == true);
+}
 
-// 	CHECK(t1.st == sys_days{ 2022_y / 12 / 6 } + 0h + 1min + 2.34s);
-// }
+TEST_CASE("test_time_2")
+{
+	using namespace mxml::literals;
+	using namespace date;
+	using namespace std::literals;
 
-// TEST_CASE("test_time_2")
-// {
-// 	using namespace mxml::literals;
-// 	using namespace date;
+	time_t1 t1{ sys_days{ 2022_y / 12 / 6 } + 1h + 2min + 3s };
 
-// 	time_t1 t1{ sys_days{ 2022_y / 12 / 6 } + 1h + 2min + 3s };
+	mxml::document doc;
+	to_xml(doc, t1);
 
-// 	mxml::document doc;
-// 	mxml::serializer s(doc);
+	auto ti = doc.find_first("//t");
+	REQUIRE(ti != doc.end());
 
-// 	s.serialize_element(t1);
+	auto ti_c = ti->get_content();
 
-// 	auto ti = doc.find_first("//t");
-// 	BOOST_ASSERT(ti != doc.end());
+	std::regex rx(R"(^2022-12-06T01:02:03(\.0+)?Z$)");
 
-// 	auto ti_c = ti->get_content();
+	CHECK(std::regex_match(ti_c, rx));
+}
 
-// 	std::regex rx(R"(^2022-12-06T01:02:03(\.0+)?Z$)");
+#endif
 
-// 	CHECK(std::regex_match(ti_c, rx));
-// }
+TEST_CASE("test_s_5")
+{
+	st_1 s1 = { 1, "aap" };
 
-// TEST_CASE("test_s_2")
-// {
-// 	st_1 s1 = { 1, "aap" };
+	v_st_1 v1;
+	v1.push_back(s1);
+	v1.push_back(s1);
 
-// 	v_st_1 v1;
-// 	v1.push_back(s1);
-// 	v1.push_back(s1);
+	mxml::document doc;
+	CHECK_THROWS_AS(mxml::to_xml(doc, "v1", v1), mxml::exception);
+}
 
-// 	xml::document doc;
-// 	CHECK_THROWS_AS(doc.serialize("v1", v1), exception);
-// }
+TEST_CASE("test_s_6")
+{
+	st_1 st[] = { { 1, "aap" }, { 2, "noot" } };
 
-// TEST_CASE("test_s_3")
-// {
-// 	st_1 st[] = { { 1, "aap" }, { 2, "noot" } };
+	v_st_1 v1;
+	v1.push_back(st[0]);
+	v1.push_back(st[1]);
 
-// 	v_st_1 v1;
-// 	v1.push_back(st[0]);
-// 	v1.push_back(st[1]);
+	mxml::document doc("<v1/>");
+	mxml::to_xml(doc.front(), "s1", v1);
 
-// 	xml::document doc("<v1/>");
-// 	xml::serializer sr(doc.front());
-// 	sr.serialize_element("s1", v1);
+	CHECK((std::ostringstream() << doc).str() == "<v1><s1><i>1</i><s>aap</s></s1><s1><i>2</i><s>noot</s></s1></v1>");
 
-// 	stringstream s;
-// 	s << doc;
+	v_st_1 v2;
+	// CHECK_THROWS_AS(mxml::from_xml(doc, "v1", v2), mxml::exception);
 
-// 	cout << s.str() << endl;
+	mxml::from_xml(doc.front(), "s1", v2);
 
-// 	CHECK(s.str(), "<v1><s1><i>1</i><s>aap</s></s1><s1><i>2</i><s>noot</s></s1></v1>");
-
-// 	v_st_1 v2;
-// 	CHECK_THROWS_AS(doc.deserialize("v1", v2), exception);
-
-// 	xml::deserializer dr(doc.front());
-// 	dr.deserialize_element("s1", v2);
-
-// 	CHECK(v1 == v2);
-// }
+	CHECK(v1 == v2);
+}
 
 struct st_2
 {
@@ -481,7 +472,7 @@ struct st_2
 	}
 };
 
-// TEST_CASE("test_s_4")
+// TEST_CASE("test_s_7")
 // {
 // 	st_2 s1;
 // 	s1.s.push_back("aap");

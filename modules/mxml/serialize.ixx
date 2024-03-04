@@ -37,6 +37,11 @@ module;
 #include <string>
 #include <system_error>
 
+#if __has_include(<date/date.h>)
+#include <regex>
+#include <date/date.h>
+#endif
+
 export module mxml:serialize;
 
 import :node;
@@ -263,7 +268,7 @@ struct value_serializer<T>
 // date/time support
 // We're using Howard Hinands date functions here. If available...
 
-#if __has_include(<date/date.h>) and 0
+#if __has_include(<date/date.h>)
 
 /// \brief to_string/from_string for std::chrono::system_clock::time_point
 /// time is always assumed to be UTC

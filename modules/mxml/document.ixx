@@ -241,7 +241,7 @@ export class document final : public element_container
 		requires std::is_constructible_v<element, Args...>
 	auto emplace(Args &&... args)
 	{
-		emplace_back(std::forward<Args>(args)...);
+		return emplace_back(std::forward<Args>(args)...);
 	}
 
   protected:

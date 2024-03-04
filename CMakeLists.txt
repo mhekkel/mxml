@@ -8,6 +8,8 @@ endif()
 
 include(CTest)
 
+find_package(date)
+
 add_library(mxml STATIC)
 add_library(mxml::mxml ALIAS mxml)
 
@@ -56,6 +58,10 @@ target_sources(mxml
 
 target_compile_features(mxml PUBLIC cxx_std_20)
 
+if (date_FOUND)
+	target_link_libraries(mxml date::date)
+endif()
+
 install(TARGETS mxml
 	EXPORT mxml
 	CXX_MODULES_BMI DESTINATION "lib/cxx/bmi"
@@ -66,10 +72,15 @@ install(EXPORT mxml
 	DESTINATION "lib/cmake/mxml"
 	FILE "mxml-targets.cmake")
 
-file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/mxml-config.cmake"
-	"include(\"\${CMAKE_CURRENT_LIST_DIR}/mxml-targets.cmake\")
-set(\${CMAKE_FIND_PACKAGE_NAME}_FOUND 1)
-")
+if(date_FOUND)
+	set(FIND_DEPENDENCIES "find_dependency(date REQUIRED)")
+endif()
+
+# file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/mxml-config.cmake"
+# 	"
+# ")
+configure_file(${PROJECT_SOURCE_DIR}/cmake/mxml-config.cmake.in
+	${CMAKE_CURRENT_BINARY_DIR}/mxml-config.cmake @ONLY)
 
 install(FILES "${CMAKE_CURRENT_BINARY_DIR}/mxml-config.cmake"
 	DESTINATION "lib/cmake/mxml")
