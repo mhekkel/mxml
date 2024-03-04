@@ -28,8 +28,6 @@ module;
 
 #include <string>
 
-#include <cstring>
-
 module mxml;
 
 import :doctype;

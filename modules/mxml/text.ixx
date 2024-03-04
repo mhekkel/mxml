@@ -29,15 +29,9 @@ module;
 /// \file
 /// various definitions of data types and routines used to work with Unicode encoded text
 
-#include <cstdint>
-#include <locale>
-#include <vector>
 #include <string>
-#include <tuple>
 
 export module mxml:text;
-
-import :error;
 
 namespace mxml
 {

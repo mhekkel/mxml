@@ -31,7 +31,7 @@ module;
 /// the core of the libzeep XML library defining the main classes in the DOM API
 
 #include <compare>
-#include <stdint.h>
+#include <cstdint>
 
 export module mxml:version;
 

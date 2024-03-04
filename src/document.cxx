@@ -26,18 +26,15 @@
 
 module;
 
-#include <algorithm>
+#include <cassert>
 #include <fstream>
 #include <functional>
-#include <iomanip>
 #include <memory>
-#include <sstream>
-#include <tuple>
-
-#include <cassert>
+#include <istream>
 
 module mxml;
 
+// import :node;
 import :document;
 import :error;
 
@@ -51,7 +48,7 @@ document::document()
 	, m_preserve_cdata(false)
 	, m_has_xml_decl(false)
 	, m_encoding(encoding_type::UTF8)
-	, m_version({1, 0})
+	, m_version({ 1, 0 })
 	, m_standalone(false)
 {
 }
@@ -99,7 +96,7 @@ document::document(std::istream &is, const std::string &base_dir)
 
 void swap(document &a, document &b) noexcept
 {
-	swap(static_cast<element_container&>(a), static_cast<element_container&>(b));
+	swap(static_cast<element_container &>(a), static_cast<element_container &>(b));
 
 	std::swap(a.m_dtd_dir, b.m_dtd_dir);
 	std::swap(a.m_doctype, b.m_doctype);
@@ -160,7 +157,7 @@ bool document::is_html5() const
 
 bool document::operator==(const document &other) const
 {
-	return static_cast<const element_container&>(*this) == static_cast<const element_container&>(other);
+	return static_cast<const element_container &>(*this) == static_cast<const element_container &>(other);
 }
 
 std::ostream &operator<<(std::ostream &os, const document &doc)

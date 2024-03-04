@@ -10,8 +10,6 @@ using namespace std;
 
 namespace fs = std::filesystem;
 
-#define foreach BOOST_FOREACH
-
 int VERBOSE;
 
 ostream& operator<<(ostream& os, const mxml::node& n)

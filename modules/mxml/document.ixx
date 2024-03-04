@@ -29,21 +29,14 @@ module;
 /// \file
 /// definition of the mxml::document class
 
-#include <algorithm>
-#include <fstream>
 #include <functional>
-#include <iomanip>
-#include <sstream>
-#include <tuple>
-
-#include <cassert>
+#include <string>
 
 export module mxml:document;
 
-import :doctype;
-import :error;
 import :node;
 import :parser;
+import :version;
 import :text;
 
 namespace mxml

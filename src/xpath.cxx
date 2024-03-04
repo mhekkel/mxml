@@ -28,15 +28,15 @@ module;
 
 #include <algorithm>
 #include <charconv>
+#include <cmath>
 #include <functional>
 #include <map>
 #include <memory>
-
-#include <cmath>
+#include <string>
+#include <vector>
 
 module mxml;
 
-import :document;
 import :error;
 import :node;
 import :xpath;

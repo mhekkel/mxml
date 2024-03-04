@@ -29,16 +29,10 @@ module;
 /// \file
 /// the core of the libzeep XML library defining the main classes in the DOM API
 
-#include <iostream>
-#include <map>
-#include <memory>
-#include <set>
-#include <stack>
-#include <string>
-#include <tuple>
-#include <utility>
-
 #include <cassert>
+#include <string>
+#include <utility>
+#include <vector>
 
 export module mxml:node;
 
@@ -69,8 +63,7 @@ concept NodeType = std::is_base_of_v<mxml::node, std::remove_cvref_t<T>>;
 
 // Instead of using RTTI and/or virtual clone methods, we use our
 // own runtime type info based on a node_type when needed
-export enum class node_type
-{
+export enum class node_type {
 	element,
 	text,
 	attribute,
@@ -97,7 +90,7 @@ struct format_info
 	bool html = false; ///< This flag can be used to collapse only 'empty elements'
 	std::size_t indent_width = 0;
 	std::size_t indent_level = 0;
-	version_type version{1, 0};
+	version_type version{ 1, 0 };
 };
 
 // --------------------------------------------------------------------
@@ -212,9 +205,9 @@ class node
 
 	friend void swap(node &a, node &b) noexcept
 	{
-		if (a.m_next == &a)	// a empty?
+		if (a.m_next == &a) // a empty?
 		{
-			if (b.m_next != &b)	// b empty?
+			if (b.m_next != &b) // b empty?
 			{
 				a.m_next = b.m_next;
 				a.m_prev = b.m_prev;
@@ -234,11 +227,10 @@ class node
 		}
 
 		a.m_next->m_prev = a.m_prev->m_next = &a;
-		b.m_next->m_prev = b.m_prev->m_next = &b;	
+		b.m_next->m_prev = b.m_prev->m_next = &b;
 	}
 
   protected:
-
 	void init()
 	{
 		m_next = m_prev = this;
@@ -277,7 +269,8 @@ class basic_node_list
 	node *m_header = nullptr;
 	bool m_owner;
 
-	template <typename T> friend class node_list;
+	template <typename T>
+	friend class node_list;
 
   protected:
 	basic_node_list(element_container *e)
@@ -467,8 +460,8 @@ class node_list : public basic_node_list
 
 	node_list(element_container *e);
 
-	template<typename T2>
-		requires (std::is_same_v<value_type, node> and std::is_same_v<T2, element>)
+	template <typename T2>
+		requires(std::is_same_v<value_type, node> and std::is_same_v<T2, element>)
 	node_list(node_list<T2> *e)
 		: basic_node_list(e->m_header->m_parent)
 	{
@@ -715,7 +708,7 @@ class element_container : public node, public node_list<element>
 
 	friend void swap(element_container &a, element_container &b) noexcept
 	{
-		swap(static_cast<node_list<element>&>(a), static_cast<node_list<element>&>(b));
+		swap(static_cast<node_list<element> &>(a), static_cast<node_list<element> &>(b));
 	}
 
 	// --------------------------------------------------------------------
@@ -746,7 +739,6 @@ class element_container : public node, public node_list<element>
 	const_iterator find_first(const std::string &path) const;
 
   protected:
-
 	void write(std::ostream &os, format_info fmt) const override;
 };
 
@@ -791,7 +783,7 @@ class node_with_text : public node
 	bool equals(const node *n) const override
 	{
 		return type() == n->type() and
-			static_cast<const node_with_text *>(n)->m_text == m_text;
+		       static_cast<const node_with_text *>(n)->m_text == m_text;
 	}
 
   protected:
@@ -1102,7 +1094,7 @@ class attribute final : public node
 // --------------------------------------------------------------------
 /// \brief set of attributes and name_spaces. Is a node_list but with a set interface
 
-class attribute_set : public node_list<attribute>
+export class attribute_set : public node_list<attribute>
 {
   public:
 	using iterator = typename node_list::iterator;

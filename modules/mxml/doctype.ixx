@@ -26,17 +26,11 @@
 
 module;
 
-#include <functional>
-#include <memory>
-#include <numeric>
-#include <string>
-
 #include <cassert>
+#include <memory>
+#include <vector>
 
 export module mxml:doctype;
-
-import :error;
-import :text;
 
 namespace mxml::doctype
 {
@@ -318,8 +312,6 @@ class element
 	const std::string &name() const { return m_name; }
 
 	bool is_declared() const { return m_declared; }
-
-	bool empty() const;
 
 	void set_allowed(content_spec_base_ptr allowed);
 	content_spec_base_ptr get_allowed() const { return m_allowed; }

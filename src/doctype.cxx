@@ -25,11 +25,11 @@
  */
 
 module;
-#include <functional>
-#include <memory>
-#include <numeric>
 
 #include <cassert>
+#include <functional>
+#include <memory>
+#include <vector>
 
 module mxml;
 
@@ -798,11 +798,6 @@ const attribute_ptr element::get_attribute(const std::string &name) const
 	}
 
 	return result;
-}
-
-bool element::empty() const
-{
-	return typeid(*m_allowed) == typeid(content_spec_empty);
 }
 
 } // namespace mxml::doctype

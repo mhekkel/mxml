@@ -31,14 +31,10 @@ module;
 
 #include <algorithm>
 #include <charconv>
-#include <chrono>
-#include <cinttypes>
 #include <map>
 #include <optional>
 #include <string>
 #include <system_error>
-
-#include <experimental/type_traits>
 
 export module mxml:serialize;
 

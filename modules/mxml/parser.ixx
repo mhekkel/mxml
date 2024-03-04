@@ -29,17 +29,9 @@ module;
 /// \file
 /// definition of the libzeep XML parser, a recursive descent parser
 
-#include <algorithm>
-#include <array>
 #include <functional>
-#include <map>
-#include <set>
-#include <sstream>
-#include <stack>
-#include <utility>
-#include <vector>
-
-#include <cassert>
+#include <istream>
+#include <string>
 
 export module mxml:parser;
 

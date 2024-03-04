@@ -26,23 +26,16 @@
 
 module;
 
-#include <iostream>
+#include <cassert>
 #include <map>
 #include <set>
 #include <stack>
 #include <string>
-#include <tuple>
-#include <utility>
-
-#include <cassert>
-
-export module mxml:node;
+#include <ostream>
 
 module mxml;
 
-import :error;
 import :node;
-import :text;
 
 namespace mxml
 {

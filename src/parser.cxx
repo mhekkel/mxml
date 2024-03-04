@@ -28,21 +28,20 @@ module;
 
 #include <algorithm>
 #include <array>
+#include <cassert>
 #include <map>
 #include <memory>
 #include <set>
 #include <sstream>
 #include <stack>
 #include <utility>
+#include <tuple>
 #include <vector>
-
-#include <cassert>
+#include <string>
 
 module mxml;
 
 import :doctype;
-// import :error;
-// import :node;
 import :text;
 import :parser;
 
@@ -1719,7 +1718,11 @@ version_type parser_imp::parse_version()
 {
 	version_type result{ 0, 0 };
 
-	enum { major, minor } state = major;
+	enum
+	{
+		major,
+		minor
+	} state = major;
 
 	for (char ch : m_token)
 	{
@@ -3824,7 +3827,8 @@ void parser_imp::element(doctype::validator &valid)
 		uri = ns.default_ns();
 
 	// sort the attributes
-	sort(attrs.begin(), attrs.end(), [](auto &a, auto &b) { return a.m_name < b.m_name; });
+	sort(attrs.begin(), attrs.end(), [](auto &a, auto &b)
+		{ return a.m_name < b.m_name; });
 
 	if (m_lookahead == XMLToken::Slash)
 	{
