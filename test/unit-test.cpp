@@ -702,7 +702,7 @@ TEST_CASE("xml_namespaces")
 	using namespace mxml::literals;
 
 	auto doc = R"(<?xml version="1.0"?>
-<data xmlns:m="http://www.hekkelman.com/libzeep/m2">
+<data xmlns:m="http://www.hekkelman.com/mxml/m2">
 <div>
 <m:test0/>
 <test1 m:if="${true}"/><test2 m:unless="${true}"/>
@@ -727,7 +727,7 @@ TEST_CASE("xml_namespaces")
 	CHECK(test0.parent() == &div);
 	CHECK(test0.name() == "test0");
 	CHECK(test0.get_qname() == "m:test0");
-	CHECK(test0.get_ns() == "http://www.hekkelman.com/libzeep/m2");
+	CHECK(test0.get_ns() == "http://www.hekkelman.com/mxml/m2");
 
 	auto &test1 = *(std::next(div.begin()));
 	CHECK(test1.parent() == &div);
@@ -738,7 +738,7 @@ TEST_CASE("xml_namespaces")
 	auto &test1_if = *test1.attributes().begin();
 	CHECK(test1_if.name() == "if");
 	CHECK(test1_if.get_qname() == "m:if");
-	CHECK(test1_if.get_ns() == "http://www.hekkelman.com/libzeep/m2");
+	CHECK(test1_if.get_ns() == "http://www.hekkelman.com/mxml/m2");
 
 	auto &test2 = *(std::next(std::next(div.begin())));
 	CHECK(test2.parent() == &div);
@@ -749,7 +749,7 @@ TEST_CASE("xml_namespaces")
 	auto &test2_unless = *test2.attributes().begin();
 	CHECK(test2_unless.name() == "unless");
 	CHECK(test2_unless.get_qname() == "m:unless");
-	CHECK(test2_unless.get_ns() == "http://www.hekkelman.com/libzeep/m2");
+	CHECK(test2_unless.get_ns() == "http://www.hekkelman.com/mxml/m2");
 }
 
 TEST_CASE("xml_namespaces_2")
@@ -757,7 +757,7 @@ TEST_CASE("xml_namespaces_2")
 	using namespace mxml::literals;
 
 	auto doc = R"(<?xml version="1.0"?>
-<data xmlns="http://www.hekkelman.com/libzeep">
+<data xmlns="http://www.hekkelman.com/mxml">
 <x a="1">
 <y a="2"/>
 </x>
@@ -767,7 +767,7 @@ TEST_CASE("xml_namespaces_2")
 	auto &data = *doc.child();
 	CHECK(data.parent() == &doc);
 	CHECK(data.name() == "data");
-	CHECK(data.get_ns() == "http://www.hekkelman.com/libzeep");
+	CHECK(data.get_ns() == "http://www.hekkelman.com/mxml");
 
 	CHECK(data.empty() == false);
 	CHECK(data.begin() != data.end());
@@ -775,26 +775,26 @@ TEST_CASE("xml_namespaces_2")
 	auto &x = data.front();
 	CHECK(x.name() == "x");
 	CHECK(x.get_qname() == "x");
-	CHECK(x.get_ns() == "http://www.hekkelman.com/libzeep");
+	CHECK(x.get_ns() == "http://www.hekkelman.com/mxml");
 	CHECK(x.parent() == &data);
 
 	auto ax = x.attributes().find("a");
 	CHECK(ax != x.attributes().end());
 	CHECK(ax->value() == "1");
-	CHECK(ax->get_ns() == "http://www.hekkelman.com/libzeep");
+	CHECK(ax->get_ns() == "http://www.hekkelman.com/mxml");
 
 	auto &y = x.front();
 	CHECK(y.parent() == &x);
 	CHECK(y.name() == "y");
 	CHECK(y.get_qname() == "y");
-	CHECK(y.get_ns() == "http://www.hekkelman.com/libzeep");
+	CHECK(y.get_ns() == "http://www.hekkelman.com/mxml");
 
 	auto ay = y.attributes().find("a");
 	CHECK(ay != y.attributes().end());
 	CHECK(ay->value() == "2");
-	CHECK(ay->get_ns() == "http://www.hekkelman.com/libzeep");
+	CHECK(ay->get_ns() == "http://www.hekkelman.com/mxml");
 
-	mxml::element data2("data", { { "xmlns", "http://www.hekkelman.com/libzeep" } });
+	mxml::element data2("data", { { "xmlns", "http://www.hekkelman.com/mxml" } });
 	auto x2 = data2.emplace_back("x", std::initializer_list<mxml::attribute>{ { "a", "1" } });
 	x2->emplace_back("y", std::initializer_list<mxml::attribute>{ { "a", "2" } });
 
@@ -806,7 +806,7 @@ TEST_CASE("xml_namespaces_3")
 	using namespace mxml::literals;
 
 	auto doc = R"(<?xml version="1.0"?>
-<data xmlns="http://www.hekkelman.com/libzeep" xmlns:a="http://a.com/">
+<data xmlns="http://www.hekkelman.com/mxml" xmlns:a="http://a.com/">
 <x a="1">
 <y a:a="2"/>
 </x>
@@ -816,7 +816,7 @@ TEST_CASE("xml_namespaces_3")
 	auto &data = *doc.child();
 	CHECK(data.parent() == &doc);
 	CHECK(data.name() == "data");
-	CHECK(data.get_ns() == "http://www.hekkelman.com/libzeep");
+	CHECK(data.get_ns() == "http://www.hekkelman.com/mxml");
 
 	CHECK(data.empty() == false);
 	CHECK(data.begin() != data.end());
@@ -824,19 +824,19 @@ TEST_CASE("xml_namespaces_3")
 	auto &x = data.front();
 	CHECK(x.name() == "x");
 	CHECK(x.get_qname() == "x");
-	CHECK(x.get_ns() == "http://www.hekkelman.com/libzeep");
+	CHECK(x.get_ns() == "http://www.hekkelman.com/mxml");
 	CHECK(x.parent() == &data);
 
 	auto ax = x.attributes().find("a");
 	CHECK(ax != x.attributes().end());
 	CHECK(ax->value() == "1");
-	CHECK(ax->get_ns() == "http://www.hekkelman.com/libzeep");
+	CHECK(ax->get_ns() == "http://www.hekkelman.com/mxml");
 
 	auto &y = x.front();
 	CHECK(y.parent() == &x);
 	CHECK(y.name() == "y");
 	CHECK(y.get_qname() == "y");
-	CHECK(y.get_ns() == "http://www.hekkelman.com/libzeep");
+	CHECK(y.get_ns() == "http://www.hekkelman.com/mxml");
 
 	auto ay = y.attributes().find("a:a");
 	CHECK(ay != y.attributes().end());

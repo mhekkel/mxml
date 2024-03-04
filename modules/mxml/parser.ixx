@@ -27,7 +27,7 @@
 module;
 
 /// \file
-/// definition of the libzeep XML parser, a recursive descent parser
+/// definition of the mxml XML parser, a recursive descent parser
 
 #include <functional>
 #include <istream>

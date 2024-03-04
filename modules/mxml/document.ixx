@@ -264,7 +264,7 @@ export class document final : public element_container
 	std::istream *external_entity_ref(const std::string &base, const std::string &pubid, const std::string &sysid);
 	void parse(std::istream &data);
 
-	/// The default for libzeep is to locate the external reference based
+	/// The default for MXML is to locate the external reference based
 	/// on sysid and base_dir. Only local files are loaded this way.
 	/// You can specify a entity loader here if you want to be able to load
 	/// DTD files from another source.

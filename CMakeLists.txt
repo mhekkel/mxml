@@ -1,12 +1,18 @@
 cmake_minimum_required(VERSION 3.28)
 
-project(mxml VERSION 0.1.0 LANGUAGES CXX)
+project(mxml VERSION 1.0.0 LANGUAGES CXX)
 
 if(NOT CMAKE_GENERATOR STREQUAL "Ninja")
     message(FATAL_ERROR "This project requires the Ninja generator. Refers to https://cmake.org/cmake/help/latest/manual/cmake-cxxmodules.7.html#generator-support")
 endif()
 
+list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
+
 include(CTest)
+include(GNUInstallDirs)
+
+option(MXML_BUILD_EXAMPLES "Build example executables" ON)
+option(MXML_BUILD_DOCUMENTATION "Build documentation" OFF)
 
 find_package(date)
 
@@ -107,4 +113,14 @@ endif()
 # 	-S "${CMAKE_CURRENT_SOURCE_DIR}/test"
 # 	-B "${CMAKE_CURRENT_BINARY_DIR}/test")
 
-add_subdirectory(test)
+if(BUILD_TESTING)
+	add_subdirectory(test)
+endif()
+
+if(MXML_BUILD_EXAMPLES)
+	add_subdirectory(examples)
+endif()
+
+if(MXML_BUILD_DOCUMENTATION)
+	add_subdirectory(docs)
+endif()

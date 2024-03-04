@@ -34,7 +34,7 @@ export module mxml:error;
 namespace mxml
 {
 
-/// \brief base class of the exceptions thrown by libzeep
+/// \brief base class of the exceptions thrown by mxml
 export class exception : public std::exception
 {
   public:
