@@ -75,9 +75,8 @@ template <>
 struct value_serializer<std::string>
 {
 	static std::string type_name() { return "xsd:string"; }
-	static std::string_view to_string(std::string_view value) { return value; }
-	static const std::string &to_string(const std::string &value) { return value; }
-	static std::string_view from_string(std::string_view value) { return value; }
+	static std::string to_string(std::string_view value) { return std::string{ value }; }
+	static std::string from_string(std::string_view value) { return std::string{ value }; }
 };
 
 /// @ref value_serializer implementation for numbers
@@ -294,17 +293,18 @@ struct value_serializer<std::chrono::system_clock::time_point>
 	/// If Zulu time is specified, then the parsed xsd:dateTime is returned.
 	/// If an UTC offset is present, then the offset is subtracted from the xsd:dateTime, this yields UTC.
 	/// If no UTC offset is present, then the xsd:dateTime is assumed to be local time and converted to UTC.
-	static time_type from_string(const std::string &s)
+	static time_type from_string(std::string_view s)
 	{
 		time_type result;
 
 		std::regex kRX(R"(^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?(Z|[-+]\d{2}:\d{2})?)");
-		std::smatch m;
+		std::cmatch m;
 
-		if (not std::regex_match(s, m, kRX))
+		if (not std::regex_match(s.data(), s.data() + s.length(), m, kRX))
 			throw std::runtime_error("Invalid date format");
 
-		std::istringstream is(s);
+		std::stringstream is;
+		is << s;
 
 		if (m[1].matched)
 		{
@@ -340,11 +340,12 @@ struct value_serializer<date::sys_days>
 	}
 
 	/// from_string according to ISO8601 rules.
-	static date::sys_days from_string(const std::string &s)
+	static date::sys_days from_string(std::string_view s)
 	{
 		date::sys_days result;
 
-		std::istringstream is(s);
+		std::stringstream is;
+		is << s;
 		date::from_stream(is, "%F", result);
 
 		if (is.bad() or is.fail())
@@ -385,7 +386,7 @@ template <template <class...> class Op, class... Args>
 constexpr inline bool is_detected_v = is_detected<Op, Args...>::value;
 
 export template <typename T>
-using serialize_value_t = decltype(std::declval<value_serializer<T> &>().from_string(std::declval<const std::string &>()));
+using serialize_value_t = decltype(std::declval<value_serializer<T> &>().from_string(std::declval<std::string_view>()));
 
 export template <typename T, typename Archive>
 using serialize_function = decltype(std::declval<T &>().serialize(std::declval<Archive &>(), std::declval<unsigned long>()));

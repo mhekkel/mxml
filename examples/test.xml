@@ -3,7 +3,7 @@
 		<firstname>John</firstname>
 		<lastname>Doe</lastname>
 	</person>
-	<person id="2">
+	<person id="2" jobtile="">
 		<firstname>Jane</firstname>
 		<lastname>Jones</lastname>
 	</person>

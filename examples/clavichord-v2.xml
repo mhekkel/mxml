@@ -1,0 +1,10 @@
+<?xml version="1.1" encoding="UTF-8"?>
+<!DOCTYPE data SYSTEM "clavichord-stringing.dtd">
+<data>
+  <naam>Zweed klavechord, versie 2</naam>
+  <omschrijving>Een clavichord naar zweedse voorbeelden, werkmeister stemming</omschrijving>
+  <stemming a="466">&werckmeister;</stemming>
+  <snaren hoek="7.5" ideale-stress="70">
+    <gebonden vanaf="c" schema="zweeds"></gebonden>
+  </snaren>
+</data>

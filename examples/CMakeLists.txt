@@ -9,7 +9,7 @@ if("${PARENT_DIRECTORY}" STREQUAL "")
 	find_package(mxml REQUIRED)
 endif()
 
-list(APPEND examples synopsis-xml serialize-xml validating-xml-sample xpath-sample)
+list(APPEND examples synopsis-xml serialize-xml validating-xml-sample xpath-sample clavichord-example)
 
 foreach(EXAMPLE IN LISTS examples)
 	add_executable(${EXAMPLE} ${EXAMPLE}.cpp)

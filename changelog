@@ -1,0 +1,8 @@
+version 1.0.1
+- So sad, when adding one more example a bug was found
+  in the value_serializer classes which is now fixed.
+- Added real world example showing how you can use DTD
+  to validate and extend 'user' input.
+
+version 1.0.0
+- initial release

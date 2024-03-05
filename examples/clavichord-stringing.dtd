@@ -1,0 +1,32 @@
+<!ELEMENT data (naam,omschrijving,stemming,snaren)>
+
+<!ELEMENT naam (#PCDATA)>
+<!ELEMENT omschrijving (#PCDATA)>
+
+<!ELEMENT stemming (noot, noot, noot, noot, noot, noot, noot, noot, noot, noot, noot, noot)>
+<!ATTLIST stemming a NMTOKEN #REQUIRED>
+
+<!ELEMENT noot EMPTY>
+<!ATTLIST noot id CDATA #REQUIRED>
+<!ATTLIST noot f NMTOKEN #REQUIRED>
+
+<!-- de verschillende stemmingen -->
+<!ENTITY middentoon SYSTEM "middentoon.xml">
+<!ENTITY werckmeister SYSTEM "werckmeister.xml">
+
+<!ELEMENT snaren (gebonden?)>
+<!ATTLIST snaren hoek NMTOKEN #REQUIRED>
+<!ATTLIST snaren ideale-stress NMTOKEN #REQUIRED>
+<!--
+<!ATTLIST snaren breedte NMTOKEN #REQUIRED>
+<!ATTLIST snaren marge NMTOKEN #REQUIRED>
+<!ATTLIST snaren afstand-paar-van NMTOKEN #REQUIRED>
+<!ATTLIST snaren afstand-paar-tot NMTOKEN #REQUIRED>
+<!ATTLIST snaren afstand-volgende NMTOKEN #REQUIRED>
+-->
+
+<!ELEMENT gebonden (bind*)>
+<!ATTLIST gebonden vanaf NMTOKEN #REQUIRED>
+<!ATTLIST gebonden schema (zweeds|duits) #REQUIRED>
+
+<!ELEMENT bind (#PCDATA)>

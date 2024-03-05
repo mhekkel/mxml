@@ -13,9 +13,9 @@ The DOM API
 MXML uses a modern C++ way of accessing and manipulating data. Look at the following code to get an idea how this works.
 
 .. literalinclude:: ../examples/synopsis-xml.cpp
-	:language: c++
-	:start-after: //[ synopsis_xml_main
-	:end-before: //]
+    :language: c++
+    :start-after: //[ synopsis_xml_main
+    :end-before: //]
 
 XML nodes
 ^^^^^^^^^
@@ -30,8 +30,8 @@ XML elements also contain attributes, stored in the :cpp:class:`mxml::attribute`
 
 .. code-block:: cpp
 
-	mxml::attribute a("x", "1");
-	auto& [name, value] = a; // name == "x", value == "1"
+    mxml::attribute a("x", "1");
+    auto& [name, value] = a; // name == "x", value == "1"
 
 Input and output
 --------------------------------------
@@ -45,8 +45,8 @@ You can use std::iostream to read and write :cpp:class:`mxml::document` objects.
 
 .. code-block:: cpp
 
-	mxml::document doc;
-	std::cin >> doc;
+    mxml::document doc;
+    std::cin >> doc;
 
 Writing is just as simple. A warning though, round trip fidelity is not guaranteed. There are a few issues with that. First of all, the default is to replace CDATA sections in a file with their content. If this is not the desired behaviour you can call :cpp::func:`mxml::document::set_preserve_cdata` with argument `true`.
 
@@ -56,7 +56,7 @@ Specifying indentation is BTW done like this:
 
 .. code-block:: cpp
 
-	std::cout << std::setw(2) << doc;
+    std::cout << std::setw(2) << doc;
 
 That will indent with two spaces for each level.
 
@@ -69,26 +69,26 @@ As an example, take the following DTD file
 
 .. code-block:: xml
 
-	<!ELEMENT foo (bar)>
-	<!ELEMENT bar (#PCDATA)>
-	<!ENTITY hello "Hello, world!">
+    <!ELEMENT foo (bar)>
+    <!ELEMENT bar (#PCDATA)>
+    <!ENTITY hello "Hello, world!">
 
 And an XML document containing
 
 .. code-block:: xml
 
-	<?xml version="1.0" encoding="UTF-8" ?>
-	<!DOCTYPE foo SYSTEM "sample.dtd">
-	<foo>
-	<bar>&hello;</bar>
-	</foo>
+    <?xml version="1.0" encoding="UTF-8" ?>
+    <!DOCTYPE foo SYSTEM "sample.dtd">
+    <foo>
+    <bar>&hello;</bar>
+    </foo>
 
 When we want to see the `&hello;` entity replaced with `'Hello, world!'` as specified in the DTD, we need to provide a way to load this DTD. To do this, look at the following code. Of course, in this example a simple call to :cpp::func:`mxml::document::set_base_dir` would have been sufficient.
 
 .. literalinclude:: ../examples/validating-xml-sample.cpp
-	:language: c++
-	:start-after: //[ xml_validation_sample
-	:end-before: //]
+    :language: c++
+    :start-after: //[ xml_validation_sample
+    :end-before: //]
 
 Serialization
 --------------------------------------
@@ -96,38 +96,32 @@ Serialization
 An alternative way to read/write XML files is using serialization. To do this, we first construct a structure called Person. We add a templated function to this struct just like in `boost::serialize` and then we can read the file.
 
 .. literalinclude:: ../examples/serialize-xml.cpp
-	:language: c++
-	:start-after: //[ serialisation
-	:end-before: //]
+    :language: c++
+    :start-after: //[ serialisation
+    :end-before: //]
 
 attributes
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Suppose you want to serialize a value into a XML attribute, you would have to replace `zeep::make_nvp` with `zeep::make_attribute_nvp`.
+Suppose you want to serialize a value into a XML attribute, you would have to replace `mxml::make_element_nvp` with `mxml::make_attribute_nvp`.
 
 custom types
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-What happens during serialization is deconstruction of structured data types into parts that can be converted into text strings. For this final conversion there are __value_serializer__ helper classes. __value_serializer__ is a template and specializations for the default types are given in `<zeep/value_serializer.hpp>`. You can create your own specializations for this class for custom data types, look at the one for `std::chrono::system_clock::time_point` for inspiration.
+What happens during serialization is deconstruction of structured data types into parts that can be converted into text strings. For this final conversion there are mxml::value_serializer helper classes. mxml::value_serializer is a template and specializations for the default types are given in `<mxml/serializer.ixx>`. You can create your own specializations for this class for custom data types, look at the one for `std::chrono::system_clock::time_point` for inspiration.
 
 enums
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-For conversion of enum's you can use the __value_serializer__ specialization for enums:
+For conversion of enum's you can use the `mxml::value_serializer` specialization for enums:
 
 .. code-block:: cpp
 
-	enum class MyEnum { FOO, BAR };
-	__value_serializer__<MyEnum>::instance()
-	("foo", MyEnum::FOO)
-	("bar", MyEnum::BAR);
-
-There's also a new interface, somewhat more intuitive from a modern C++ viewpoint:
-
-.. literalinclude:: ../examples/synopsis-json.cpp
-	:language: c++
-	:start-after: //[ enum_support
-	:end-before: //]
+    enum class MyEnum { FOO, BAR };
+    mxml::value_serializer<MyEnum>::init({
+        { MyEnum::FOO, "foo" },
+        { MyEnum::BAR, "bar" }
+    });
 
 XPath 1.0
 --------------------------------------
@@ -140,7 +134,7 @@ An example where we look for the first person in our test file with the lastname
 
 .. code-block:: cpp
 
-	mxml::element* jones = doc.child()->find_first("//person[lastname='Jones']");
+    mxml::element* jones = doc.child()->find_first("//person[lastname='Jones']");
 
 variables
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -148,13 +142,41 @@ variables
 XPath constructs can reference variables. As an example, suppose you need to find nodes in a special XML Namespace but you do not want to find out what the prefix of this Namespace is, you could do something like this:
 
 .. literalinclude:: ../examples/xpath-sample.cpp
-	:language: c++
-	:start-after: //[ xpath_sample
-	:end-before: //]
+    :language: c++
+    :start-after: //[ xpath_sample
+    :end-before: //]
 
 .. note::
 
-	Please note that the evaluation of an XPath returns pointers to XML nodes. Of course these are only valid as long as you do not modify the the document in which they are contained.
+    Please note that the evaluation of an XPath returns pointers to XML nodes. Of course these are only valid as long as you do not modify the the document in which they are contained.
+
+Real world example
+--------------------
+
+A real world example is given in the clavichord-example application. It uses a subset of configuration data to calculate the ideal layout of strings for a clavichord.
+
+Start by looking at the following DTD files:
+
+.. literalinclude:: ../examples/clavichord-stringing.dtd
+    :language: xml
+
+And 
+
+.. literalinclude:: ../examples/werckmeister.xml
+    :language: xml
+
+These files define what needs to go into a configuration file for our program. A sample configuration file may then look like this:
+
+.. literalinclude:: ../examples/clavichord-v2.xml
+    :language: xml
+
+And the application code to read this data looks like this:
+
+.. literalinclude:: ../examples/clavichord-example.cpp
+    :language: c++
+    :start-after: //[ clavichord-example
+    :end-before: //]
+
 
 
 .. toctree::
