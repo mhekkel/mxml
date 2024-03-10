@@ -529,7 +529,7 @@ bool element::equals(const node *n) const
 		auto a = na.begin();
 		auto b = nb.begin();
 
-		while (a != na.end() or b != nb.end())
+		while (a != na.end() and b != nb.end())
 		{
 			if (a->equals(b))
 			{
