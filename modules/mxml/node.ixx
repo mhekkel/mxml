@@ -29,6 +29,7 @@ module;
 /// \file
 /// the core of the mxml XML library defining the main classes in the DOM API
 
+#include <algorithm>
 #include <cassert>
 #include <string>
 #include <utility>
@@ -53,7 +54,7 @@ export class comment;
 export class cdata;
 export class processing_instruction;
 export class document;
-class element_container;
+export class element_container;
 
 using node_set = std::vector<node *>;
 using element_set = std::vector<element *>;
@@ -191,8 +192,8 @@ class node
 	// basic access
 
 	// All nodes should have a single root node
-	virtual node *root();             ///< The root node for this node
-	virtual const node *root() const; ///< The root node for this node
+	virtual element_container *root();             ///< The root node for this node
+	virtual const element_container *root() const; ///< The root node for this node
 
 	void parent(element_container *p) noexcept { m_parent = p; } ///< Set parent to \a p
 	element_container *parent() { return m_parent; }             ///< The parent node for this node
@@ -708,6 +709,10 @@ class node_list : public basic_node_list
 		if constexpr (not std::is_same_v<value_type, node>)
 			basic_node_list::clear();
 	}
+
+	/// \brief Sort the nodes
+	template <typename Pred>
+	void sort(Pred &&pred);
 };
 
 // --------------------------------------------------------------------
@@ -1538,6 +1543,28 @@ inline auto node_list<node>::insert(const_iterator pos, value_type &&e) -> itera
 			throw exception("internal error");
 	}
 }
+
+template <typename T>
+template <typename Pred>
+void node_list<T>::sort(Pred &&pred)
+{
+	std::vector<node *> t;
+	for (auto n = m_header->m_next; n != m_header; n = n->m_next)
+		t.push_back(n);
+
+	std::sort(t.begin(), t.end(), [pred](node *a, node *b) { return pred(static_cast<T&>(*a), static_cast<T&>(*b)); });
+
+	auto p = m_header;
+	for (auto n : t)
+	{
+		n->m_prev = p;
+		p->m_next = n;
+		p = n;
+	}
+	p->m_next = m_header;
+	m_header->m_prev = p;
+}
+
 /** @endcond */
 
 // --------------------------------------------------------------------
@@ -1554,7 +1581,7 @@ inline auto node_list<node>::insert(const_iterator pos, value_type &&e) -> itera
  * \param dest		The (usually) document element that is the destination
  */
 
-void fix_namespaces(element &e, element &source, element &dest);
+export void fix_namespaces(element &e, element &source, element &dest);
 
 } // namespace mxml
 

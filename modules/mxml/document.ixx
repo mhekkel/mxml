@@ -216,10 +216,10 @@ export class document final : public element_container
 
 	/**
 	 * @brief Set a callback for loading external entities
-	 * 
+	 *
 	 * The default for MXML is to locate the external reference based
 	 * on sysid and base_dir. Only local files are loaded this way.
-	 * 
+	 *
 	 * You can specify a entity loader here if you want to be able to load
 	 * DTD files from another source.
 	 */
@@ -235,8 +235,8 @@ export class document final : public element_container
 	version_type get_version() const; ///< XML version, should be either 1.0 or 1.1
 	void set_version(version_type v); ///< XML version, should be either 1.0 or 1.1
 
-	node *root() override { return this; }             ///< The root node, which is the document of course
-	const node *root() const override { return this; } ///< The root node, which is the document of course
+	element_container *root() override { return this; }             ///< The root node, which is the document of course
+	const element_container *root() const override { return this; } ///< The root node, which is the document of course
 
 	/// @brief Return the single child, or nullptr in case the document is empty
 	element *child()
@@ -316,20 +316,19 @@ export class document final : public element_container
 	/** @endcond */
 };
 
-
 export namespace literals
 {
 	/**
 	 * @brief This operator allows you to construct static XML
 	 * documents from strings. As in this example:
-	 * 
+	 *
 	 * @code{.cpp}
 	 * using namespace mxml::literals;
-	 * 
+	 *
 	 * mxml::document doc = "<text>Hello, world!</text>"_xml;"
 	 * @endcode
 	 */
 	document operator""_xml(const char *text, size_t length);
-}
+} // namespace literals
 
 } // namespace mxml

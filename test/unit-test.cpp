@@ -546,7 +546,7 @@ TEST_CASE("xml_iterators_2")
 		CHECK(bii->get_content() == std::to_string(i));
 
 		auto eii = ei;
-		std::advance(eii, - i - 1);
+		std::advance(eii, -i - 1);
 		CHECK(eii->get_content() == std::to_string(9 - i));
 	}
 
@@ -895,11 +895,10 @@ TEST_CASE("doc-test-1")
 TEST_CASE("trim")
 {
 	std::string s;
-	
+
 	s = "aap";
 	mxml::trim(s);
 	CHECK(s == "aap");
-
 
 	s = " aap";
 	mxml::trim(s);
@@ -916,4 +915,30 @@ TEST_CASE("trim")
 	s = "\t aap \n";
 	mxml::trim(s);
 	CHECK(s == "aap");
+}
+
+TEST_CASE("sort-1")
+{
+	using namespace mxml;
+
+	element e("test", { { "aap", "1" },
+						  { "noot", "2" },
+						  { "mies", "3" },
+						  { "boom", "4" },
+						  { "roos", "5" },
+						  { "vis", "6" },
+						  { "vuur", "7" } });
+
+	CHECK((std::ostringstream() << e).str() == R"(<test aap="1" noot="2" mies="3" boom="4" roos="5" vis="6" vuur="7"/>)");
+
+	e.attributes().sort([](attribute &a, attribute &b)
+		{ return a.name() < b.name(); });
+
+	CHECK((std::ostringstream() << e).str() == R"(<test aap="1" boom="4" mies="3" noot="2" roos="5" vis="6" vuur="7"/>)");
+
+	e.attributes().sort([](attribute &a, attribute &b)
+		{ return a.value() < b.value(); });
+
+	CHECK((std::ostringstream() << e).str() == R"(<test aap="1" noot="2" mies="3" boom="4" roos="5" vis="6" vuur="7"/>)");
+
 }

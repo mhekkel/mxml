@@ -127,17 +127,17 @@ node::~node()
 {
 }
 
-node *node::root()
+element_container *node::root()
 {
-	node *result = nullptr;
+	element_container *result = nullptr;
 	if (m_parent != nullptr)
 		result = m_parent->root();
 	return result;
 }
 
-const node *node::root() const
+const element_container *node::root() const
 {
-	const node *result = nullptr;
+	const element_container *result = nullptr;
 	if (m_parent != nullptr)
 		result = m_parent->root();
 	return result;
