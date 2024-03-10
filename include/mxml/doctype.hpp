@@ -24,7 +24,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-module;
+#pragma once
 
 /** @file
  * File containing code to support DOCTYPE handling. This is private code
@@ -36,8 +36,6 @@ module;
 #include <cassert>
 #include <memory>
 #include <vector>
-
-export module mxml:doctype;
 
 namespace mxml::doctype
 {

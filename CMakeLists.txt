@@ -21,28 +21,28 @@ add_library(mxml::mxml ALIAS mxml)
 
 target_sources(mxml
 	PRIVATE
-	src/doctype.cxx
-	src/document.cxx
-	src/html-named-characters.cxx
-	src/node.cxx
-	src/parser.cxx
-	src/text.cxx
-	src/xpath.cxx
+	src/doctype.cpp
+	src/document.cpp
+	src/html-named-characters.cpp
+	src/node.cpp
+	src/parser.cpp
+	src/text.cpp
+	src/xpath.cpp
 	PUBLIC
-	FILE_SET public_modules TYPE CXX_MODULES
+	FILE_SET public_modules TYPE HEADERS
 	BASE_DIRS
-	${CMAKE_CURRENT_SOURCE_DIR}/modules
+	${CMAKE_CURRENT_SOURCE_DIR}/include
 	FILES
-	modules/mxml.ixx
-	modules/mxml/doctype.ixx
-	modules/mxml/document.ixx
-	modules/mxml/error.ixx
-	modules/mxml/node.ixx
-	modules/mxml/parser.ixx
-	modules/mxml/serialize.ixx
-	modules/mxml/text.ixx
-	modules/mxml/version.ixx
-	modules/mxml/xpath.ixx
+	include/mxml.hpp
+	include/mxml/doctype.hpp
+	include/mxml/document.hpp
+	include/mxml/error.hpp
+	include/mxml/node.hpp
+	include/mxml/parser.hpp
+	include/mxml/serialize.hpp
+	include/mxml/text.hpp
+	include/mxml/version.hpp
+	include/mxml/xpath.hpp
 )
 
 target_compile_features(mxml PUBLIC cxx_std_20)
@@ -53,13 +53,12 @@ endif()
 
 install(TARGETS mxml
 	EXPORT mxml
-	CXX_MODULES_BMI DESTINATION "lib/cxx/bmi"
-	FILE_SET public_modules DESTINATION "lib/cxx/miu")
+	FILE_SET public_modules DESTINATION include)
 
 install(EXPORT mxml
 	NAMESPACE mxml::
-	DESTINATION "lib/cmake/mxml"
-	FILE "mxml-targets.cmake")
+	DESTINATION lib/cmake/mxml
+	FILE mxml-targets.cmake)
 
 if(date_FOUND)
 	set(FIND_DEPENDENCIES "find_dependency(date REQUIRED)")
@@ -68,8 +67,8 @@ endif()
 configure_file(${PROJECT_SOURCE_DIR}/cmake/mxml-config.cmake.in
 	${CMAKE_CURRENT_BINARY_DIR}/mxml-config.cmake @ONLY)
 
-install(FILES "${CMAKE_CURRENT_BINARY_DIR}/mxml-config.cmake"
-	DESTINATION "lib/cmake/mxml")
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/mxml-config.cmake
+	DESTINATION lib/cmake/mxml)
 
 set(generator
 	-G "${CMAKE_GENERATOR}")

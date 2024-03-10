@@ -24,22 +24,20 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-module;
+#pragma once
 
 /**
  * \file
  * definition of the mxml::document class
  */
 
+#include "mxml/node.hpp"
+#include "mxml/parser.hpp"
+#include "mxml/version.hpp"
+#include "mxml/text.hpp"
+
 #include <functional>
 #include <string>
-
-export module mxml:document;
-
-import :node;
-import :parser;
-import :version;
-import :text;
 
 namespace mxml
 {
@@ -78,7 +76,7 @@ struct doc_type
  * so-called root-node.
  */
 
-export class document final : public element_container
+class document final : public element_container
 {
   public:
 	/// \brief node_type of a document
@@ -316,7 +314,7 @@ export class document final : public element_container
 	/** @endcond */
 };
 
-export namespace literals
+namespace literals
 {
 	/**
 	 * @brief This operator allows you to construct static XML

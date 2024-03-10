@@ -23,9 +23,8 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-// module;
 
-module;
+#pragma once
 
 /**
  * \file
@@ -34,8 +33,6 @@ module;
 
 #include <compare>
 #include <cstdint>
-
-export module mxml:version;
 
 namespace mxml
 {
@@ -47,7 +44,7 @@ namespace mxml
  *
  */
 
-export struct version_type
+struct version_type
 {
 	uint8_t major; ///< major, usually 1
 	uint8_t minor; ///< minor, usually 0 or 1

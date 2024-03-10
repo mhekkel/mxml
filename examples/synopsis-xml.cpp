@@ -26,7 +26,7 @@
 
 #include <iostream>
 
-import mxml;
+#include "mxml.hpp"
 
 //[ synopsis_xml_main
 int main()

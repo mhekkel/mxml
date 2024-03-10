@@ -24,19 +24,18 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-module;
+#pragma once
 
 /** @file 
  * Main module definition for mxml.
 */
 
-export module mxml;
-
-export import :text;
-export import :error;
-export import :node;
-export import :document;
-export import :parser;
-export import :xpath;
-export import :serialize;
-export import :version;
+#include "mxml/doctype.hpp"
+#include "mxml/document.hpp"
+#include "mxml/error.hpp"
+#include "mxml/node.hpp"
+#include "mxml/parser.hpp"
+#include "mxml/serialize.hpp"
+#include "mxml/text.hpp"
+#include "mxml/version.hpp"
+#include "mxml/xpath.hpp"

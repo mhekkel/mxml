@@ -24,10 +24,13 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-module;
+#pragma once
 
 /// \file
 /// the core of the mxml XML library defining the main classes in the DOM API
+
+#include "mxml/error.hpp"
+#include "mxml/version.hpp"
 
 #include <algorithm>
 #include <cassert>
@@ -35,26 +38,21 @@ module;
 #include <utility>
 #include <vector>
 
-export module mxml:node;
-
-import :error;
-import :version;
-
 namespace mxml
 {
 
 // forward declarations
 
-export class node;
-export class element;
-export class text;
-export class attribute;
-export class name_space;
-export class comment;
-export class cdata;
-export class processing_instruction;
-export class document;
-export class element_container;
+class node;
+class element;
+class text;
+class attribute;
+class name_space;
+class comment;
+class cdata;
+class processing_instruction;
+class document;
+class element_container;
 
 using node_set = std::vector<node *>;
 using element_set = std::vector<element *>;
@@ -67,7 +65,7 @@ concept NodeType = std::is_base_of_v<mxml::node, std::remove_cvref_t<T>>;
  * to find out the actual type of a node
  */
 
-export enum class node_type {
+enum class node_type {
 	element,
 	text,
 	attribute,
@@ -1226,7 +1224,7 @@ class attribute final : public node
  * 
  */
 
-export class attribute_set : public node_list<attribute>
+class attribute_set : public node_list<attribute>
 {
   public:
 	/// @brief constructor to create an attribute_set for an element
@@ -1581,7 +1579,7 @@ void node_list<T>::sort(Pred &&pred)
  * \param dest		The (usually) document element that is the destination
  */
 
-export void fix_namespaces(element &e, element &source, element &dest);
+void fix_namespaces(element &e, element &source, element &dest);
 
 } // namespace mxml
 

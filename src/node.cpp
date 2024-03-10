@@ -24,7 +24,9 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-module;
+#include "mxml/node.hpp"
+#include "mxml/text.hpp"
+#include "mxml/xpath.hpp"
 
 #include <cassert>
 #include <map>
@@ -32,10 +34,6 @@ module;
 #include <stack>
 #include <string>
 #include <ostream>
-
-module mxml;
-
-import :node;
 
 namespace mxml
 {

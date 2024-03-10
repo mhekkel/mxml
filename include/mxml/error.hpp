@@ -24,23 +24,21 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#pragma once
+
 /**
  * \file
  * definition of the mxml::exception class
  */
 
-module;
-
 #include <exception>
 #include <string>
-
-export module mxml:error;
 
 namespace mxml
 {
 
 /// \brief base class of the exceptions thrown by mxml
-export class exception : public std::exception
+class exception : public std::exception
 {
   public:
 	/// \brief Create an exception with the message in \a message

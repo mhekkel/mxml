@@ -34,7 +34,7 @@
 
 //[ clavichord-example
 
-import mxml;
+#include "mxml.hpp"
 
 #include <array>
 #include <fstream>

@@ -24,19 +24,14 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-module;
+#include "mxml/document.hpp"
+#include "mxml/error.hpp"
 
 #include <cassert>
 #include <fstream>
 #include <functional>
 #include <memory>
 #include <istream>
-
-module mxml;
-
-// import :node;
-import :document;
-import :error;
 
 namespace mxml
 {

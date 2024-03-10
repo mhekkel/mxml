@@ -6,7 +6,7 @@
 #include <fstream>
 #include <vector>
 
-import mxml;
+#include "mxml.hpp"
 
 //[ serialisation
 struct Person

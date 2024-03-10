@@ -24,20 +24,18 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-module;
+#pragma once
 
 /**
  * \file
  * definition of the mxml::xpath class, implementing a XPath 1.0 compatible search facility
  */
 
+#include "mxml/node.hpp"
+
 #include <memory>
 #include <string>
 #include <vector>
-
-export module mxml:xpath;
-
-import :node;
 
 namespace mxml
 {
@@ -53,7 +51,7 @@ namespace mxml
  * 
  */
 
-export class context final
+class context final
 {
   public:
 	/// @brief constructor
@@ -106,7 +104,7 @@ export class context final
  * 
  */
 
-export class xpath final
+class xpath final
 {
   public:
 	/// @brief constructor taking a UTF-8 encoded xpath in \a path

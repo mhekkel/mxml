@@ -24,7 +24,10 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-module;
+#include "mxml/error.hpp"
+#include "mxml/node.hpp"
+#include "mxml/text.hpp"
+#include "mxml/xpath.hpp"
 
 #include <algorithm>
 #include <charconv>
@@ -35,12 +38,6 @@ module;
 #include <optional>
 #include <string>
 #include <vector>
-
-module mxml;
-
-import :error;
-import :node;
-import :xpath;
 
 namespace mxml
 {
