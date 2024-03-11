@@ -529,16 +529,16 @@ bool element::equals(const node *n) const
 		auto a = na.begin();
 		auto b = nb.begin();
 
-		while (a != na.end() and b != nb.end())
+		while (a != na.end() or b != nb.end())
 		{
-			if (a->equals(b))
+			if (a != na.end() and b != nb.end() and a->equals(b.operator->()))
 			{
 				++a;
 				++b;
 				continue;
 			}
 
-			if (a->type() == node_type::text)
+			if (a != na.end() and a->type() == node_type::text)
 			{
 				auto t = static_cast<const text *>(&*a);
 				if (t->is_space())
@@ -548,7 +548,7 @@ bool element::equals(const node *n) const
 				}
 			}
 
-			if (b->type() == node_type::text)
+			if (b != nb.end() and b->type() == node_type::text)
 			{
 				auto t = static_cast<const text *>(&*b);
 				if (t->is_space())
@@ -867,7 +867,7 @@ std::ostream &operator<<(std::ostream &os, const element &e)
 
 // --------------------------------------------------------------------
 
-void fix_namespaces(element &e, element &source, element &dest)
+void fix_namespaces(element &e, const element &source, const element &dest)
 {
 	std::stack<node *> s;
 
@@ -903,7 +903,7 @@ void fix_namespaces(element &e, element &source, element &dest)
 				else
 				{
 					mapped[p] = p;
-					dest.attributes().emplace({ "xmlns:" + p, ns });
+					e.attributes().emplace({ "xmlns:" + p, ns });
 				}
 			}
 		}

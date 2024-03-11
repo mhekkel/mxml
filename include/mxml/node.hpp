@@ -343,6 +343,7 @@ class basic_node_list
 	// proxy methods for every insertion
 
 	virtual node *insert_impl(const node *p, node *n);
+
 	node *erase_impl(node *n);
 };
 
@@ -470,7 +471,7 @@ class iterator_impl
 	template <NodeType T2>
 	bool operator==(const T2 *n) const { return m_current == n; }
 
-	operator pointer() const { return static_cast<pointer>(m_current); }
+	explicit operator pointer() const { return static_cast<pointer>(m_current); }
 
   private:
 	using node_base_type = std::conditional_t<std::is_const_v<T>, const node, node>;
@@ -648,7 +649,7 @@ class node_list : public basic_node_list
 	/// \brief erase the node at \a pos
 	iterator erase(const_iterator pos)
 	{
-		return erase_impl(const_cast<node *>((const node *)pos));
+		return erase_impl(pos);
 	}
 
 	/// \brief erase the nodes from \a first to \a last
@@ -701,16 +702,24 @@ class node_list : public basic_node_list
 		emplace(end(), e);
 	}
 
-	/// \brief delete all nodes, but only if this a self containing list
-	void clear() override
-	{
-		if constexpr (not std::is_same_v<value_type, node>)
-			basic_node_list::clear();
-	}
-
 	/// \brief Sort the nodes
 	template <typename Pred>
 	void sort(Pred &&pred);
+
+  protected:
+	using basic_node_list::insert_impl;
+
+	node *insert_impl(const_iterator pos, node *n)
+	{
+		return basic_node_list::insert_impl(&*pos, n);
+	}
+
+	using basic_node_list::erase_impl;
+
+	node *erase_impl(iterator pos)
+	{
+		return basic_node_list::erase_impl(&*pos);
+	}
 };
 
 // --------------------------------------------------------------------
@@ -1579,7 +1588,7 @@ void node_list<T>::sort(Pred &&pred)
  * \param dest		The (usually) document element that is the destination
  */
 
-void fix_namespaces(element &e, element &source, element &dest);
+void fix_namespaces(element &e, const element &source, const element &dest);
 
 } // namespace mxml
 

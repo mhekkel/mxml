@@ -733,7 +733,7 @@ struct type_serializer<T>
 		}
 		else
 		{
-			element *e = n.emplace_back(name);
+			element *e = (element *)n.emplace_back(name);
 			serializer sr(*e);
 			const_cast<value_type &>(value).serialize(sr, 0Ul);
 		}

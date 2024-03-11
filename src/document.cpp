@@ -287,7 +287,7 @@ void document::StartElementHandler(const std::string &name, const std::string &u
 			qname = std::string{ prefix } + ':' + std::string{ name };
 	}
 
-	m_cur = static_cast<element *>(m_cur)->emplace_back(qname);
+	m_cur = (element *)(static_cast<element *>(m_cur)->emplace_back(qname));
 
 	for (const auto &[prefix, uri] : m_namespaces)
 	{
