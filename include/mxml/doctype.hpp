@@ -35,6 +35,7 @@
 
 #include <cassert>
 #include <memory>
+#include <string>
 #include <vector>
 
 namespace mxml::doctype
