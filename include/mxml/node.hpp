@@ -34,6 +34,7 @@
 
 #include <algorithm>
 #include <cassert>
+#include <compare>
 #include <string>
 #include <utility>
 #include <vector>

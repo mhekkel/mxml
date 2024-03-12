@@ -43,6 +43,10 @@ target_sources(mxml
 
 target_compile_features(mxml PUBLIC cxx_std_20)
 
+if(MSVC)
+	target_compile_definitions(mxml PUBLIC NOMINMAX=1)
+endif()
+
 if (date_FOUND)
 	target_link_libraries(mxml date::date)
 endif()
