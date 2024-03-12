@@ -1153,13 +1153,13 @@ class attribute final : public node
 	/** @endcond */
 
 	/// @brief Attributes can be sorted
-	std::strong_ordering operator<=>(const attribute &a) const
+	friend std::strong_ordering operator<=>(const attribute &a, const attribute &b)
 	{
-		if (auto cmp = m_qname <=> a.m_qname; cmp != 0)
+		if (auto cmp = (a.m_qname <=> b.m_qname); cmp != 0)
 			return cmp;
-		if (auto cmp = m_id <=> a.m_id; cmp != 0)
+		if (auto cmp = (a.m_id <=> b.m_id); cmp != 0)
 			return cmp;
-		return m_value <=> a.m_value;
+		return a.m_value <=> b.m_value;
 	}
 
 	/// @brief Compare two attributes for equality
