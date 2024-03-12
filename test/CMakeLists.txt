@@ -1,8 +1,8 @@
+include(FetchContent)
+
 find_package(Catch2 QUIET)
 
 if(NOT Catch2_FOUND)
-	include(FetchContent)
-
 	FetchContent_Declare(
 		Catch2
 		GIT_REPOSITORY https://github.com/catchorg/Catch2.git
@@ -16,16 +16,8 @@ endif()
 find_package(libmcfp QUIET)
 
 if(NOT libmcfp_FOUND)
-	if(ZEEP_ALLOW_FETCH_CONTENT)
-		include(FetchContent)
-
-		FetchContent_Declare(libmcfp GIT_REPOSITORY https://github.com/mhekkel/libmcfp GIT_TAG v1.2.4)
-		FetchContent_MakeAvailable(libmcfp)
-	elseif(EXISTS libmcfp/CMakeLists.txt)
-		add_subdirectory(libmcfp EXCLUDE_FROM_ALL)
-	else()
-		message(FATAL_ERROR "The libmcfp package was not found, please install https://github.com/mhekkel/libmcfp and try again")
-	endif()
+	FetchContent_Declare(libmcfp GIT_REPOSITORY https://github.com/mhekkel/libmcfp GIT_TAG v1.2.4)
+	FetchContent_MakeAvailable(libmcfp)
 endif()
 
 # data files for the parser test
