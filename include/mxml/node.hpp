@@ -711,7 +711,7 @@ class node_list : public basic_node_list
 
 	node *insert_impl(const_iterator pos, node *n)
 	{
-		return basic_node_list::insert_impl(&*pos, n);
+		return insert_impl(&*pos, n);
 	}
 
 	using basic_node_list::erase_impl;
