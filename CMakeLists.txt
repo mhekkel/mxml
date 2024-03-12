@@ -2,10 +2,6 @@ cmake_minimum_required(VERSION 3.28)
 
 project(mxml VERSION 1.0.1 LANGUAGES CXX)
 
-if(NOT CMAKE_GENERATOR STREQUAL "Ninja")
-    message(FATAL_ERROR "This project requires the Ninja generator. Refers to https://cmake.org/cmake/help/latest/manual/cmake-cxxmodules.7.html#generator-support")
-endif()
-
 list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 
 include(CTest)
