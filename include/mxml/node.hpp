@@ -1155,11 +1155,21 @@ class attribute final : public node
 	/// @brief Attributes can be sorted
 	friend std::strong_ordering operator<=>(const attribute &a, const attribute &b)
 	{
+#if defined(_LIBCPP_VERSION) and _LIBCPP_VERSION < 160000
+		int d = a.m_qname.compare(b.m_qname);
+		if (d == 0)
+			d = a.m_id - b.m_id;
+		if (d == 0)
+			d = a.m_value.compare(b.m_value);
+		return d < 0 ? std::strong_ordering::less :
+			d > 0 ? std::strong_ordering::greater : std::strong_ordering::equivalent;
+#else
 		if (auto cmp = (a.m_qname <=> b.m_qname); cmp != 0)
 			return cmp;
 		if (auto cmp = (a.m_id <=> b.m_id); cmp != 0)
 			return cmp;
 		return a.m_value <=> b.m_value;
+#endif
 	}
 
 	/// @brief Compare two attributes for equality
