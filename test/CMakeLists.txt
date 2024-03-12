@@ -57,7 +57,7 @@ foreach(TEST IN LISTS MXML_TESTS)
 
 	add_executable(${MXML_TEST} ${MXML_TEST_SOURCE})
 
-	target_link_libraries(${MXML_TEST} PRIVATE libmcfp::libmcfp mxml::mxml)
+	target_link_libraries(${MXML_TEST} PRIVATE libmcfp::libmcfp mxml::mxml Catch2::Catch2)
 
 	if(${Catch2_VERSION} VERSION_GREATER_EQUAL 3.0.0)
 		target_compile_definitions(${MXML_TEST} PUBLIC CATCH22=0)

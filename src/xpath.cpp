@@ -33,6 +33,7 @@
 #include <charconv>
 #include <cmath>
 #include <functional>
+#include <iterator>
 #include <map>
 #include <memory>
 #include <optional>
