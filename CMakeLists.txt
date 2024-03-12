@@ -10,7 +10,7 @@ include(GNUInstallDirs)
 option(MXML_BUILD_EXAMPLES "Build example executables" ON)
 option(MXML_BUILD_DOCUMENTATION "Build documentation" OFF)
 
-find_package(date)
+find_package(date QUIET)
 
 add_library(mxml STATIC)
 add_library(mxml::mxml ALIAS mxml)
