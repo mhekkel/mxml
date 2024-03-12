@@ -24,11 +24,11 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <iostream>
-
+//[ synopsis_xml_main
 #include "mxml.hpp"
 
-//[ synopsis_xml_main
+#include <iostream>
+
 int main()
 {
     using namespace mxml::literals; 

@@ -1,5 +1,5 @@
 EXCLUDE_SYMBOLS        = std* mxml::doctype::*
-FILE_PATTERNS          = *.ixx
+FILE_PATTERNS          = *.hpp
 PREDEFINED             += and=&& or=|| not=!
 GENERATE_XML           = YES
 GENERATE_HTML          = NO

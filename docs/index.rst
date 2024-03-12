@@ -1,7 +1,7 @@
 Introduction
 ============
 
-This is a feature complete XML library containing a validating parser as well as a modern C++ API for the data structures. It also supports serializing custom data structures. In fact, this library is so modern that at the time of writing only a very limited subset of compilers is capable of building it since it uses the C++20 feature of Modules. This library is a C++ Module Library.
+This is a feature complete XML library containing a validating parser as well as a modern C++ API for the data structures. It also supports serializing custom data structures. 
 
 The core of this library is a validating XML parser with DTD processing and all. On top of this are implemented an API for manipulating XML data in a DOM like fashion and a serialization API. As a bonus there's also an XPath implementation, albeit this is limited to XPath 1.0.
 

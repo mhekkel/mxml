@@ -23,7 +23,7 @@ exhale_args = {
     # These arguments are required
     "containmentFolder":     "./api",
     "rootFileName":          "library_root.rst",
-    "doxygenStripFromPath":  "../modules/",
+    "doxygenStripFromPath":  "../include/",
     # Heavily encouraged optional argument (see docs)
     "rootFileTitle":         "API Reference",
     # Suggested optional arguments
