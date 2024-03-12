@@ -16,7 +16,8 @@ endif()
 find_package(libmcfp QUIET)
 
 if(NOT libmcfp_FOUND)
-	FetchContent_Declare(libmcfp GIT_REPOSITORY https://github.com/mhekkel/libmcfp GIT_TAG v1.3.1)
+	# FetchContent_Declare(libmcfp GIT_REPOSITORY https://github.com/mhekkel/libmcfp GIT_TAG v1.3.1)
+	FetchContent_Declare(libmcfp GIT_REPOSITORY https://github.com/mhekkel/libmcfp GIT_TAG e2db07c)
 	FetchContent_MakeAvailable(libmcfp)
 endif()
 
