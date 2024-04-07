@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.23)
 
-project(mxml VERSION 1.0.1 LANGUAGES CXX)
+project(mxml VERSION 1.0.2 LANGUAGES CXX)
 
 list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 
@@ -55,7 +55,7 @@ if(MSVC)
 	target_compile_definitions(mxml PUBLIC NOMINMAX=1)
 endif()
 
-if (TARGET date OR date_FOUND)
+if(TARGET date OR date_FOUND)
 	target_link_libraries(mxml date::date)
 endif()
 
@@ -77,7 +77,14 @@ configure_package_config_file(
 	${CMAKE_CURRENT_BINARY_DIR}/mxml-config.cmake
 	INSTALL_DESTINATION lib/cmake/mxml)
 
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/mxml-config.cmake
+write_basic_package_version_file(
+	"${CMAKE_CURRENT_BINARY_DIR}/mxml-config-version.cmake"
+	COMPATIBILITY AnyNewerVersion
+)
+
+install(FILES
+	${CMAKE_CURRENT_BINARY_DIR}/mxml-config.cmake
+	${CMAKE_CURRENT_BINARY_DIR}/mxml-config-version.cmake
 	DESTINATION lib/cmake/mxml)
 
 set(generator
