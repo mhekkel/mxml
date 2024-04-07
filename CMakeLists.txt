@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.28)
+cmake_minimum_required(VERSION 3.23)
 
 project(mxml VERSION 1.0.1 LANGUAGES CXX)
 
@@ -6,11 +6,18 @@ list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 
 include(CTest)
 include(GNUInstallDirs)
+include(CMakePackageConfigHelpers)
+include(VersionString)
 
 option(MXML_BUILD_EXAMPLES "Build example executables" ON)
 option(MXML_BUILD_DOCUMENTATION "Build documentation" OFF)
 
-find_package(date QUIET)
+if(NOT TARGET date)
+	find_package(date QUIET)
+endif()
+
+# Version info
+write_version_header("${CMAKE_CURRENT_SOURCE_DIR}/src" LIB_NAME "libmxml")
 
 add_library(mxml STATIC)
 add_library(mxml::mxml ALIAS mxml)
@@ -24,6 +31,7 @@ target_sources(mxml
 	src/parser.cpp
 	src/text.cpp
 	src/xpath.cpp
+	src/revision.hpp
 	PUBLIC
 	FILE_SET public_modules TYPE HEADERS
 	BASE_DIRS
@@ -47,7 +55,7 @@ if(MSVC)
 	target_compile_definitions(mxml PUBLIC NOMINMAX=1)
 endif()
 
-if (date_FOUND)
+if (TARGET date OR date_FOUND)
 	target_link_libraries(mxml date::date)
 endif()
 
@@ -64,8 +72,10 @@ if(date_FOUND)
 	set(FIND_DEPENDENCIES "find_dependency(date REQUIRED)")
 endif()
 
-configure_file(${PROJECT_SOURCE_DIR}/cmake/mxml-config.cmake.in
-	${CMAKE_CURRENT_BINARY_DIR}/mxml-config.cmake @ONLY)
+configure_package_config_file(
+	${PROJECT_SOURCE_DIR}/cmake/mxml-config.cmake.in
+	${CMAKE_CURRENT_BINARY_DIR}/mxml-config.cmake
+	INSTALL_DESTINATION lib/cmake/mxml)
 
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/mxml-config.cmake
 	DESTINATION lib/cmake/mxml)

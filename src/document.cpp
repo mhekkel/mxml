@@ -27,6 +27,8 @@
 #include "mxml/document.hpp"
 #include "mxml/error.hpp"
 
+#include "revision.hpp"
+
 #include <cassert>
 #include <fstream>
 #include <functional>
