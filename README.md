@@ -1,7 +1,7 @@
 mxml
 ====
 
-This library is a C++ Module Library implementing a validating XML parser, a DOM tree, XPaths and serialization.
+This library is a C++ ~~Module Library~~ library implementing a validating XML parser, a DOM tree, XPaths and serialization.
 
 Full documentation is available [here](https://www.hekkelman.net/libmxml-doc/)
 
