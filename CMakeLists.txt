@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.23)
 
-project(mxml VERSION 1.0.2 LANGUAGES CXX)
+project(mxml VERSION 1.0.3 LANGUAGES CXX)
 
 list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 
