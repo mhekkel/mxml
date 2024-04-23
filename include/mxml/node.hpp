@@ -422,7 +422,7 @@ class iterator_impl
 	}
 
 	reference operator*() { return *static_cast<value_type *>(m_current); }
-	pointer operator->() const { return static_cast<value_type *>(m_current); }
+	pointer operator->() { return static_cast<value_type *>(m_current); }
 
 	iterator_impl &operator++()
 	{
