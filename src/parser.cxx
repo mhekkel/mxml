@@ -24,9 +24,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "mxml/doctype.hpp"
-#include "mxml/text.hpp"
-#include "mxml/parser.hpp"
+module;
 
 #include <algorithm>
 #include <array>
@@ -40,6 +38,12 @@
 #include <tuple>
 #include <vector>
 #include <string>
+
+module mxml;
+
+import :doctype;
+import :text;
+import :parser;
 
 namespace mxml
 {

@@ -24,20 +24,22 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#pragma once
+module;
 
 /**
  * \file
  * definition of the mxml XML parser, a recursive descent parser
  */
 
-#include "mxml/error.hpp"
-#include "mxml/text.hpp"
-#include "mxml/version.hpp"
-
 #include <functional>
 #include <istream>
 #include <string>
+
+export module mxml:parser;
+
+import :error;
+import :text;
+import :version;
 
 namespace mxml
 {
@@ -48,7 +50,7 @@ namespace mxml
 ///
 /// The what() member of the exception object will contain an explanation.
 
-class invalid_exception : public exception
+export class invalid_exception : public exception
 {
   public:
 	invalid_exception(const std::string &msg)
@@ -64,7 +66,7 @@ class invalid_exception : public exception
 ///
 /// The what() member of the exception object will contain an explanation.
 
-class not_wf_exception : public exception
+export class not_wf_exception : public exception
 {
   public:
 	not_wf_exception(const std::string &msg)
@@ -81,7 +83,7 @@ class not_wf_exception : public exception
  * call back handlers for the SAX events and then call parse().
  */
 
-class parser
+export class parser
 {
   public:
 	/**

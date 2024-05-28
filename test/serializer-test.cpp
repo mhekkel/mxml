@@ -13,8 +13,7 @@
 #include <iostream>
 #include <system_error>
 
-#include "mxml.hpp"
-// #include "mxml.ixx"
+import mxml;
 
 std::filesystem::path gTestDir = std::filesystem::current_path();
 

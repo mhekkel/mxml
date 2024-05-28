@@ -3,8 +3,7 @@
 #include <fstream>
 #include <filesystem>
 
-#include "mxml.hpp"
-// #include "mxml.ixx"
+import mxml;
 
 using namespace std;
 

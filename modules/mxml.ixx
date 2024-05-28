@@ -24,35 +24,19 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#pragma once
+module;
 
-/**
- * \file
- * definition of the mxml::exception class
+/** @file
+ * Main module definition for mxml.
  */
 
-#include <exception>
-#include <string>
+export module mxml;
 
-namespace mxml
-{
-
-/// \brief base class of the exceptions thrown by mxml
-class exception : public std::exception
-{
-  public:
-	/// \brief Create an exception with the message in \a message
-	exception(std::string_view message)
-		: m_message(message)
-	{
-	}
-
-	virtual ~exception() noexcept {}
-
-	virtual const char *what() const noexcept { return m_message.c_str(); }
-
-  protected:
-	std::string m_message;
-};
-
-} // namespace mxml
+export import :text;
+export import :error;
+export import :node;
+export import :document;
+export import :parser;
+export import :xpath;
+export import :serialize;
+export import :version;

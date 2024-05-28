@@ -24,9 +24,13 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "mxml/doctype.hpp"
+module;
 
 #include <string>
+
+module mxml;
+
+import :doctype;
 
 namespace mxml::doctype
 {

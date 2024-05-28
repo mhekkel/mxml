@@ -24,10 +24,12 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "mxml/error.hpp"
+module;
 
 #include <string>
 #include <vector>
+
+module mxml;
 
 namespace mxml
 {

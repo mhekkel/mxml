@@ -14,8 +14,7 @@
 
 #include <mcfp/mcfp.hpp>
 
-#include "mxml.hpp"
-// #include "mxml.ixx"
+import mxml;
 
 namespace fs = std::filesystem;
 

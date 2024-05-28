@@ -7,7 +7,7 @@
 #include <fstream>
 #include <iostream>
 
-#include "mxml.hpp"
+import mxml;
 
 namespace fs = std::filesystem;
 

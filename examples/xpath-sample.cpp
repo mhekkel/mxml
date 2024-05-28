@@ -5,7 +5,7 @@
 
 #include <iostream>
 
-#include "mxml.hpp"
+import mxml;
 
 //[ xpath_sample
 int main()

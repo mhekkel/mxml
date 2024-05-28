@@ -25,7 +25,7 @@
  */
 
 //[ synopsis_xml_main
-#include "mxml.hpp"
+import mxml;
 
 #include <iostream>
 

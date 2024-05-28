@@ -24,14 +24,16 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "mxml/doctype.hpp"
-#include "mxml/error.hpp"
-#include "mxml/text.hpp"
+module;
 
 #include <cassert>
 #include <functional>
 #include <memory>
 #include <vector>
+
+module mxml;
+
+import :doctype;
 
 namespace mxml::doctype
 {

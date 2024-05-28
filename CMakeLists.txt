@@ -1,6 +1,10 @@
-cmake_minimum_required(VERSION 3.23)
+cmake_minimum_required(VERSION 3.28)
 
-project(mxml VERSION 1.0.2 LANGUAGES CXX)
+project(mxml VERSION 1.0.3 LANGUAGES CXX)
+
+if(NOT CMAKE_GENERATOR STREQUAL "Ninja")
+    message(FATAL_ERROR "This project requires the Ninja generator. Refers to https://cmake.org/cmake/help/latest/manual/cmake-cxxmodules.7.html#generator-support")
+endif()
 
 list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 
@@ -24,29 +28,29 @@ add_library(mxml::mxml ALIAS mxml)
 
 target_sources(mxml
 	PRIVATE
-	src/doctype.cpp
-	src/document.cpp
-	src/html-named-characters.cpp
-	src/node.cpp
-	src/parser.cpp
-	src/text.cpp
-	src/xpath.cpp
+	src/doctype.cxx
+	src/document.cxx
+	src/html-named-characters.cxx
+	src/node.cxx
+	src/parser.cxx
+	src/text.cxx
+	src/xpath.cxx
 	src/revision.hpp
 	PUBLIC
-	FILE_SET public_modules TYPE HEADERS
+	FILE_SET public_modules TYPE CXX_MODULES
 	BASE_DIRS
-	${CMAKE_CURRENT_SOURCE_DIR}/include
+	${CMAKE_CURRENT_SOURCE_DIR}/modules
 	FILES
-	include/mxml.hpp
-	include/mxml/doctype.hpp
-	include/mxml/document.hpp
-	include/mxml/error.hpp
-	include/mxml/node.hpp
-	include/mxml/parser.hpp
-	include/mxml/serialize.hpp
-	include/mxml/text.hpp
-	include/mxml/version.hpp
-	include/mxml/xpath.hpp
+	modules/mxml.ixx
+	modules/mxml/doctype.ixx
+	modules/mxml/document.ixx
+	modules/mxml/error.ixx
+	modules/mxml/node.ixx
+	modules/mxml/parser.ixx
+	modules/mxml/serialize.ixx
+	modules/mxml/text.ixx
+	modules/mxml/version.ixx
+	modules/mxml/xpath.ixx
 )
 
 target_compile_features(mxml PUBLIC cxx_std_20)
@@ -61,12 +65,13 @@ endif()
 
 install(TARGETS mxml
 	EXPORT mxml
-	FILE_SET public_modules DESTINATION include)
+	CXX_MODULES_BMI DESTINATION "lib/cxx/bmi"
+	FILE_SET public_modules DESTINATION "lib/cxx/miu")
 
 install(EXPORT mxml
 	NAMESPACE mxml::
-	DESTINATION lib/cmake/mxml
-	FILE mxml-targets.cmake)
+	DESTINATION "lib/cmake/mxml"
+	FILE "mxml-targets.cmake")
 
 if(date_FOUND)
 	set(FIND_DEPENDENCIES "find_dependency(date REQUIRED)")
@@ -85,7 +90,7 @@ write_basic_package_version_file(
 install(FILES
 	${CMAKE_CURRENT_BINARY_DIR}/mxml-config.cmake
 	${CMAKE_CURRENT_BINARY_DIR}/mxml-config-version.cmake
-	DESTINATION lib/cmake/mxml)
+	DESTINATION "lib/cmake/mxml")
 
 set(generator
 	-G "${CMAKE_GENERATOR}")
