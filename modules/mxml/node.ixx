@@ -47,7 +47,9 @@ namespace mxml
 // forward declarations
 
 export class node;
+export class element_container;
 export class element;
+export class node_with_text;
 export class text;
 export class attribute;
 export class name_space;
@@ -1591,7 +1593,7 @@ void node_list<T>::sort(Pred &&pred)
  * \param dest		The (usually) document element that is the destination
  */
 
-void fix_namespaces(element &e, const element &source, const element &dest);
+export void fix_namespaces(element &e, const element &source, const element &dest);
 
 } // namespace mxml
 
