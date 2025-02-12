@@ -51,7 +51,8 @@ document::document()
 }
 
 document::document(const document &doc)
-	: m_doctype(doc.m_doctype)
+	: element_container(doc)
+	, m_doctype(doc.m_doctype)
 	, m_validating(doc.m_validating)
 	, m_preserve_cdata(doc.m_preserve_cdata)
 	, m_has_xml_decl(doc.m_has_xml_decl)
