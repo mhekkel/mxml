@@ -13,12 +13,11 @@ if(NOT Catch2_FOUND)
 	set(Catch2_VERSION "2.13.9")
 endif()
 
-find_package(libmcfp QUIET)
+find_package(mcfp QUIET)
 
-if(NOT libmcfp_FOUND)
-	# FetchContent_Declare(libmcfp GIT_REPOSITORY https://github.com/mhekkel/libmcfp GIT_TAG v1.3.1)
-	FetchContent_Declare(libmcfp GIT_REPOSITORY https://github.com/mhekkel/libmcfp GIT_TAG 5e6a186)
-	FetchContent_MakeAvailable(libmcfp)
+if(NOT mcfp_FOUND)
+	FetchContent_Declare(mcfp GIT_REPOSITORY https://github.com/mhekkel/mcfp GIT_TAG v1.3.5)
+	FetchContent_MakeAvailable(mcfp)
 endif()
 
 # data files for the parser test
@@ -58,7 +57,7 @@ foreach(TEST IN LISTS MXML_TESTS)
 
 	add_executable(${MXML_TEST} ${MXML_TEST_SOURCE})
 
-	target_link_libraries(${MXML_TEST} PRIVATE libmcfp::libmcfp mxml::mxml Catch2::Catch2)
+	target_link_libraries(${MXML_TEST} PRIVATE mcfp::mcfp mxml::mxml Catch2::Catch2)
 
 	if(${Catch2_VERSION} VERSION_GREATER_EQUAL 3.0.0)
 		target_compile_definitions(${MXML_TEST} PUBLIC CATCH22=0)
