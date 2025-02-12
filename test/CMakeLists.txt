@@ -16,7 +16,7 @@ endif()
 find_package(mcfp QUIET)
 
 if(NOT mcfp_FOUND)
-	FetchContent_Declare(mcfp GIT_REPOSITORY https://github.com/mhekkel/mcfp GIT_TAG v1.3.5)
+	FetchContent_Declare(mcfp GIT_REPOSITORY https://github.com/mhekkel/libmcfp GIT_TAG v1.3.5)
 	FetchContent_MakeAvailable(mcfp)
 endif()
 
