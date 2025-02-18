@@ -1,16 +1,14 @@
 include(FetchContent)
 
-find_package(Catch2 QUIET)
+find_package(Catch2 3 QUIET)
 
 if(NOT Catch2_FOUND)
 	FetchContent_Declare(
 		Catch2
 		GIT_REPOSITORY https://github.com/catchorg/Catch2.git
-		GIT_TAG v2.13.9)
+		GIT_TAG v3.8.0)
 
 	FetchContent_MakeAvailable(Catch2)
-
-	set(Catch2_VERSION "2.13.9")
 endif()
 
 find_package(libmcfp QUIET)
@@ -60,11 +58,7 @@ foreach(TEST IN LISTS MXML_TESTS)
 
 	target_link_libraries(${MXML_TEST} PRIVATE libmcfp::libmcfp mxml::mxml Catch2::Catch2)
 
-	if(${Catch2_VERSION} VERSION_GREATER_EQUAL 3.0.0)
-		target_compile_definitions(${MXML_TEST} PUBLIC CATCH22=0)
-	else()
-		target_compile_definitions(${MXML_TEST} PUBLIC CATCH22=1)
-	endif()
+	target_compile_definitions(${MXML_TEST} PUBLIC CATCH22=1)
 
 	if(MSVC)
 		# Specify unwind semantics so that MSVC knowns how to handle exceptions
