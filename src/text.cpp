@@ -101,7 +101,13 @@ bool is_valid_system_literal(std::string_view s)
 {
 	bool result = true;
 	for (auto ch : s)
-		result = is_valid_system_literal_char(ch);
+	{
+		if (not is_valid_system_literal_char(ch))
+		{
+			result = false;
+			break;
+		}
+	}
 	return result;
 }
 
@@ -119,7 +125,13 @@ bool is_valid_public_id(std::string_view s)
 {
 	bool result = true;
 	for (auto ch : s)
-		result = is_valid_public_id_char(ch);
+	{
+		if (not is_valid_public_id_char(ch))
+		{
+			result = false;
+			break;
+		}
+	}
 	return result;
 }
 
