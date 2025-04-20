@@ -1,5 +1,6 @@
 version 1.0.3
 - Fix copy constructor of document
+- Switch to Catch2 v3 only
 
 version 1.0.2
 - Drop the C++20 module setup, it is too early for that.

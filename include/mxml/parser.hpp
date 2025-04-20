@@ -51,8 +51,8 @@ namespace mxml
 class invalid_exception : public exception
 {
   public:
-	invalid_exception(const std::string &msg)
-		: exception(msg)
+	invalid_exception(std::string msg)
+		: exception(std::move(msg))
 	{
 	}
 	~invalid_exception() noexcept {}
@@ -67,8 +67,8 @@ class invalid_exception : public exception
 class not_wf_exception : public exception
 {
   public:
-	not_wf_exception(const std::string &msg)
-		: exception(msg)
+	not_wf_exception(std::string msg)
+		: exception(std::move(msg))
 	{
 	}
 	~not_wf_exception() noexcept {}
@@ -110,19 +110,19 @@ class parser
 	 */
 
 	std::function<void(encoding_type encoding, bool standalone, version_type version)> xml_decl_handler;
-	std::function<void(const std::string &name, const std::string &uri, const attr_list_type &atts)> start_element_handler;
-	std::function<void(const std::string &name, const std::string &uri)> end_element_handler;
-	std::function<void(const std::string &data)> character_data_handler;
-	std::function<void(const std::string &target, const std::string &data)> processing_instruction_handler;
-	std::function<void(const std::string &data)> comment_handler;
+	std::function<void(std::string name, std::string uri, const attr_list_type &atts)> start_element_handler;
+	std::function<void(std::string name, std::string uri)> end_element_handler;
+	std::function<void(std::string data)> character_data_handler;
+	std::function<void(std::string target, std::string data)> processing_instruction_handler;
+	std::function<void(std::string data)> comment_handler;
 	std::function<void()> start_cdata_section_handler;
 	std::function<void()> end_cdata_section_handler;
-	std::function<void(const std::string &prefix, const std::string &uri)> start_namespace_decl_handler;
-	std::function<void(const std::string &prefix)> end_namespace_decl_handler;
-	std::function<void(const std::string &root, const std::string &publicId, const std::string &uri)> doctype_decl_handler;
-	std::function<void(const std::string &name, const std::string &systemId, const std::string &publicId)> notation_decl_handler;
-	std::function<std::istream *(const std::string &base, const std::string &pubid, const std::string &uri)> external_entity_ref_handler;
-	std::function<void(const std::string &msg)> report_invalidation_handler;
+	std::function<void(std::string prefix, std::string uri)> start_namespace_decl_handler;
+	std::function<void(std::string prefix)> end_namespace_decl_handler;
+	std::function<void(std::string root, std::string publicId, std::string uri)> doctype_decl_handler;
+	std::function<void(std::string name, std::string systemId, std::string publicId)> notation_decl_handler;
+	std::function<std::istream *(std::string_view base, std::string_view pubid, std::string_view uri)> external_entity_ref_handler;
+	std::function<void(std::string msg)> report_invalidation_handler;
 
 	/** @brief Start the actual parsing, optionally validating content and namespaces */
 	void parse(bool validate, bool validate_ns);
@@ -133,34 +133,33 @@ class parser
 
 	virtual void xml_decl(encoding_type encoding, bool standalone, version_type version);
 
-	virtual void doctype_decl(const std::string &root, const std::string &publicId, const std::string &uri);
+	virtual void doctype_decl(std::string root, std::string publicId, std::string uri);
 
-	virtual void start_element(const std::string &name,
-		const std::string &uri, const attr_list_type &atts);
+	virtual void start_element(std::string name, std::string uri, const attr_list_type &atts);
 
-	virtual void end_element(const std::string &name, const std::string &uri);
+	virtual void end_element(std::string name, std::string uri);
 
-	virtual void character_data(const std::string &data);
+	virtual void character_data(std::string data);
 
-	virtual void processing_instruction(const std::string &target, const std::string &data);
+	virtual void processing_instruction(std::string target, std::string data);
 
-	virtual void comment(const std::string &data);
+	virtual void comment(std::string data);
 
 	virtual void start_cdata_section();
 
 	virtual void end_cdata_section();
 
-	virtual void start_namespace_decl(const std::string &prefix, const std::string &uri);
+	virtual void start_namespace_decl(std::string prefix, std::string uri);
 
-	virtual void end_namespace_decl(const std::string &prefix);
+	virtual void end_namespace_decl(std::string prefix);
 
-	virtual void notation_decl(const std::string &name,
-		const std::string &systemId, const std::string &publicId);
+	virtual void notation_decl(std::string name,
+		std::string systemId, std::string publicId);
 
-	virtual void report_invalidation(const std::string &msg);
+	virtual void report_invalidation(std::string msg);
 
-	virtual std::istream *external_entity_ref(const std::string &base,
-		const std::string &pubid, const std::string &uri);
+	virtual std::istream *external_entity_ref(std::string_view base,
+		std::string_view pubid, std::string_view uri);
 
 	struct parser_imp *m_impl;
 	std::istream *m_istream;

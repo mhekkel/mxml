@@ -164,9 +164,9 @@ class node
 	 * \param name		The actual name to use
 	 */
 
-	void set_qname(const std::string &prefix, const std::string &name)
+	void set_qname(std::string prefix, std::string name)
 	{
-		set_qname(prefix.empty() ? name : prefix + ':' + name);
+		set_qname(prefix.empty() ? std::move(name) : prefix + ':' + name);
 	}
 
 	virtual std::string name() const;       ///< The name for the node as parsed from the qname.
@@ -174,13 +174,13 @@ class node
 	virtual std::string get_ns() const;     ///< Returns the namespace URI for the node, if it can be resolved.
 
 	/// Return the namespace URI for a prefix
-	virtual std::string namespace_for_prefix(const std::string &prefix) const;
+	virtual std::string namespace_for_prefix(std::string_view prefix) const;
 
 	/// Return the prefix for a namespace URI
-	virtual std::pair<std::string, bool> prefix_for_namespace(const std::string &uri) const;
+	virtual std::pair<std::string, bool> prefix_for_namespace(std::string_view uri) const;
 
 	/// Prefix the \a tag with the namespace prefix for \a uri
-	virtual std::string prefix_tag(std::string tag, const std::string &uri) const;
+	virtual std::string prefix_tag(std::string tag, std::string_view uri) const;
 
 	/// return all content concatenated, including that of children.
 	virtual std::string str() const = 0;
@@ -800,15 +800,15 @@ class element_container : public node, public node_list<element>
 	/// If you need to find other classes than xml::element, of if your XPath
 	/// contains variables, you should create a mxml::xpath object and use
 	/// its evaluate method.
-	element_set find(const std::string &path) const;
+	element_set find(std::string_view path) const;
 
 	/// \brief return the first element that matches XPath \a path.
 	///
 	/// If you need to find other classes than xml::element, of if your XPath
 	/// contains variables, you should create a mxml::xpath object and use
 	/// its evaluate method.
-	iterator find_first(const std::string &path);
-	const_iterator find_first(const std::string &path) const;
+	iterator find_first(std::string_view path);
+	const_iterator find_first(std::string_view path) const;
 
   protected:
 	/** @cond */
@@ -831,8 +831,8 @@ class node_with_text : public node
 
 	node_with_text() = default;
 
-	node_with_text(const std::string &s)
-		: m_text(s)
+	node_with_text(std::string s)
+		: m_text(std::move(s))
 	{
 	}
 
@@ -884,8 +884,8 @@ class comment final : public node_with_text
 	constexpr node_type type() const override { return node_type::comment; }
 
 	/// @brief default constructor
-	comment(const std::string &text = {})
-		: node_with_text(text)
+	comment(std::string text = {})
+		: node_with_text(std::move(text))
 	{
 	}
 
@@ -938,9 +938,9 @@ class processing_instruction final : public node_with_text
 	/// This constructs a processing instruction with the specified parameters
 	/// \param target	The target, this will follow the <? characters, e.g. `php` will generate <?php ... ?>
 	/// \param text		The text inside this node, e.g. the PHP code.
-	processing_instruction(const std::string &target, const std::string &text)
-		: node_with_text(text)
-		, m_target(target)
+	processing_instruction(std::string target, std::string text)
+		: node_with_text(std::move(text))
+		, m_target(std::move(target))
 	{
 	}
 
@@ -953,7 +953,7 @@ class processing_instruction final : public node_with_text
 
 	/// @brief move constructor
 	processing_instruction(processing_instruction &&pi) noexcept
-		: node_with_text(std::move(pi))
+		: node_with_text(std::move(pi.m_text))
 		, m_target(std::move(pi.m_target))
 	{
 	}
@@ -980,7 +980,7 @@ class processing_instruction final : public node_with_text
 	std::string get_target() const { return m_target; }
 
 	/// \brief set the target
-	void set_target(const std::string &target) { m_target = target; }
+	void set_target(std::string target) { m_target = std::move(target); }
 
 	/// \brief compare nodes for equality
 	bool equals(const node *n) const override
@@ -1009,8 +1009,8 @@ class text final : public node_with_text
 	constexpr node_type type() const override { return node_type::text; }
 
 	/// @brief default constructor
-	text(const std::string &text = {})
-		: node_with_text(text)
+	text(std::string text = {})
+		: node_with_text(std::move(text))
 	{
 	}
 
@@ -1034,7 +1034,7 @@ class text final : public node_with_text
 	}
 
 	/// \brief append \a text to the stored text
-	void append(const std::string &text) { m_text.append(text.begin(), text.end()); }
+	void append(std::string_view text) { m_text.append(text.begin(), text.end()); }
 
 	/// \brief compare nodes for equality
 	bool equals(const node *n) const override;
@@ -1060,8 +1060,8 @@ class cdata final : public node_with_text
 	constexpr node_type type() const override { return node_type::cdata; }
 
 	/// @brief default constructor
-	cdata(const std::string &s = {})
-		: node_with_text(s)
+	cdata(std::string s = {})
+		: node_with_text(std::move(s))
 	{
 	}
 
@@ -1085,7 +1085,7 @@ class cdata final : public node_with_text
 	}
 
 	/// \brief append \a text to the stored text
-	void append(const std::string &text) { m_text.append(text.begin(), text.end()); }
+	void append(std::string_view text) { m_text.append(text.begin(), text.end()); }
 
 	/// \brief compare nodes for equality
 	bool equals(const node *n) const override
@@ -1186,7 +1186,7 @@ class attribute final : public node
 	std::string value() const { return m_value; }
 
 	/// @brief Set the value of this attribute to \a v
-	void set_value(const std::string &v) { m_value = v; }
+	void set_value(std::string v) { m_value = std::move(v); }
 
 	/// \brief same as value, but checks to see if this really is a namespace attribute
 	std::string uri() const;
@@ -1310,7 +1310,7 @@ class attribute_set : public node_list<attribute>
 	using node_list::erase;
 
 	/// \brief remove attribute with name \a key
-	size_type erase(const std::string &key)
+	size_type erase(std::string_view key)
 	{
 		size_type result = 0;
 		auto i = find(key);
@@ -1429,13 +1429,13 @@ class element final : public element_container
 	// --------------------------------------------------------------------
 
 	/// \brief return the URI of the namespace for \a prefix
-	std::string namespace_for_prefix(const std::string &prefix) const override;
+	std::string namespace_for_prefix(std::string_view prefix) const override;
 
 	/// \brief return the prefix for the XML namespace with uri \a uri.
 	/// \return The result is a pair of a std::string containing the actual prefix value
 	/// and a boolean indicating if the namespace was found at all, needed since empty prefixes
 	/// are allowed.
-	std::pair<std::string, bool> prefix_for_namespace(const std::string &uri) const override;
+	std::pair<std::string, bool> prefix_for_namespace(std::string_view uri) const override;
 
 	/// \brief move this element and optionally everyting beneath it to the
 	///        specified namespace/prefix
@@ -1444,7 +1444,7 @@ class element final : public element_container
 	/// \param uri					The new namespace uri
 	/// \param recursive			Apply this to the child nodes as well
 	/// \param including_attributes	Move the attributes to this new namespace as well
-	void move_to_name_space(const std::string &prefix, const std::string &uri,
+	void move_to_name_space(std::string prefix, std::string uri,
 		bool recursive, bool including_attributes);
 
 	// --------------------------------------------------------------------
@@ -1457,7 +1457,7 @@ class element final : public element_container
 	std::string get_content() const;
 
 	/// \brief replace all existing child text nodes with a new single text node containing \a content
-	void set_content(const std::string &content);
+	void set_content(std::string content);
 
 	/// \brief return the value of attribute name \a qname or the empty string if not found
 	std::string get_attribute(std::string_view qname) const;
@@ -1466,12 +1466,12 @@ class element final : public element_container
 	void set_attribute(std::string_view qname, std::string_view value);
 
 	/// \brief The set_text method replaces any text node with the new text (call set_content)
-	virtual void set_text(const std::string &s);
+	virtual void set_text(std::string s);
 
 	/// The add_text method checks if the last added child is a text node,
 	/// and if so, it appends the string to this node's value. Otherwise,
 	/// it adds a new text node child with the new text.
-	void add_text(const std::string &s);
+	void add_text(std::string s);
 
 	/// To combine all adjacent child text nodes into one
 	void flatten_text();

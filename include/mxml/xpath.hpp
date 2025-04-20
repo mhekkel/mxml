@@ -77,15 +77,15 @@ class context final
 	}
 
 	/// @brief Store a new variable in this context with name \a name and value \a value
-	void set(const std::string &name, const std::string &value);
+	void set(std::string name, std::string value);
 
 	/// @brief Store a new variable in this context with name \a name and value \a value
-	void set(const std::string &name, double value);
+	void set(std::string name, double value);
 
 	/// @brief Get a variable stored in this context or further up the scopes
 	template <typename T>
 		requires std::is_same_v<T, std::string> or std::is_same_v<T, double>
-	T get(const std::string &name);
+	T get(std::string name);
 
 	/** @cond */
   private:
@@ -108,7 +108,7 @@ class xpath final
 {
   public:
 	/// @brief constructor taking a UTF-8 encoded xpath in \a path
-	xpath(const std::string &path);
+	xpath(std::string_view path);
 
 	/// @brief copy constructor
 	xpath(const xpath &rhs)

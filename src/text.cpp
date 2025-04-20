@@ -97,11 +97,11 @@ bool is_valid_system_literal_char(char32_t uc)
 	       uc != '#';
 }
 
-bool is_valid_system_literal(const std::string &s)
+bool is_valid_system_literal(std::string_view s)
 {
 	bool result = true;
-	for (std::string::const_iterator ch = s.begin(); result == true and ch != s.end(); ++ch)
-		result = is_valid_system_literal_char(*ch);
+	for (auto ch : s)
+		result = is_valid_system_literal_char(ch);
 	return result;
 }
 
@@ -115,11 +115,11 @@ bool is_valid_public_id_char(char32_t uc)
 	       (uc < 128 and kPubChars.find(static_cast<char>(uc)) != std::string::npos);
 }
 
-bool is_valid_public_id(const std::string &s)
+bool is_valid_public_id(std::string_view s)
 {
 	bool result = true;
-	for (std::string::const_iterator ch = s.begin(); result == true and ch != s.end(); ++ch)
-		result = is_valid_public_id_char(*ch);
+	for (auto ch : s)
+		result = is_valid_public_id_char(ch);
 	return result;
 }
 
@@ -198,7 +198,7 @@ char32_t pop_back_char(std::string& s)
 }
 
 /// \brief return the first unicode and the advanced pointer from a string
-char32_t pop_front_char(std::string::const_iterator &ptr, std::string::const_iterator end)
+char32_t pop_front_char(std::string_view::const_iterator &ptr, std::string_view::const_iterator end)
 {
 	char32_t result = static_cast<unsigned char>(*ptr);
 	++ptr;
@@ -248,6 +248,17 @@ char32_t pop_front_char(std::string::const_iterator &ptr, std::string::const_ite
 		}
 	}
 
+	return result;
+}
+
+char32_t pop_front_char(std::string::const_iterator &ptr, std::string::const_iterator end)
+{
+	std::string_view sv(ptr, end);
+
+	auto sv_ptr = sv.begin();
+	auto result = pop_front_char(sv_ptr, sv.end());
+
+	ptr += sv_ptr - sv.begin();
 	return result;
 }
 

@@ -42,8 +42,8 @@ class exception : public std::exception
 {
   public:
 	/// \brief Create an exception with the message in \a message
-	exception(std::string_view message)
-		: m_message(message)
+	exception(std::string message)
+		: m_message(std::move(message))
 	{
 	}
 

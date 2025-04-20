@@ -74,8 +74,8 @@ template <>
 struct value_serializer<std::string>
 {
 	static std::string type_name() { return "xsd:string"; }
-	static std::string to_string(std::string_view value) { return std::string{ value }; }
-	static std::string from_string(std::string_view value) { return std::string{ value }; }
+	static std::string to_string(std::string value) { return value; }
+	static std::string from_string(std::string_view value) { return std::string { value }; }
 };
 
 /// @ref value_serializer implementation for numbers
@@ -217,11 +217,11 @@ struct value_serializer<T>
 		instance().m_value_map = value_map_type(values);
 	}
 
-	static value_serializer &instance(std::string_view name = {})
+	static value_serializer &instance(std::string name = {})
 	{
 		static value_serializer s_instance;
 		if (not name.empty() and s_instance.m_type_name.empty())
-			s_instance.m_type_name = name;
+			s_instance.m_type_name = std::move(name);
 		return s_instance;
 	}
 
@@ -231,9 +231,9 @@ struct value_serializer<T>
 		return *this;
 	}
 
-	value_serializer &operator()(std::string_view name, T v)
+	value_serializer &operator()(std::string name, T v)
 	{
-		m_value_map[v] = name;
+		m_value_map[v] = std::move(name);
 		return *this;
 	}
 
@@ -458,8 +458,8 @@ class name_value_pair
 {
   public:
 	/// @brief constructor
-	name_value_pair(std::string_view name, T &value)
-		: m_name(name)
+	name_value_pair(std::string name, T &value)
+		: m_name(std::move(name))
 		, m_value(value)
 	{
 	}
@@ -488,8 +488,8 @@ template <typename T>
 class element_nvp : public name_value_pair<T>
 {
   public:
-	element_nvp(std::string_view name, T &value)
-		: name_value_pair<T>(name, value)
+	element_nvp(std::string name, T &value)
+		: name_value_pair<T>(std::move(name), value)
 	{
 	}
 };
@@ -499,8 +499,8 @@ template <typename T>
 class attribute_nvp : public name_value_pair<T>
 {
   public:
-	attribute_nvp(std::string_view name, T &value)
-		: name_value_pair<T>(name, value)
+	attribute_nvp(std::string name, T &value)
+		: name_value_pair<T>(std::move(name), value)
 	{
 	}
 };
@@ -509,18 +509,18 @@ class attribute_nvp : public name_value_pair<T>
  * @brief Create a name/value pair for serializing to and from an XML element
  */
 template <typename T>
-constexpr attribute_nvp<T> make_attribute_nvp(std::string_view name, T &value)
+constexpr attribute_nvp<T> make_attribute_nvp(std::string name, T &value)
 {
-	return attribute_nvp(name, value);
+	return attribute_nvp(std::move(name), value);
 }
 
 /**
  * @brief Create a name/value pair for serializing to and from an XML attribute
  */
 template <typename T>
-constexpr element_nvp<T> make_element_nvp(std::string_view name, T &value)
+constexpr element_nvp<T> make_element_nvp(std::string name, T &value)
 {
-	return element_nvp(name, value);
+	return element_nvp(std::move(name), value);
 }
 
 /**

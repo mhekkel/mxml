@@ -32,8 +32,8 @@
 #include <cassert>
 #include <fstream>
 #include <functional>
-#include <memory>
 #include <istream>
+#include <memory>
 
 namespace mxml
 {
@@ -84,11 +84,11 @@ document::document(std::istream &is)
 	parse(is);
 }
 
-document::document(std::istream &is, const std::string &base_dir)
+document::document(std::istream &is, std::string base_dir)
 	: document()
 {
 	m_validating = true;
-	m_dtd_dir = base_dir;
+	m_dtd_dir = std::move(base_dir);
 	parse(is);
 }
 
@@ -116,9 +116,9 @@ void swap(document &a, document &b) noexcept
 	std::swap(a.m_root_size_at_first_notation, b.m_root_size_at_first_notation);
 }
 
-void document::set_base_dir(const std::string &path)
+void document::set_base_dir(std::string path)
 {
-	m_dtd_dir = path;
+	m_dtd_dir = std::move(path);
 }
 
 encoding_type document::get_encoding() const
@@ -261,7 +261,7 @@ void document::XmlDeclHandler(encoding_type /*encoding*/, bool standalone, versi
 	m_fmt.version = version;
 }
 
-void document::StartElementHandler(const std::string &name, const std::string &uri, const parser::attr_list_type &atts)
+void document::StartElementHandler(std::string name, std::string uri, const parser::attr_list_type &atts)
 {
 	using namespace std::literals;
 
@@ -284,10 +284,10 @@ void document::StartElementHandler(const std::string &name, const std::string &u
 			std::tie(prefix, found) = m_cur->prefix_for_namespace(uri);
 
 		if (prefix.empty() and not found)
-			throw exception("namespace not found: "s + std::string{ uri });
+			throw exception("namespace not found: "s + uri);
 
 		if (not prefix.empty())
-			qname = std::string{ prefix } + ':' + std::string{ name };
+			qname = prefix + ':' + name;
 	}
 
 	m_cur = (element *)(static_cast<element *>(m_cur)->emplace_back(qname));
@@ -319,64 +319,36 @@ void document::StartElementHandler(const std::string &name, const std::string &u
 	m_namespaces.clear();
 }
 
-void document::EndElementHandler(const std::string & /*name*/, const std::string & /*name*/)
+void document::EndElementHandler(std::string /*name*/, std::string /*name*/)
 {
 	if (m_cdata != nullptr)
 		throw exception("CDATA section not closed");
 
-#if 0 // This check is not needed since it can never happen anyway
-	std::string qname = name;
-	if (not uri.empty())
-	{
-		std::string prefix;
-		bool found;
-
-		auto i = std::find_if(m_namespaces.begin(), m_namespaces.end(),
-			[uri](auto& ns) { return ns.second == uri; });
-
-		if (i != m_namespaces.end())
-		{
-			prefix = i->first;
-			found = true;
-		}
-		else
-			std::tie(prefix, found) = m_cur->prefix_for_namespace(uri);
-	
-		if (prefix.empty() and not found)
-			throw exception("namespace not found: " + uri);
-
-		if (not prefix.empty())
-			qname = prefix + ':' + name;
-	}
-
-	assert(m_cur->name() == qname);
-#endif
-
 	m_cur = m_cur->parent();
 }
 
-void document::CharacterDataHandler(const std::string &data)
+void document::CharacterDataHandler(std::string data)
 {
 	if (m_cdata != nullptr)
 		m_cdata->append(data);
 	else if (m_cur != this)
-		static_cast<element *>(m_cur)->add_text(data);
+		static_cast<element *>(m_cur)->add_text(std::move(data));
 }
 
-void document::ProcessingInstructionHandler(const std::string &target, const std::string &data)
+void document::ProcessingInstructionHandler(std::string target, std::string data)
 {
 	if (m_cur == this)
-		nodes().emplace_back(processing_instruction(target, data));
+		nodes().emplace_back(processing_instruction(std::move(target), std::move(data)));
 	else
-		static_cast<element_container *>(m_cur)->nodes().emplace_back(processing_instruction(target, data));
+		static_cast<element_container *>(m_cur)->nodes().emplace_back(processing_instruction(std::move(target), std::move(data)));
 }
 
-void document::CommentHandler(const std::string &s)
+void document::CommentHandler(std::string s)
 {
 	if (m_cur == this)
-		nodes().emplace_back(comment(s));
+		nodes().emplace_back(comment(std::move(s)));
 	else
-		static_cast<element_container *>(m_cur)->nodes().emplace_back(comment(s));
+		static_cast<element_container *>(m_cur)->nodes().emplace_back(comment(std::move(s)));
 }
 
 void document::StartCdataSectionHandler()
@@ -389,37 +361,35 @@ void document::EndCdataSectionHandler()
 	m_cdata = nullptr;
 }
 
-void document::StartNamespaceDeclHandler(const std::string &prefix, const std::string &uri)
+void document::StartNamespaceDeclHandler(std::string prefix, std::string uri)
 {
-	m_namespaces.emplace_back(std::string{ prefix }, std::string{ uri });
+	m_namespaces.emplace_back(std::move(prefix), std::move(uri));
 }
 
-void document::EndNamespaceDeclHandler(const std::string & /*prefix*/)
+void document::EndNamespaceDeclHandler(std::string_view /*prefix*/)
 {
 }
 
-void document::DoctypeDeclHandler(const std::string &root, const std::string &publicId, const std::string &uri)
+void document::DoctypeDeclHandler(std::string root, std::string publicId, std::string uri)
 {
-	m_doctype.m_root = root;
-	m_doctype.m_pubid = publicId;
-	m_doctype.m_dtd = uri;
+	m_doctype.m_root = std::move(root);
+	m_doctype.m_pubid = std::move(publicId);
+	m_doctype.m_dtd = std::move(uri);
 }
 
-void document::NotationDeclHandler(const std::string &name, const std::string &sysid, const std::string &pubid)
+void document::NotationDeclHandler(std::string name, std::string sysid, std::string pubid)
 {
 	if (m_notations.empty())
 		m_root_size_at_first_notation = nodes().size();
-
-	notation n = { std::string{ name }, std::string{ sysid }, std::string{ pubid } };
 
 	auto i = find_if(m_notations.begin(), m_notations.end(),
 		[name](auto &nt)
 		{ return nt.m_name >= name; });
 
-	m_notations.insert(i, n);
+	m_notations.insert(i, { std::move(name), std::move(sysid), std::move(pubid) });
 }
 
-std::istream *document::external_entity_ref(const std::string &base, const std::string &pubid, const std::string &sysid)
+std::istream *document::external_entity_ref(std::string_view base, std::string_view pubid, std::string_view sysid)
 {
 	std::istream *result = nullptr;
 

@@ -44,7 +44,7 @@ struct state_base : std::enable_shared_from_this<state_base>
 {
 	state_base() = default;
 
-	virtual std::tuple<bool, bool> allow(const std::string &name) = 0;
+	virtual std::tuple<bool, bool> allow(std::string_view name) = 0;
 	virtual bool allow_char_data() { return false; }
 	virtual bool allow_empty() { return false; }
 	virtual bool must_be_empty() { return false; }
@@ -57,30 +57,27 @@ struct state_base : std::enable_shared_from_this<state_base>
 
 struct state_any : public state_base
 {
-	virtual std::tuple<bool, bool>
-	allow(const std::string & /*name*/) { return std::make_tuple(true, true); }
-	virtual bool allow_char_data() { return true; }
-	virtual bool allow_empty() { return true; }
+	virtual std::tuple<bool, bool> allow(std::string_view /*name*/) override { return std::make_tuple(true, true); }
+	virtual bool allow_char_data() override { return true; }
+	virtual bool allow_empty() override { return true; }
 };
 
 struct state_empty : public state_base
 {
-	virtual std::tuple<bool, bool>
-	allow(const std::string & /*name*/) { return std::make_tuple(false, true); }
-	virtual bool allow_empty() { return true; }
-	virtual bool must_be_empty() { return true; }
+	virtual std::tuple<bool, bool> allow(std::string_view /*name*/) override { return std::make_tuple(false, true); }
+	virtual bool allow_empty() override { return true; }
+	virtual bool must_be_empty() override { return true; }
 };
 
 struct state_element : public state_base
 {
-	state_element(const std::string &name)
-		: m_name(name)
+	state_element(std::string name)
+		: m_name(std::move(name))
 		, m_done(false)
 	{
 	}
 
-	virtual std::tuple<bool, bool>
-	allow(const std::string &name)
+	virtual std::tuple<bool, bool> allow(std::string_view name) override
 	{
 		bool result = false;
 		if (not m_done and m_name == name)
@@ -89,7 +86,7 @@ struct state_element : public state_base
 		return std::make_tuple(result, m_done);
 	}
 
-	virtual void reset() { m_done = false; }
+	virtual void reset() override { m_done = false; }
 
 	std::string m_name;
 	bool m_done;
@@ -103,13 +100,13 @@ struct state_repeated : public state_base
 	{
 	}
 
-	virtual void reset()
+	virtual void reset() override
 	{
 		m_sub->reset();
 		m_state = 0;
 	}
 
-	virtual bool allow_char_data() { return m_sub->allow_char_data(); }
+	virtual bool allow_char_data() override { return m_sub->allow_char_data(); }
 
 	state_base_ptr m_sub;
 	int m_state;
@@ -124,12 +121,12 @@ struct state_repeated_zero_or_once : public state_repeated
 	{
 	}
 
-	std::tuple<bool, bool> allow(const std::string &name);
+	std::tuple<bool, bool> allow(std::string_view name) override;
 
-	virtual bool allow_empty() { return true; }
+	virtual bool allow_empty() override { return true; }
 };
 
-std::tuple<bool, bool> state_repeated_zero_or_once::allow(const std::string &name)
+std::tuple<bool, bool> state_repeated_zero_or_once::allow(std::string_view name)
 {
 	// use a state machine
 	enum State
@@ -167,12 +164,12 @@ struct state_repeated_any : public state_repeated
 	{
 	}
 
-	std::tuple<bool, bool> allow(const std::string &name);
+	std::tuple<bool, bool> allow(std::string_view name) override;
 
-	virtual bool allow_empty() { return true; }
+	virtual bool allow_empty() override { return true; }
 };
 
-std::tuple<bool, bool> state_repeated_any::allow(const std::string &name)
+std::tuple<bool, bool> state_repeated_any::allow(std::string_view name)
 {
 	// use a state machine
 	enum State
@@ -215,12 +212,12 @@ struct state_repeated_at_least_once : public state_repeated
 	{
 	}
 
-	std::tuple<bool, bool> allow(const std::string &name);
+	std::tuple<bool, bool> allow(std::string_view name) override;
 
-	virtual bool allow_empty() { return m_sub->allow_empty(); }
+	virtual bool allow_empty() override { return m_sub->allow_empty(); }
 };
 
-std::tuple<bool, bool> state_repeated_at_least_once::allow(const std::string &name)
+std::tuple<bool, bool> state_repeated_at_least_once::allow(std::string_view name)
 {
 	// use a state machine
 	enum State
@@ -277,10 +274,9 @@ struct state_seq : public state_base
 			m_states.emplace_back(a->create_state());
 	}
 
-	virtual std::tuple<bool, bool>
-	allow(const std::string &name);
+	virtual std::tuple<bool, bool> allow(std::string_view name) override;
 
-	virtual void reset()
+	virtual void reset() override
 	{
 		m_state = 0;
 		for (auto state : m_states)
@@ -288,7 +284,7 @@ struct state_seq : public state_base
 		;
 	}
 
-	virtual bool allow_char_data()
+	virtual bool allow_char_data() override
 	{
 		bool result = false;
 		for (auto s : m_states)
@@ -303,14 +299,14 @@ struct state_seq : public state_base
 		return result;
 	}
 
-	virtual bool allow_empty();
+	virtual bool allow_empty() override;
 
 	std::vector<state_base_ptr> m_states;
 	std::vector<state_base_ptr>::iterator m_next;
 	int m_state;
 };
 
-std::tuple<bool, bool> state_seq::allow(const std::string &name)
+std::tuple<bool, bool> state_seq::allow(std::string_view name)
 {
 	bool result = false, done = false;
 
@@ -380,19 +376,18 @@ struct state_choice : public state_base
 			m_states.push_back(a->create_state());
 	}
 
-	virtual std::tuple<bool, bool>
-	allow(const std::string &name);
+	virtual std::tuple<bool, bool> allow(std::string_view name) override;
 
-	virtual void reset()
+	virtual void reset() override
 	{
 		m_state = 0;
 		for (auto state : m_states)
 			state->reset();
 	}
 
-	virtual bool allow_char_data() { return m_mixed; }
+	virtual bool allow_char_data() override { return m_mixed; }
 
-	virtual bool allow_empty();
+	virtual bool allow_empty() override;
 
 	std::vector<state_base_ptr> m_states;
 	bool m_mixed;
@@ -400,7 +395,7 @@ struct state_choice : public state_base
 	state_base_ptr m_sub;
 };
 
-std::tuple<bool, bool> state_choice::allow(const std::string &name)
+std::tuple<bool, bool> state_choice::allow(std::string_view name)
 {
 	bool result = false, done = false;
 
@@ -465,7 +460,7 @@ validator::validator(element_ptr e)
 	}
 }
 
-bool validator::allow(const std::string &name)
+bool validator::allow(std::string_view name)
 {
 	bool result;
 	std::tie(result, m_done) = m_state->allow(name);
@@ -756,7 +751,7 @@ bool attribute::validate_value(std::string &value, const entity_list &entities) 
 	return result;
 }
 
-bool attribute::is_unparsed_entity(const std::string &s, const entity_list &l) const
+bool attribute::is_unparsed_entity(std::string_view s, const entity_list &l) const
 {
 	bool result = false;
 
@@ -782,7 +777,7 @@ void element::add_attribute(attribute_ptr attrib)
 		m_attlist.push_back(attrib);
 }
 
-const attribute_ptr element::get_attribute(const std::string &name) const
+const attribute_ptr element::get_attribute(std::string_view name) const
 {
 	attribute_ptr result;
 

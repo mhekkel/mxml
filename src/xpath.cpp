@@ -214,8 +214,7 @@ class object
 	object(node_set ns);
 	object(bool b);
 	object(double n);
-	object(const std::string &s);
-	object(std::string_view s);
+	object(std::string s);
 	object(const object &o);
 	object &operator=(const object &o);
 
@@ -263,15 +262,9 @@ object::object(double n)
 {
 }
 
-object::object(const std::string &s)
+object::object(std::string s)
 	: m_type(object_type::string)
-	, m_string(s)
-{
-}
-
-object::object(std::string_view s)
-	: m_type(object_type::string)
-	, m_string(s)
+	, m_string(std::move(s))
 {
 }
 
@@ -578,7 +571,7 @@ void iterate_namespaces(element *e, node_set &s, PREDICATE pred)
 struct context_imp_base
 {
 	virtual ~context_imp_base() = default;
-	virtual const object &get(const std::string &name) const = 0;
+	virtual const object &get(std::string name) const = 0;
 };
 
 struct context_imp : public context_imp_base
@@ -586,12 +579,12 @@ struct context_imp : public context_imp_base
 	context_imp() = default;
 	context_imp(const context_imp &) = default;
 
-	const object &get(const std::string &name) const override
+	const object &get(std::string name) const override
 	{
 		return m_variables.at(name);
 	}
 
-	void set(const std::string &name, const object &value)
+	void set(std::string name, const object &value)
 	{
 		m_variables[name] = value;
 	}
@@ -608,9 +601,9 @@ struct expression_context : public context_imp_base
 	{
 	}
 
-	const object &get(const std::string &name) const override
+	const object &get(std::string name) const override
 	{
-		return m_next.get(name);
+		return m_next.get(std::move(name));
 	}
 
 	size_t position() const;
@@ -1595,9 +1588,9 @@ struct xpath_parser
 {
 	xpath_parser();
 
-	expression_ptr parse(const std::string &path);
+	expression_ptr parse(std::string_view path);
 
-	void preprocess(const std::string &path);
+	void preprocess(std::string_view path);
 
 	void retract();
 	Token get_next_token();
@@ -1646,7 +1639,7 @@ xpath_parser::xpath_parser()
 {
 }
 
-expression_ptr xpath_parser::parse(const std::string &path)
+expression_ptr xpath_parser::parse(std::string_view path)
 {
 	// start by expanding the abbreviations in the path
 	preprocess(path);
@@ -1668,7 +1661,7 @@ expression_ptr xpath_parser::parse(const std::string &path)
 	return result;
 }
 
-void xpath_parser::preprocess(const std::string &path)
+void xpath_parser::preprocess(std::string_view path)
 {
 	// preprocessing consists of expanding abbreviations
 	// replacements are:
@@ -2514,31 +2507,31 @@ context::context()
 {
 }
 
-void context::set(const std::string &name, double value)
+void context::set(std::string name, double value)
 {
-	m_impl->set(name, value);
+	m_impl->set(std::move(name), value);
 }
 
 template <>
-double context::get<double>(const std::string &name)
+double context::get<double>(std::string name)
 {
-	return m_impl->get(name).as<double>();
+	return m_impl->get(std::move(name)).as<double>();
 }
 
-void context::set(const std::string &name, const std::string &value)
+void context::set(std::string name, std::string value)
 {
-	m_impl->set(name, value);
+	m_impl->set(std::move(name), std::move(value));
 }
 
 template <>
-std::string context::get<std::string>(const std::string &name)
+std::string context::get<std::string>(std::string name)
 {
-	return m_impl->get(name).as<std::string>();
+	return m_impl->get(std::move(name)).as<std::string>();
 }
 
 // --------------------------------------------------------------------
 
-xpath::xpath(const std::string &path)
+xpath::xpath(std::string_view path)
 	: m_impl(xpath_parser().parse(path))
 {
 }

@@ -38,19 +38,20 @@ namespace mxml
 
 /// some character classification routines
 
-bool is_name_start_char(char32_t uc);               ///< is the character a 'name_start_char'?
-bool is_name_char(char32_t uc);                     ///< is the character a 'name_char'?
-bool is_valid_xml_1_0_char(char32_t uc);            ///< is the character a 'valid_xml_1_0_char'?
-bool is_valid_xml_1_1_char(char32_t uc);            ///< is the character a 'valid_xml_1_1_char'?
-bool is_valid_system_literal_char(char32_t uc);     ///< is the character a 'valid_system_literal_char'?
-bool is_valid_system_literal(const std::string &s); ///< is the character a 'valid_system_literal'?
-bool is_valid_public_id_char(char32_t uc);          ///< is the character a 'valid_public_id_char'?
-bool is_valid_public_id(const std::string &s);      ///< is the character a 'valid_public_id'?
+bool is_name_start_char(char32_t uc);             ///< is the character a 'name_start_char'?
+bool is_name_char(char32_t uc);                   ///< is the character a 'name_char'?
+bool is_valid_xml_1_0_char(char32_t uc);          ///< is the character a 'valid_xml_1_0_char'?
+bool is_valid_xml_1_1_char(char32_t uc);          ///< is the character a 'valid_xml_1_1_char'?
+bool is_valid_system_literal_char(char32_t uc);   ///< is the character a 'valid_system_literal_char'?
+bool is_valid_system_literal(std::string_view s); ///< is the character a 'valid_system_literal'?
+bool is_valid_public_id_char(char32_t uc);        ///< is the character a 'valid_public_id_char'?
+bool is_valid_public_id(std::string_view s);      ///< is the character a 'valid_public_id'?
 
 /// \brief the (admittedly limited) set of supported text encodings in libmxml
 ///
 /// these are the supported encodings. Perhaps we should extend this list a bit?
-enum class encoding_type {
+enum class encoding_type
+{
 	ASCII,   ///< 7-bit ascii
 	UTF8,    ///< UTF-8
 	UTF16BE, ///< UTF-16 Big Endian
@@ -66,6 +67,8 @@ char32_t pop_back_char(std::string &s);
 
 /// \brief return the first unicode and advance the pointer @a ptr from a string
 char32_t pop_front_char(std::string::const_iterator &ptr, std::string::const_iterator end);
+
+char32_t pop_front_char(std::string_view::const_iterator &ptr, std::string_view::const_iterator end);
 
 /// \brief A simple implementation of trim, removing white space from start and end of \a s
 void trim(std::string &s);

@@ -110,7 +110,7 @@ class document final : public element_container
 
 	/// \brief Constructor that will parse the XML passed in argument \a is. This
 	/// constructor will also validate the input using DTD's found in \a base_dir
-	document(std::istream &is, const std::string &base_dir);
+	document(std::istream &is, std::string base_dir);
 
 	~document() = default;
 
@@ -172,9 +172,9 @@ class document final : public element_container
 	doc_type get_doctype() const { return m_doctype; }
 
 	/// \brief Set the doctype to write out
-	void set_doctype(const std::string &root, const std::string &pubid, const std::string &dtd)
+	void set_doctype(std::string root, std::string pubid, std::string dtd)
 	{
-		set_doctype({ root, pubid, dtd });
+		set_doctype({ std::move(root), std::move(pubid), std::move(dtd) });
 	}
 
 	/// Set the doctype to write out
@@ -210,7 +210,7 @@ class document final : public element_container
 
 	/// If you want to validate the document using DTD files stored on disk, you can specifiy this directory prior to reading
 	/// the document.
-	void set_base_dir(const std::string &path);
+	void set_base_dir(std::string path);
 
 	/**
 	 * @brief Set a callback for loading external entities
@@ -261,22 +261,22 @@ class document final : public element_container
 	node *insert_impl(const node *p, node *n) override;
 
 	void XmlDeclHandler(encoding_type encoding, bool standalone, version_type version);
-	void StartElementHandler(const std::string &name, const std::string &uri, const parser::attr_list_type &atts);
-	void EndElementHandler(const std::string &name, const std::string &uri);
-	void CharacterDataHandler(const std::string &data);
-	void ProcessingInstructionHandler(const std::string &target, const std::string &data);
-	void CommentHandler(const std::string &comment);
+	void StartElementHandler(std::string name, std::string uri, const parser::attr_list_type &atts);
+	void EndElementHandler(std::string name, std::string uri);
+	void CharacterDataHandler(std::string data);
+	void ProcessingInstructionHandler(std::string target, std::string data);
+	void CommentHandler(std::string comment);
 	void StartCdataSectionHandler();
 	void EndCdataSectionHandler();
-	void StartNamespaceDeclHandler(const std::string &prefix, const std::string &uri);
-	void EndNamespaceDeclHandler(const std::string &prefix);
-	void DoctypeDeclHandler(const std::string &root, const std::string &publicId, const std::string &uri);
-	void NotationDeclHandler(const std::string &name, const std::string &sysid, const std::string &pubid);
+	void StartNamespaceDeclHandler(std::string prefix, std::string uri);
+	void EndNamespaceDeclHandler(std::string_view prefix);
+	void DoctypeDeclHandler(std::string root, std::string publicId, std::string uri);
+	void NotationDeclHandler(std::string name, std::string sysid, std::string pubid);
 
-	std::istream *external_entity_ref(const std::string &base, const std::string &pubid, const std::string &sysid);
+	std::istream *external_entity_ref(std::string_view base, std::string_view pubid, std::string_view sysid);
 	void parse(std::istream &data);
 
-	std::function<std::istream *(const std::string &base, const std::string &pubid, const std::string &sysid)>
+	std::function<std::istream *(std::string_view base, std::string_view pubid, std::string_view sysid)>
 		m_external_entity_ref_loader;
 
 	void write(std::ostream &os, format_info fmt) const override;

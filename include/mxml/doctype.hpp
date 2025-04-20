@@ -87,7 +87,7 @@ class validator
 	validator(const validator &other) = delete;
 	validator &operator=(const validator &other) = delete;
 
-	bool allow(const std::string &name);
+	bool allow(std::string_view name);
 	content_spec_type get_content_spec() const;
 	bool done();
 
@@ -142,9 +142,9 @@ struct content_spec_empty : public content_spec_base
 
 struct content_spec_element : public content_spec_base
 {
-	content_spec_element(const std::string &name)
+	content_spec_element(std::string name)
 		: content_spec_base(content_spec_type::Children)
-		, m_name(name)
+		, m_name(std::move(name))
 	{
 	}
 
@@ -238,17 +238,17 @@ enum class attribute_default
 class attribute
 {
   public:
-	attribute(const std::string &name, attribute_type type)
-		: m_name(name)
+	attribute(std::string name, attribute_type type)
+		: m_name(std::move(name))
 		, m_type(type)
 		, m_default(attribute_default::None)
 		, m_external(false)
 	{
 	}
 
-	attribute(const std::string &name, attribute_type type,
+	attribute(std::string name, attribute_type type,
 		const std::vector<std::string> &enums)
-		: m_name(name)
+		: m_name(std::move(name))
 		, m_type(type)
 		, m_default(attribute_default::None)
 		, m_enum(enums)
@@ -260,10 +260,10 @@ class attribute
 
 	bool validate_value(std::string &value, const entity_list &entities) const;
 
-	void set_default(attribute_default def, const std::string &value)
+	void set_default(attribute_default def, std::string value)
 	{
 		m_default = def;
-		m_default_value = value;
+		m_default_value = std::move(value);
 	}
 
 	std::tuple<attribute_default, std::string>
@@ -283,7 +283,7 @@ class attribute
 	bool is_nmtoken(std::string &s) const;
 	bool is_nmtokens(std::string &s) const;
 
-	bool is_unparsed_entity(const std::string &s, const entity_list &l) const;
+	bool is_unparsed_entity(std::string_view s, const entity_list &l) const;
 
 	std::string m_name;
 	attribute_type m_type;
@@ -301,8 +301,8 @@ class element
 	element(const element &) = delete;
 	element &operator=(const element &) = delete;
 
-	element(const std::string &name, bool declared, bool external)
-		: m_name(name)
+	element(std::string name, bool declared, bool external)
+		: m_name(std::move(name))
 		, m_allowed(nullptr)
 		, m_declared(declared)
 		, m_external(external)
@@ -313,7 +313,7 @@ class element
 
 	void add_attribute(attribute_ptr attr);
 
-	const attribute_ptr get_attribute(const std::string &name) const;
+	const attribute_ptr get_attribute(std::string_view name) const;
 
 	const std::string &name() const { return m_name; }
 
@@ -344,7 +344,7 @@ class entity
 	bool is_parsed() const { return m_parsed; }
 
 	const std::string &get_ndata() const { return m_ndata; }
-	void set_ndata(const std::string &ndata) { m_ndata = ndata; }
+	void set_ndata(std::string ndata) { m_ndata = std::move(ndata); }
 
 	bool is_external() const { return m_external; }
 
@@ -355,10 +355,10 @@ class entity
 	}
 
   protected:
-	entity(const std::string &name, const std::string &replacement,
+	entity(std::string name, std::string replacement,
 		bool external, bool parsed)
-		: m_name(name)
-		, m_replacement(replacement)
+		: m_name(std::move(name))
+		, m_replacement(std::move(replacement))
 		, m_parameter(false)
 		, m_parsed(parsed)
 		, m_external(external)
@@ -366,11 +366,10 @@ class entity
 	{
 	}
 
-	entity(const std::string &name, const std::string &replacement,
-		const std::string &path)
-		: m_name(name)
-		, m_replacement(replacement)
-		, m_path(path)
+	entity(std::string name, std::string replacement, std::string path)
+		: m_name(std::move(name))
+		, m_replacement(std::move(replacement))
+		, m_path(std::move(path))
 		, m_parameter(true)
 		, m_parsed(true)
 		, m_external(true)
@@ -391,9 +390,9 @@ class entity
 class general_entity : public entity
 {
   public:
-	general_entity(const std::string &name, const std::string &replacement,
+	general_entity(std::string name, std::string replacement,
 		bool external = false, bool parsed = true)
-		: entity(name, replacement, external, parsed)
+		: entity(std::move(name), std::move(replacement), external, parsed)
 	{
 	}
 };
@@ -401,9 +400,8 @@ class general_entity : public entity
 class parameter_entity : public entity
 {
   public:
-	parameter_entity(const std::string &name, const std::string &replacement,
-		const std::string &path)
-		: entity(name, replacement, path)
+	parameter_entity(std::string name, std::string replacement, std::string path)
+		: entity(std::move(name), std::move(replacement), std::move(path))
 	{
 	}
 };

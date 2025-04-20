@@ -24,9 +24,9 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "mxml/parser.hpp"
 #include "mxml/doctype.hpp"
 #include "mxml/text.hpp"
-#include "mxml/parser.hpp"
 
 #include <algorithm>
 #include <array>
@@ -36,10 +36,10 @@
 #include <set>
 #include <sstream>
 #include <stack>
-#include <utility>
-#include <tuple>
-#include <vector>
 #include <string>
+#include <tuple>
+#include <utility>
+#include <vector>
 
 namespace mxml
 {
@@ -67,7 +67,7 @@ std::string to_hex(uint32_t i)
 /// \brief our own implementation of iequals: compares \a a with \a b case-insensitive
 ///
 /// This is a limited use function, works only reliably with ASCII. But that's OK.
-bool iequals(const std::string &a, const std::string &b)
+bool iequals(std::string_view a, std::string_view b)
 {
 	bool equal = a.length() == b.length();
 
@@ -116,9 +116,9 @@ class data_source;
 class source_exception : public exception
 {
   public:
-	source_exception(const std::string &msg)
+	source_exception(std::string msg)
 		: exception(msg)
-		, m_wmsg(msg)
+		, m_wmsg(std::move(msg))
 	{
 	}
 	~source_exception() noexcept {}
@@ -149,7 +149,7 @@ class data_source
 	// data_source is a virtual base class. Derivatives need to declare the next function.
 	virtual char32_t get_next_char() = 0;
 
-	void base(std::string_view dir) { m_base = dir; }
+	void base(std::string dir) { m_base = std::move(dir); }
 	const std::string &base() const { return m_base; }
 
 	encoding_type encoding() const { return m_encoding; }
@@ -469,8 +469,8 @@ char32_t istream_data_source::get_next_char()
 class string_data_source : public data_source
 {
   public:
-	string_data_source(const std::string &data)
-		: m_data(data)
+	string_data_source(std::string data)
+		: m_data(std::move(data))
 		, m_ptr(m_data.cbegin())
 	{
 	}
@@ -498,10 +498,10 @@ class string_data_source : public data_source
 class entity_data_source : public string_data_source
 {
   public:
-	entity_data_source(const std::string &text, const std::string &entity_path)
-		: string_data_source(text)
+	entity_data_source(std::string text, std::string entity_path)
+		: string_data_source(std::move(text))
 	{
-		base(entity_path);
+		base(std::move(entity_path));
 	}
 };
 
@@ -510,10 +510,10 @@ class entity_data_source : public string_data_source
 class parameter_entity_data_source : public string_data_source
 {
   public:
-	parameter_entity_data_source(const std::string &data, const std::string &base_dir)
-		: string_data_source(" " + std::string{ data } + " ")
+	parameter_entity_data_source(std::string data, std::string base_dir)
+		: string_data_source(" " + data + " ")
 	{
-		base(base_dir);
+		base(std::move(base_dir));
 	}
 };
 
@@ -566,7 +566,7 @@ struct parser_imp
 	void pereference();
 
 	void doctypedecl();
-	data_source *get_data_source(const std::string &pubid, std::string uri);
+	data_source *get_data_source(std::string_view pubid, std::string uri);
 	std::tuple<std::string, std::string> read_external_id();
 	void intsubset();
 	void extsubset();
@@ -730,13 +730,13 @@ struct parser_imp
 	version_type parse_version();
 
 	// error handling routines
-	void not_well_formed(const std::string &msg) const;
-	void not_valid(const std::string &msg) const;
+	void not_well_formed(std::string msg) const;
+	void not_valid(std::string msg) const;
 
 	// doctype support
-	const doctype::entity &get_general_entity(const std::string &name) const;
-	const doctype::entity &get_parameter_entity(const std::string &name) const;
-	const doctype::element_ptr get_element(const std::string &name) const;
+	const doctype::entity &get_general_entity(std::string_view name) const;
+	const doctype::entity &get_parameter_entity(std::string_view name) const;
+	const doctype::element_ptr get_element(std::string_view name) const;
 
 	struct save_state
 	{
@@ -834,9 +834,9 @@ struct parser_imp
 			return result;
 		}
 
-		void default_ns(const std::string &ns)
+		void default_ns(std::string ns)
 		{
-			m_default_ns = ns;
+			m_default_ns = std::move(ns);
 		}
 
 		std::string ns_for_prefix(const std::string &prefix)
@@ -855,14 +855,14 @@ struct parser_imp
 			return result;
 		}
 
-		void bind(const std::string &prefix, const std::string &uri)
+		void bind(std::string prefix, std::string uri)
 		{
-			m_known[prefix] = uri;
+			m_known[prefix] = std::move(uri);
 		}
 
-		void unbind(const std::string &prefix)
+		void unbind(std::string prefix)
 		{
-			m_unbound.insert(prefix);
+			m_unbound.insert(std::move(prefix));
 		}
 
 		bool is_known_prefix(const std::string &prefix)
@@ -1021,7 +1021,7 @@ parser_imp::~parser_imp()
 		m_source.pop();
 }
 
-const doctype::entity &parser_imp::get_general_entity(const std::string &name) const
+const doctype::entity &parser_imp::get_general_entity(std::string_view name) const
 {
 	for (auto e : m_general_entities)
 	{
@@ -1045,7 +1045,7 @@ const doctype::entity &parser_imp::get_general_entity(const std::string &name) c
 	throw 0;
 }
 
-const doctype::entity &parser_imp::get_parameter_entity(const std::string &name) const
+const doctype::entity &parser_imp::get_parameter_entity(std::string_view name) const
 {
 	for (auto e : m_parameter_entities)
 	{
@@ -1057,7 +1057,7 @@ const doctype::entity &parser_imp::get_parameter_entity(const std::string &name)
 	throw 0;
 }
 
-const doctype::element_ptr parser_imp::get_element(const std::string &name) const
+const doctype::element_ptr parser_imp::get_element(std::string_view name) const
 {
 	doctype::element_ptr result;
 
@@ -1143,7 +1143,7 @@ void parser_imp::match(XMLToken token)
 	}
 }
 
-void parser_imp::not_well_formed(const std::string &msg) const
+void parser_imp::not_well_formed(std::string msg) const
 {
 	std::stringstream s;
 	if (m_source.empty())
@@ -1153,7 +1153,7 @@ void parser_imp::not_well_formed(const std::string &msg) const
 	throw not_wf_exception(s.str());
 }
 
-void parser_imp::not_valid(const std::string &msg) const
+void parser_imp::not_valid(std::string msg) const
 {
 	if (m_validating)
 	{
@@ -1167,7 +1167,7 @@ void parser_imp::not_valid(const std::string &msg) const
 		throw invalid_exception(s.str());
 	}
 	else
-		m_parser.report_invalidation(msg);
+		m_parser.report_invalidation(std::move(msg));
 }
 
 /*
@@ -2959,7 +2959,7 @@ void parser_imp::notation_decl()
 	m_parser.notation_decl(name, sysid, pubid);
 }
 
-data_source *parser_imp::get_data_source(const std::string &pubid, std::string uri)
+data_source *parser_imp::get_data_source(std::string_view pubid, std::string uri)
 {
 	data_source *result = nullptr;
 
@@ -2976,7 +2976,7 @@ data_source *parser_imp::get_data_source(const std::string &pubid, std::string u
 			uri.erase(s, std::string::npos);
 
 			if (is_absolute_path(uri))
-				result->base(uri);
+				result->base(std::move(uri));
 			else
 				result->base(m_source.top()->base() + '/' + uri);
 		}
@@ -4147,34 +4147,34 @@ void parser::xml_decl(encoding_type encoding, bool standalone, version_type vers
 		xml_decl_handler(encoding, standalone, version);
 }
 
-void parser::start_element(const std::string &name, const std::string &uri, const std::vector<attr> &atts)
+void parser::start_element(std::string name, std::string uri, const std::vector<attr> &atts)
 {
 	if (start_element_handler)
-		start_element_handler(name, uri, atts);
+		start_element_handler(std::move(name), std::move(uri), atts);
 }
 
-void parser::end_element(const std::string &name, const std::string &uri)
+void parser::end_element(std::string name, std::string uri)
 {
 	if (end_element_handler)
-		end_element_handler(name, uri);
+		end_element_handler(std::move(name), std::move(uri));
 }
 
-void parser::character_data(const std::string &data)
+void parser::character_data(std::string data)
 {
 	if (character_data_handler)
-		character_data_handler(data);
+		character_data_handler(std::move(data));
 }
 
-void parser::processing_instruction(const std::string &target, const std::string &data)
+void parser::processing_instruction(std::string target, std::string data)
 {
 	if (processing_instruction_handler)
-		processing_instruction_handler(target, data);
+		processing_instruction_handler(std::move(target), std::move(data));
 }
 
-void parser::comment(const std::string &data)
+void parser::comment(std::string data)
 {
 	if (comment_handler)
-		comment_handler(data);
+		comment_handler(std::move(data));
 }
 
 void parser::start_cdata_section()
@@ -4189,31 +4189,31 @@ void parser::end_cdata_section()
 		end_cdata_section_handler();
 }
 
-void parser::start_namespace_decl(const std::string &prefix, const std::string &uri)
+void parser::start_namespace_decl(std::string prefix, std::string uri)
 {
 	if (start_namespace_decl_handler)
-		start_namespace_decl_handler(prefix, uri);
+		start_namespace_decl_handler(std::move(prefix), std::move(uri));
 }
 
-void parser::end_namespace_decl(const std::string &prefix)
+void parser::end_namespace_decl(std::string prefix)
 {
 	if (end_namespace_decl_handler)
-		end_namespace_decl_handler(prefix);
+		end_namespace_decl_handler(std::move(prefix));
 }
 
-void parser::doctype_decl(const std::string &root, const std::string &publicId, const std::string &uri)
+void parser::doctype_decl(std::string root, std::string publicId, std::string uri)
 {
 	if (doctype_decl_handler)
-		doctype_decl_handler(root, publicId, uri);
+		doctype_decl_handler(std::move(root), std::move(publicId), std::move(uri));
 }
 
-void parser::notation_decl(const std::string &name, const std::string &systemId, const std::string &publicId)
+void parser::notation_decl(std::string name, std::string systemId, std::string publicId)
 {
 	if (notation_decl_handler)
-		notation_decl_handler(name, systemId, publicId);
+		notation_decl_handler(std::move(name), std::move(systemId), std::move(publicId));
 }
 
-std::istream *parser::external_entity_ref(const std::string &base, const std::string &pubid, const std::string &uri)
+std::istream *parser::external_entity_ref(std::string_view base, std::string_view pubid, std::string_view uri)
 {
 	std::istream *result = nullptr;
 	if (external_entity_ref_handler)
@@ -4221,10 +4221,10 @@ std::istream *parser::external_entity_ref(const std::string &base, const std::st
 	return result;
 }
 
-void parser::report_invalidation(const std::string &msg)
+void parser::report_invalidation(std::string msg)
 {
 	if (report_invalidation_handler)
-		report_invalidation_handler(msg);
+		report_invalidation_handler(std::move(msg));
 }
 
 } // namespace mxml
