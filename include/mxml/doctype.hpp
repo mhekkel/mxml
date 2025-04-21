@@ -334,8 +334,8 @@ class element
 class entity
 {
   public:
-	entity(const entity &) = delete;
-	entity &operator=(const entity &) = delete;
+	entity(const entity &) = default;
+	entity &operator=(const entity &) = default;
 
 	const std::string &name() const { return m_name; }
 	const std::string &get_replacement() const { return m_replacement; }
@@ -390,7 +390,9 @@ class entity
 class general_entity : public entity
 {
   public:
-	general_entity(std::string name, std::string replacement,
+	general_entity(const general_entity &) = default;
+
+    general_entity(std::string name, std::string replacement,
 		bool external = false, bool parsed = true)
 		: entity(std::move(name), std::move(replacement), external, parsed)
 	{

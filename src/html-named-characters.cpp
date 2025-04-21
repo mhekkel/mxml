@@ -26,12 +26,18 @@
 
 #include "mxml/doctype.hpp"
 
+#include <map>
+#include <mutex>
 #include <string>
 
 namespace mxml::doctype
 {
 
-general_entity kNamedHTMLCharacters[] = {
+struct html5_named_character
+{
+	const char *name;
+	const char *value;
+} kNamedHTMLCharacters[] = {
 	{ "AElig", "Æ" },
 	{ "AMP", "&" },
 	{ "Aacute", "Á" },
@@ -2159,22 +2165,53 @@ general_entity kNamedHTMLCharacters[] = {
 	{ "zwnj", "‌" }
 };
 
-const general_entity *get_named_character(std::string_view name)
+class named_character_table
 {
-	int L = 0, R = sizeof(kNamedHTMLCharacters) / sizeof(general_entity);
-	while (L <= R)
+  public:
+	static named_character_table &instance()
 	{
-		int i = (L + R) / 2;
-		int d = kNamedHTMLCharacters[i].name().compare(name);
-		if (d == 0)
-			return kNamedHTMLCharacters + i;
-		if (d < 0)
-			L = i + 1;
-		else
-			R = i - 1;
+		static named_character_table s_instance;
+		return s_instance;
 	}
 
-	return nullptr;
+	const general_entity *get(std::string name);
+
+  private:
+	std::mutex m_mutex;
+	std::map<std::string, general_entity> m_entities;
+};
+
+const general_entity *named_character_table::get(std::string name)
+{
+	std::unique_lock lock(m_mutex);
+
+	auto gi = m_entities.find(name);
+	if (gi == m_entities.end())
+	{
+
+		int L = 0, R = sizeof(kNamedHTMLCharacters) / sizeof(html5_named_character);
+		while (L <= R)
+		{
+			int i = (L + R) / 2;
+			int d = name.compare(kNamedHTMLCharacters[i].name);
+			if (d == 0)
+			{
+				std::tie(gi, std::ignore) = m_entities.emplace(name, general_entity(kNamedHTMLCharacters[i].name, kNamedHTMLCharacters[i].value));
+				break;
+			}
+			if (d > 0)
+				L = i + 1;
+			else
+				R = i - 1;
+		}
+	}
+
+	return gi == m_entities.end() ? nullptr : &gi->second;
+}
+
+const general_entity *get_named_character(std::string_view name)
+{
+	return named_character_table::instance().get(std::string{ name });
 }
 
 } // namespace mxml::doctype
