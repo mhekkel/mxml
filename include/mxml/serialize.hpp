@@ -384,6 +384,12 @@ using is_detected = typename detector<nope, void, Op, Args...>::value_t;
 template <template <class...> class Op, class... Args>
 constexpr inline bool is_detected_v = is_detected<Op, Args...>::value;
 
+template <class Expected, template <class...> class Op, class... Args>
+using is_detected_exact = std::is_same<Expected, is_detected<Op, Args...>>;
+
+template <class Expected, template<class...> class Op, class... Args>
+constexpr inline bool is_detected_exact_v = is_detected_exact<Expected, Op, Args...>::value;
+
 template <typename T>
 using serialize_value_t = decltype(std::declval<value_serializer<T> &>().from_string(std::declval<std::string_view>()));
 
