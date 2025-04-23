@@ -162,14 +162,14 @@ TEST_CASE("test_1")
 		for (int i = 4; i > 0; --i)
 		{
 			n4.erase(n4.begin());
-			CHECK(n4.size() == i - 1);
+			CHECK(n4.size() == i - 1UL);
 		}
 		CHECK(n4.empty());
 
 		for (int i = 4; i > 0; --i)
 		{
 			n.erase(std::prev(n.end()));
-			CHECK(n.size() == i - 1);
+			CHECK(n.size() == i - 1UL);
 		}
 		CHECK(n.empty());
 	}

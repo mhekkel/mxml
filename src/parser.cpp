@@ -196,10 +196,10 @@ class istream_data_source : public data_source
 			delete m_data;
 	}
 
-	virtual bool has_bom() { return m_has_bom; }
+	bool has_bom() override { return m_has_bom; }
 
-	virtual char32_t get_next_char();
-	virtual void encoding(encoding_type enc);
+	char32_t get_next_char() override;
+	void encoding(encoding_type enc) override;
 
   private:
 	void guess_encoding();
@@ -475,7 +475,7 @@ class string_data_source : public data_source
 	{
 	}
 
-	char32_t get_next_char()
+	char32_t get_next_char() override
 	{
 		char32_t result = 0;
 
