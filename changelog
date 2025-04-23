@@ -1,3 +1,6 @@
+version 2.0.0
+- refactored API
+
 version 1.0.3
 - Fix copy constructor of document
 - Switch to Catch2 v3 only
