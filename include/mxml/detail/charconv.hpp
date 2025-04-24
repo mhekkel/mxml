@@ -5,7 +5,9 @@
 
 #pragma once
 
-#include "fast_float/fast_float.h"
+#if USE_FAST_FLOAT
+# include <fast_float/fast_float.h>
+#endif
 
 #include <algorithm>
 #include <charconv>
@@ -82,15 +84,7 @@ constexpr inline bool is_detected_v = std::experimental::is_detected<Op, Args...
 #endif
 
 template <typename T>
-struct my_charconv
-{
-	using value_type = T;
-
-	static auto from_chars(const char *first, const char *last, value_type &value)
-	{
-		return fast_float::from_chars(first, last, value);
-	}
-};
+using from_chars_function = decltype(std::from_chars(std::declval<const char *>(), std::declval<const char *>(), std::declval<T &>()));
 
 template <typename T>
 struct std_charconv
@@ -101,11 +95,29 @@ struct std_charconv
 	}
 };
 
-template <typename T>
-using from_chars_function = decltype(std::from_chars(std::declval<const char *>(), std::declval<const char *>(), std::declval<T &>()));
+#if USE_FAST_FLOAT
 
 template <typename T>
-using charconv = typename std::conditional_t<is_detected_v<from_chars_function, T>, std_charconv<T>, my_charconv<T>>;
+struct ff_charconv
+{
+	using value_type = T;
+
+	static auto from_chars(const char *first, const char *last, value_type &value)
+	{
+		return fast_float::from_chars(first, last, value);
+	}
+};
+
+
+template <typename T>
+using charconv = typename std::conditional_t<is_detected_v<from_chars_function, T>, std_charconv<T>, ff_charconv<T>>;
+
+#else
+
+template <typename T>
+using charconv = std_charconv<T>;
+
+#endif
 
 template <typename T>
 constexpr auto from_chars(const char *s, const char *e, T &v)

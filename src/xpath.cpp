@@ -662,6 +662,8 @@ class step_expression : public expression
 	}
 
   protected:
+	using expression::evaluate;
+
 	template <typename T>
 	object evaluate(expression_context &context, T pred, bool elementsOnly);
 

@@ -31,10 +31,16 @@ CPMAddPackage(
 	GITHUB_REPOSITORY "HowardHinnant/date"
 	VERSION 3.0.0)
 
-CPMAddPackage(
-	NAME fast_float
-	GITHUB_REPOSITORY "fastfloat/fast_float"
-	GIT_TAG v8.0.2)
+try_compile(STD_CHARCONV_COMPILING
+	SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/cmake/test-charconv.cpp)
+
+if(NOT STD_CHARCONV_COMPILING)
+	message(WARNING "Using fast_float for std::from_chars")
+	CPMAddPackage(
+		NAME fast_float
+		GITHUB_REPOSITORY "fastfloat/fast_float"
+		GIT_TAG v8.0.2)
+endif()
 
 # Version info
 write_version_header("${CMAKE_CURRENT_SOURCE_DIR}/src" LIB_NAME "libmxml")
@@ -76,7 +82,8 @@ if(MSVC)
 	target_compile_definitions(mxml PUBLIC NOMINMAX=1)
 endif()
 
-target_link_libraries(mxml PUBLIC date::date fast_float)
+target_link_libraries(mxml PUBLIC date::date $<IF:$<BOOL:${STD_CHARCONV_COMPILING}>,,fast_float>)
+target_compile_definitions(mxml INTERFACE $<IF:$<BOOL:${STD_CHARCONV_COMPILING}>,,USE_FAST_FLOAT>)
 
 install(TARGETS mxml
 	EXPORT mxml

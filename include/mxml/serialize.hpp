@@ -47,10 +47,6 @@
 # include <regex>
 #endif
 
-#if __has_include(<fast_float/fast_float.h>)
-# include <fast_float/fast_float.h>
-#endif
-
 namespace mxml
 {
 
