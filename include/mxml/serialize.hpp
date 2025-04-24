@@ -115,7 +115,7 @@ struct char_conv_serializer
 	{
 		value_type result{};
 
-		if constexpr (std::experimental::is_detected_v<from_chars_function, T>)
+		if constexpr (std::experimental::template is_detected_v<from_chars_function, T>)
 		{
 			auto r = std::from_chars(value.data(), value.data() + value.length(), result);
 			if (r.ec != std::errc{} or r.ptr != value.data() + value.length())

@@ -335,7 +335,7 @@ double object::as<double>() const
 			{
 				auto s = m_node_set.front()->str();
 
-				if constexpr (std::experimental::is_detected_v<from_chars_function, double>)
+				if constexpr (std::experimental::template is_detected_v<from_chars_function, double>)
 				{
 					auto r = std::from_chars(s.data(), s.data() + s.length(), result);
 					if (r.ec != std::errc{} or r.ptr != s.data() + s.length())
@@ -352,7 +352,7 @@ double object::as<double>() const
 		}
 		case object_type::string:
 		{
-			if constexpr (std::experimental::is_detected_v<from_chars_function, double>)
+			if constexpr (std::experimental::template is_detected_v<from_chars_function, double>)
 			{
 				auto r = std::from_chars(m_string.data(), m_string.data() + m_string.length(), result);
 				if (r.ec != std::errc{} or r.ptr != m_string.data() + m_string.length())
