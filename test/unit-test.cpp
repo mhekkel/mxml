@@ -18,10 +18,10 @@ int main(int argc, char *argv[])
 	// Build a new parser on top of Catch2's
 	using namespace Catch::Clara;
 
-	auto cli = session.cli()                                // Get Catch2's command line parser
-	           | Opt(gTestDir, "data-dir")                  // bind variable to a new option, with a hint string
-	                 ["-D"]["--data-dir"]                   // the option names it will respond to
-	           ("The directory containing the data files"); // description string for the help output
+	auto cli = session.cli();                        // Get Catch2's command line parser
+	cli |= Opt(gTestDir, "data-dir")                 // bind variable to a new option, with a hint string
+		["-D"]["--data-dir"]                         // the option names it will respond to
+		("The directory containing the data files"); // description string for the help output
 
 	// Now pass the new composite back to Catch2 so it uses that
 	session.cli(cli);
@@ -933,5 +933,4 @@ TEST_CASE("sort-1")
 		{ return a.value() < b.value(); });
 
 	CHECK((std::ostringstream() << e).str() == R"(<test aap="1" noot="2" mies="3" boom="4" roos="5" vis="6" vuur="7"/>)");
-
 }
