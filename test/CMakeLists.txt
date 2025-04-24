@@ -1,22 +1,17 @@
-include(FetchContent)
+#          Copyright Maarten L. Hekkelman 2025
+# Distributed under the Boost Software License, Version 1.0.
+#    (See accompanying file LICENSE_1_0.txt or copy at
+#          http://www.boost.org/LICENSE_1_0.txt)
 
-find_package(Catch2 3 QUIET)
+CPMAddPackage(
+	NAME Catch2
+	GITHUB_REPOSITORY "catchorg/Catch2"
+	VERSION 3.4.0)
 
-if(NOT Catch2_FOUND)
-	FetchContent_Declare(
-		Catch2
-		GIT_REPOSITORY https://github.com/catchorg/Catch2.git
-		GIT_TAG v3.8.0)
-
-	FetchContent_MakeAvailable(Catch2)
-endif()
-
-find_package(mcfp QUIET)
-
-if(NOT mcfp_FOUND)
-	FetchContent_Declare(mcfp GIT_REPOSITORY https://github.com/mhekkel/libmcfp GIT_TAG v1.3.5)
-	FetchContent_MakeAvailable(mcfp)
-endif()
+CPMAddPackage(
+	NAME mcfp
+	GITHUB_REPOSITORY "mhekkel/libmcfp"
+	VERSION 1.3.5)
 
 # data files for the parser test
 set(XML_CONF_TAR ${CMAKE_CURRENT_SOURCE_DIR}/XML-Test-Suite.tbz)

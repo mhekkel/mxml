@@ -1,3 +1,8 @@
+#          Copyright Maarten L. Hekkelman 2025
+# Distributed under the Boost Software License, Version 1.0.
+#    (See accompanying file LICENSE_1_0.txt or copy at
+#          http://www.boost.org/LICENSE_1_0.txt)
+
 cmake_minimum_required(VERSION 3.23)
 
 project(mxml VERSION 2.0.0 LANGUAGES CXX)
@@ -18,6 +23,8 @@ if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
 elseif(MSVC)
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W4")
 endif()
+
+set(CPM_USE_LOCAL_PACKAGES ON)
 
 CPMAddPackage(
 	NAME date
