@@ -58,7 +58,7 @@ target_sources(mxml
 	${CMAKE_CURRENT_SOURCE_DIR}/include
 	FILES
 	include/mxml.hpp
-	include/mxml/detail/type_traits.hpp
+	include/mxml/detail/charconv.hpp
 	include/mxml/doctype.hpp
 	include/mxml/document.hpp
 	include/mxml/error.hpp

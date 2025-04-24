@@ -5,10 +5,18 @@
 
 #pragma once
 
+#include "fast_float/fast_float.h"
+
+#include <algorithm>
+#include <charconv>
+#include <cmath>
+#include <string>
+#include <vector>
+
 #if __has_include(<experimental/type_traits>)
-#include <experimental/type_traits>
+# include <experimental/type_traits>
 #else
-#include <type_traits>
+# include <type_traits>
 #endif
 
 namespace mxml::detail
@@ -72,5 +80,37 @@ template <template <class...> class Op, class... Args>
 constexpr inline bool is_detected_v = std::experimental::is_detected<Op, Args...>::value;
 
 #endif
+
+template <typename T>
+struct my_charconv
+{
+	using value_type = T;
+
+	static auto from_chars(const char *first, const char *last, value_type &value)
+	{
+		return fast_float::from_chars(first, last, value);
+	}
+};
+
+template <typename T>
+struct std_charconv
+{
+	static std::from_chars_result from_chars(const char *a, const char *b, T &d)
+	{
+		return std::from_chars(a, b, d);
+	}
+};
+
+template <typename T>
+using from_chars_function = decltype(std::from_chars(std::declval<const char *>(), std::declval<const char *>(), std::declval<T &>()));
+
+template <typename T>
+using charconv = typename std::conditional_t<is_detected_v<from_chars_function, T>, std_charconv<T>, my_charconv<T>>;
+
+template <typename T>
+constexpr auto from_chars(const char *s, const char *e, T &v)
+{
+	return charconv<T>::from_chars(s, e, v);
+}
 
 } // namespace mxml::detail

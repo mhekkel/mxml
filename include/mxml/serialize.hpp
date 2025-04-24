@@ -32,7 +32,7 @@
  */
 
 #include "mxml/node.hpp"
-#include "mxml/detail/type_traits.hpp"
+#include "mxml/detail/charconv.hpp"
 
 #include <algorithm>
 #include <charconv>
@@ -82,9 +82,6 @@ struct value_serializer<std::string>
 	static std::string from_string(std::string_view value) { return std::string{ value }; }
 };
 
-template <typename T>
-using from_chars_function = decltype(std::from_chars(std::declval<const char *>(), std::declval<const char *>(), std::declval<T &>()));
-
 /// @ref value_serializer implementation for numbers
 template <typename T>
 struct char_conv_serializer
@@ -110,18 +107,9 @@ struct char_conv_serializer
 	{
 		value_type result{};
 
-		if constexpr (detail::template is_detected_v<from_chars_function, T>)
-		{
-			auto r = std::from_chars(value.data(), value.data() + value.length(), result);
-			if (r.ec != std::errc{} or r.ptr != value.data() + value.length())
-				throw std::system_error(std::make_error_code(r.ec), "Error converting value '" + std::string{ value } + "' to type " + derived_type_name());
-		}
-		else
-		{
-			auto r = fast_float::from_chars(value.data(), value.data() + value.length(), result);
-			if (r.ec != std::errc{} or r.ptr != value.data() + value.length())
-				throw std::system_error(std::make_error_code(r.ec), "Error converting value '" + std::string{ value } + "' to type " + derived_type_name());
-		}
+		auto r = detail::from_chars(value.data(), value.data() + value.length(), result);
+		if (r.ec != std::errc{} or r.ptr != value.data() + value.length())
+			throw std::system_error(std::make_error_code(r.ec), "Error converting value '" + std::string{ value } + "' to type " + derived_type_name());
 
 		return result;
 	}
