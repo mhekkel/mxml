@@ -24,10 +24,11 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "mxml/xpath.hpp"
 #include "mxml/error.hpp"
 #include "mxml/node.hpp"
+#include "mxml/serialize.hpp"
 #include "mxml/text.hpp"
-#include "mxml/xpath.hpp"
 
 #include <algorithm>
 #include <charconv>
@@ -333,15 +334,36 @@ double object::as<double>() const
 			else
 			{
 				auto s = m_node_set.front()->str();
-				if (auto r = std::from_chars(s.data(), s.data() + s.size(), result); r.ec != std::errc{})
-					result = std::nan("1");
+
+				if constexpr (std::experimental::is_detected_v<from_chars_function, double>)
+				{
+					auto r = std::from_chars(s.data(), s.data() + s.length(), result);
+					if (r.ec != std::errc{} or r.ptr != s.data() + s.length())
+						result = std::nan("1");
+				}
+				else
+				{
+					auto r = fast_float::from_chars(s.data(), s.data() + s.length(), result);
+					if (r.ec != std::errc{} or r.ptr != s.data() + s.length())
+						result = std::nan("1");
+				}
 			}
 			break;
 		}
 		case object_type::string:
 		{
-			if (auto r = std::from_chars(m_string.data(), m_string.data() + m_string.size(), result); r.ec != std::errc{})
-				result = std::nan("1");
+			if constexpr (std::experimental::is_detected_v<from_chars_function, double>)
+			{
+				auto r = std::from_chars(m_string.data(), m_string.data() + m_string.length(), result);
+				if (r.ec != std::errc{} or r.ptr != m_string.data() + m_string.length())
+					result = std::nan("1");
+			}
+			else
+			{
+				auto r = fast_float::from_chars(m_string.data(), m_string.data() + m_string.length(), result);
+				if (r.ec != std::errc{} or r.ptr != m_string.data() + m_string.length())
+					result = std::nan("1");
+			}
 			break;
 		}
 		case object_type::boolean: result = m_boolean; break;
@@ -793,11 +815,14 @@ class node_type_expression : public step_expression
 	object evaluate(expression_context &context) override
 	{
 		if (m_node_type.has_value())
-			return step_expression::evaluate(context, [](const node *n) { return true; }, false);
+			return step_expression::evaluate(context, [](const node *n)
+				{ return true; }, false);
 		else if (*m_node_type == node_type::text)
-			return step_expression::evaluate(context, [](const node *n) { return n->type() == node_type::text or n->type() == node_type::cdata; }, false);
+			return step_expression::evaluate(context, [](const node *n)
+				{ return n->type() == node_type::text or n->type() == node_type::cdata; }, false);
 		else
-			return step_expression::evaluate(context, [t=*m_node_type](const node *n) { return n->type() == t; }, false);
+			return step_expression::evaluate(context, [t = *m_node_type](const node *n)
+				{ return n->type() == t; }, false);
 	}
 
   private:
