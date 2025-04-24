@@ -32,6 +32,7 @@
  */
 
 #include "mxml/node.hpp"
+#include "mxml/detail/type_traits.hpp"
 
 #include <algorithm>
 #include <charconv>
@@ -48,12 +49,6 @@
 
 #if __has_include(<fast_float/fast_float.h>)
 # include <fast_float/fast_float.h>
-#endif
-
-#if __has_include(<experimental/type_traits>)
-#include <experimental/type_traits>
-#else
-#include <type_traits>
 #endif
 
 namespace mxml
@@ -115,7 +110,7 @@ struct char_conv_serializer
 	{
 		value_type result{};
 
-		if constexpr (std::experimental::template is_detected_v<from_chars_function, T>)
+		if constexpr (detail::template is_detected_v<from_chars_function, T>)
 		{
 			auto r = std::from_chars(value.data(), value.data() + value.length(), result);
 			if (r.ec != std::errc{} or r.ptr != value.data() + value.length())
@@ -377,38 +372,6 @@ struct value_serializer<date::sys_days>
 #endif
 
 /** @cond */
-// --------------------------------------------------------------------
-// start type checking templates with our own version of is_detected_v
-
-template <class Default, class AlwaysVoid, template <class...> class Op, class... Args>
-struct detector
-{
-	using value_t = std::false_type;
-	using type = Default;
-};
-
-template <class Default, template <class...> class Op, class... Args>
-struct detector<Default, std::void_t<Op<Args...>>, Op, Args...>
-{
-	using value_t = std::true_type;
-	using type = Op<Args...>;
-};
-
-struct nope
-{
-};
-
-template <template <class...> class Op, class... Args>
-using is_detected = typename detector<nope, void, Op, Args...>::value_t;
-
-template <template <class...> class Op, class... Args>
-constexpr inline bool is_detected_v = is_detected<Op, Args...>::value;
-
-template <class Expected, template <class...> class Op, class... Args>
-using is_detected_exact = std::is_same<Expected, is_detected<Op, Args...>>;
-
-template <class Expected, template <class...> class Op, class... Args>
-constexpr inline bool is_detected_exact_v = is_detected_exact<Expected, Op, Args...>::value;
 
 template <typename T>
 using serialize_value_t = decltype(std::declval<value_serializer<T> &>().from_string(std::declval<std::string_view>()));
@@ -424,7 +387,7 @@ struct has_serialize : std::false_type
 template <typename T, typename Archive>
 struct has_serialize<T, Archive, typename std::enable_if_t<std::is_class_v<T>>>
 {
-	static constexpr bool value = is_detected_v<serialize_function, T, Archive>;
+	static constexpr bool value = detail::is_detected_v<serialize_function, T, Archive>;
 };
 
 template <typename T, typename S>
@@ -450,7 +413,7 @@ struct is_serializable_type
 {
 	using value_type = std::remove_cvref_t<T>;
 	static constexpr bool value =
-		is_detected_v<serialize_value_t, value_type> or
+		detail::is_detected_v<serialize_value_t, value_type> or
 		has_serialize_v<value_type, S>;
 };
 
@@ -460,9 +423,9 @@ inline constexpr bool is_serializable_type_v = is_serializable_type<T, S>::value
 template <typename T, typename S>
 struct is_serializable_array_type<T, S,
 	std::enable_if_t<
-		is_detected_v<value_type_t, T> and
-		is_detected_v<iterator_t, T> and
-		not is_detected_v<std_string_npos_t, T>>>
+		detail::is_detected_v<value_type_t, T> and
+		detail::is_detected_v<iterator_t, T> and
+		not detail::is_detected_v<std_string_npos_t, T>>>
 {
 	static constexpr bool value = is_serializable_type_v<typename T::value_type, S>;
 };
