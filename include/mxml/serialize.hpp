@@ -50,7 +50,11 @@
 # include <fast_float/fast_float.h>
 #endif
 
+#if __has_include(<experimental/type_traits>)
 #include <experimental/type_traits>
+#else
+#include <type_traits>
+#endif
 
 namespace mxml
 {
