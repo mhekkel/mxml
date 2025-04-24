@@ -8,6 +8,7 @@ include(CTest)
 include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)
 include(VersionString)
+include(CPM)
 
 option(MXML_BUILD_EXAMPLES "Build example executables" ON)
 option(MXML_BUILD_DOCUMENTATION "Build documentation" OFF)
@@ -18,9 +19,15 @@ elseif(MSVC)
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W4")
 endif()
 
-if(NOT TARGET date)
-	find_package(date QUIET)
-endif()
+CPMAddPackage(
+	NAME date
+	GITHUB_REPOSITORY "HowardHinnant/date"
+	VERSION 3.0.0)
+
+CPMAddPackage(
+	NAME fast_float
+	GITHUB_REPOSITORY "fastfloat/fast_float"
+	GIT_TAG v8.0.2)
 
 # Version info
 write_version_header("${CMAKE_CURRENT_SOURCE_DIR}/src" LIB_NAME "libmxml")
@@ -61,9 +68,7 @@ if(MSVC)
 	target_compile_definitions(mxml PUBLIC NOMINMAX=1)
 endif()
 
-if(TARGET date OR date_FOUND)
-	target_link_libraries(mxml date::date)
-endif()
+target_link_libraries(mxml PUBLIC date::date fast_float)
 
 install(TARGETS mxml
 	EXPORT mxml

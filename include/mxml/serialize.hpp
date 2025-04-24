@@ -42,10 +42,15 @@
 #include <system_error>
 
 #if __has_include(<date/date.h>)
-#include <regex>
-#include <date/date.h>
+# include <date/date.h>
+# include <regex>
 #endif
 
+#if __has_include(<fast_float/fast_float.h>)
+# include <fast_float/fast_float.h>
+#endif
+
+#include <experimental/type_traits>
 
 namespace mxml
 {
@@ -75,8 +80,11 @@ struct value_serializer<std::string>
 {
 	static std::string type_name() { return "xsd:string"; }
 	static std::string to_string(std::string value) { return value; }
-	static std::string from_string(std::string_view value) { return std::string { value }; }
+	static std::string from_string(std::string_view value) { return std::string{ value }; }
 };
+
+template <typename T>
+using from_chars_function = decltype(std::from_chars(std::declval<const char *>(), std::declval<const char *>(), std::declval<T &>()));
 
 /// @ref value_serializer implementation for numbers
 template <typename T>
@@ -103,10 +111,18 @@ struct char_conv_serializer
 	{
 		value_type result{};
 
-		auto r = std::from_chars(value.data(), value.data() + value.length(), result);
-
-		if (r.ec != std::errc{} or r.ptr != value.data() + value.length())
-			throw std::system_error(std::make_error_code(r.ec), "Error converting value '" + std::string{ value } + "' to type " + derived_type_name());
+		if constexpr (std::experimental::is_detected_v<from_chars_function, T>)
+		{
+			auto r = std::from_chars(value.data(), value.data() + value.length(), result);
+			if (r.ec != std::errc{} or r.ptr != value.data() + value.length())
+				throw std::system_error(std::make_error_code(r.ec), "Error converting value '" + std::string{ value } + "' to type " + derived_type_name());
+		}
+		else
+		{
+			auto r = fast_float::from_chars(value.data(), value.data() + value.length(), result);
+			if (r.ec != std::errc{} or r.ptr != value.data() + value.length())
+				throw std::system_error(std::make_error_code(r.ec), "Error converting value '" + std::string{ value } + "' to type " + derived_type_name());
+		}
 
 		return result;
 	}
@@ -387,7 +403,7 @@ constexpr inline bool is_detected_v = is_detected<Op, Args...>::value;
 template <class Expected, template <class...> class Op, class... Args>
 using is_detected_exact = std::is_same<Expected, is_detected<Op, Args...>>;
 
-template <class Expected, template<class...> class Op, class... Args>
+template <class Expected, template <class...> class Op, class... Args>
 constexpr inline bool is_detected_exact_v = is_detected_exact<Expected, Op, Args...>::value;
 
 template <typename T>
@@ -578,7 +594,7 @@ struct serializer
 
 /**
  * @brief deserializer is the class that initiates the deserialization process.
- * 
+ *
  */
 
 struct deserializer
@@ -621,7 +637,7 @@ struct deserializer
 
 /**
  * @brief Type serializer objects can serialize various types,
- * each has its own template specialization. 
+ * each has its own template specialization.
  */
 
 template <typename T>
