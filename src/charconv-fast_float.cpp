@@ -3,21 +3,21 @@
 //    (See accompanying file LICENSE_1_0.txt or copy at
 //          http://www.boost.org/LICENSE_1_0.txt)
 
-#include "zeep/detail/charconv.hpp"
+#include "mxml/detail/charconv.hpp"
 #include "fast_float/fast_float.h"
 
 namespace mxml::detail
 {
 	
 template<>
-std::ff_charconv<float>::from_chars_result from_chars(const char *a, const char *b, float &v)
+std::from_chars_result ff_charconv<float>::from_chars(const char *a, const char *b, float &v)
 {
 	auto r = fast_float::from_chars(a, b, v);
 	return { r.ptr, r.ec };
 }
 
 template<>
-std::ff_charconv<double>::from_chars_result from_chars(const char *a, const char *b, double &v)
+std::from_chars_result ff_charconv<double>::from_chars(const char *a, const char *b, double &v)
 {
 	auto r = fast_float::from_chars(a, b, v);
 	return { r.ptr, r.ec };

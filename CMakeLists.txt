@@ -42,9 +42,7 @@ write_version_header("${CMAKE_CURRENT_SOURCE_DIR}/src" LIB_NAME "libmxml")
 add_library(mxml STATIC)
 add_library(mxml::mxml ALIAS mxml)
 
-target_sources(mxml
-	PRIVATE
-	$<$<NOT:$<BOOL:STD_CHARCONV_COMPILING>>:src/charconv-fast_float.cpp>
+list(APPEND sources
 	src/doctype.cpp
 	src/document.cpp
 	src/html-named-characters.cpp
@@ -53,6 +51,17 @@ target_sources(mxml
 	src/text.cpp
 	src/xpath.cpp
 	src/revision.hpp
+)
+
+if(NOT STD_CHARCONV_COMPILING)
+	list(APPEND sources
+		src/charconv-fast_float.cpp
+	)
+endif()
+
+
+target_sources(mxml
+	PRIVATE ${sources}
 	PUBLIC
 	FILE_SET public_modules TYPE HEADERS
 	BASE_DIRS
@@ -73,8 +82,10 @@ target_sources(mxml
 
 target_compile_features(mxml PUBLIC cxx_std_20)
 
-target_link_libraries(mxml
-	PRIVATE date::date $<IF:$<BOOL:STD_CHARCONV_COMPILING>,,fast_float>)
+target_link_libraries(mxml PRIVATE date::date)
+if(NOT STD_CHARCONV_COMPILING)
+	target_link_libraries(mxml PRIVATE fast_float)
+endif()
 
 target_compile_definitions(mxml PUBLIC $<$<BOOL:MSVC>:NOMINMAX=1>)
 
