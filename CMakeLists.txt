@@ -83,7 +83,7 @@ if(MSVC)
 endif()
 
 target_link_libraries(mxml PUBLIC date::date $<IF:$<BOOL:${STD_CHARCONV_COMPILING}>,,fast_float>)
-target_compile_definitions(mxml INTERFACE $<IF:$<BOOL:${STD_CHARCONV_COMPILING}>,,USE_FAST_FLOAT>)
+target_compile_definitions(mxml PUBLIC $<IF:$<BOOL:${STD_CHARCONV_COMPILING}>,,USE_FAST_FLOAT>)
 
 install(TARGETS mxml
 	EXPORT mxml
