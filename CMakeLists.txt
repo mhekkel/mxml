@@ -59,7 +59,6 @@ if(NOT STD_CHARCONV_COMPILING)
 	)
 endif()
 
-
 target_sources(mxml
 	PRIVATE ${sources}
 	PUBLIC
@@ -83,6 +82,7 @@ target_sources(mxml
 target_compile_features(mxml PUBLIC cxx_std_20)
 
 target_link_libraries(mxml PRIVATE date::date)
+
 if(NOT STD_CHARCONV_COMPILING)
 	target_link_libraries(mxml PRIVATE fast_float)
 endif()

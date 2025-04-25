@@ -91,19 +91,13 @@ struct std_charconv
 	}
 };
 
-template <typename T>
+template <typename T, typename = void>
 struct ff_charconv;
 
-template<>
-struct ff_charconv<float>
+template <typename T>
+struct ff_charconv<T, typename std::enable_if_t<std::is_floating_point_v<T>>>
 {
-	static std::from_chars_result from_chars(const char *a, const char *b, float &v);
-};
-
-template<>
-struct ff_charconv<double>
-{
-	static std::from_chars_result from_chars(const char *a, const char *b, double &v);
+	static std::from_chars_result from_chars(const char *a, const char *b, T &v);
 };
 
 template <typename T>
