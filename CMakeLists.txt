@@ -84,7 +84,7 @@ target_compile_features(mxml PUBLIC cxx_std_20)
 target_link_libraries(mxml PRIVATE date::date)
 
 if(NOT STD_CHARCONV_COMPILING)
-	target_link_libraries(mxml PRIVATE fast_float)
+	target_include_directories(mxml PRIVATE $<TARGET_PROPERTY:fast_float,INTERFACE_INCLUDE_DIRECTORIES>)
 endif()
 
 target_compile_definitions(mxml PUBLIC $<$<BOOL:MSVC>:NOMINMAX=1>)
