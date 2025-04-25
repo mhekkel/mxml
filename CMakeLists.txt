@@ -1,7 +1,7 @@
-#          Copyright Maarten L. Hekkelman 2025
+# Copyright Maarten L. Hekkelman 2025
 # Distributed under the Boost Software License, Version 1.0.
-#    (See accompanying file LICENSE_1_0.txt or copy at
-#          http://www.boost.org/LICENSE_1_0.txt)
+# (See accompanying file LICENSE_1_0.txt or copy at
+# http://www.boost.org/LICENSE_1_0.txt)
 
 cmake_minimum_required(VERSION 3.23)
 
@@ -44,6 +44,7 @@ add_library(mxml::mxml ALIAS mxml)
 
 target_sources(mxml
 	PRIVATE
+	$<$<NOT:$<BOOL:STD_CHARCONV_COMPILING>>:src/charconv-fast_float.cpp>
 	src/doctype.cpp
 	src/document.cpp
 	src/html-named-characters.cpp
@@ -72,12 +73,10 @@ target_sources(mxml
 
 target_compile_features(mxml PUBLIC cxx_std_20)
 
-if(MSVC)
-	target_compile_definitions(mxml PUBLIC NOMINMAX=1)
-endif()
+target_link_libraries(mxml
+	PRIVATE date::date $<IF:$<BOOL:STD_CHARCONV_COMPILING>,,fast_float>)
 
-target_link_libraries(mxml PUBLIC date::date $<IF:$<BOOL:${STD_CHARCONV_COMPILING}>,,fast_float>)
-target_compile_definitions(mxml PUBLIC $<IF:$<BOOL:${STD_CHARCONV_COMPILING}>,,USE_FAST_FLOAT>)
+target_compile_definitions(mxml PUBLIC $<$<BOOL:MSVC>:NOMINMAX=1>)
 
 install(TARGETS mxml
 	EXPORT mxml

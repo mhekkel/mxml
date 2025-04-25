@@ -5,10 +5,6 @@
 
 #pragma once
 
-#if USE_FAST_FLOAT
-# include <fast_float/fast_float.h>
-#endif
-
 #include <algorithm>
 #include <charconv>
 #include <cmath>
@@ -95,29 +91,23 @@ struct std_charconv
 	}
 };
 
-#if USE_FAST_FLOAT
-
 template <typename T>
-struct ff_charconv
-{
-	using value_type = T;
+struct ff_charconv;
 
-	static auto from_chars(const char *first, const char *last, value_type &value)
-	{
-		return fast_float::from_chars(first, last, value);
-	}
+template<>
+struct ff_charconv<float>
+{
+	static std::from_chars_result from_chars(const char *a, const char *b, float &v);
 };
 
+template<>
+struct ff_charconv<double>
+{
+	static std::from_chars_result from_chars(const char *a, const char *b, double &v);
+};
 
 template <typename T>
 using charconv = typename std::conditional_t<is_detected_v<from_chars_function, T>, std_charconv<T>, ff_charconv<T>>;
-
-#else
-
-template <typename T>
-using charconv = std_charconv<T>;
-
-#endif
 
 template <typename T>
 constexpr auto from_chars(const char *s, const char *e, T &v)
