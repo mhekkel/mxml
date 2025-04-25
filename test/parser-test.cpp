@@ -11,6 +11,7 @@
 #include <regex>
 #include <set>
 #include <string>
+#include <sstream>
 
 #include <mcfp/mcfp.hpp>
 
