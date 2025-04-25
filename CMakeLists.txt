@@ -26,20 +26,14 @@ endif()
 
 set(CPM_USE_LOCAL_PACKAGES ON)
 
-CPMAddPackage(
-	NAME date
-	GITHUB_REPOSITORY "HowardHinnant/date"
-	VERSION 3.0.0)
+CPMAddPackage("gh:HowardHinnant/date@3.0.3")
 
 try_compile(STD_CHARCONV_COMPILING
 	SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/cmake/test-charconv.cpp)
 
 if(NOT STD_CHARCONV_COMPILING)
 	message(WARNING "Using fast_float for std::from_chars")
-	CPMAddPackage(
-		NAME fast_float
-		GITHUB_REPOSITORY "fastfloat/fast_float"
-		GIT_TAG v8.0.2)
+	CPMAddPackage("gh:fastfloat/fast_float@8.0.2")
 endif()
 
 # Version info

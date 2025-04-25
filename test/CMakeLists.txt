@@ -3,15 +3,8 @@
 #    (See accompanying file LICENSE_1_0.txt or copy at
 #          http://www.boost.org/LICENSE_1_0.txt)
 
-CPMAddPackage(
-	NAME Catch2
-	GITHUB_REPOSITORY "catchorg/Catch2"
-	VERSION 3.4.0)
-
-CPMAddPackage(
-	NAME mcfp
-	GITHUB_REPOSITORY "mhekkel/libmcfp"
-	VERSION 1.3.5)
+CPMAddPackage("gh:catchorg/Catch2@3.4.0")
+CPMAddPackage("https://forge.hekkelman.net/maarten/mcfp.git@1.4.0")
 
 # data files for the parser test
 set(XML_CONF_TAR ${CMAKE_CURRENT_SOURCE_DIR}/XML-Test-Suite.tbz)
