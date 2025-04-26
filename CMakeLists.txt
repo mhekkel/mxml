@@ -18,6 +18,16 @@ include(CPM)
 option(MXML_BUILD_EXAMPLES "Build example executables" ON)
 option(MXML_BUILD_DOCUMENTATION "Build documentation" OFF)
 
+if(PROJECT_IS_TOP_LEVEL)
+	set(MXML_BUILD_TESTING BUILD_TESTING)
+else()
+	set(MXML_BUILD_TESTING OFF CACHE BOOL "Set this to build testing code")
+
+	if(BUILD_TESTING AND NOT MXML_BUILD_TESTING)
+		message(NOTICE "Set MXML_BUILD_TESTING=ON to build testing")
+	endif()
+endif()
+
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wno-unused-parameter -Wsuggest-override")
 elseif(MSVC)
@@ -130,7 +140,7 @@ if(CMAKE_GENERATOR_PLATFORM)
 		-A "${CMAKE_GENERATOR_PLATFORM}")
 endif()
 
-if(BUILD_TESTING)
+if(MXML_BUILD_TESTING)
 	add_subdirectory(test)
 endif()
 
