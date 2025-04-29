@@ -7,25 +7,25 @@ cmake_minimum_required(VERSION 3.23)
 
 project(mxml VERSION 2.0.0 LANGUAGES CXX)
 
-list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
-include(CTest)
-include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)
-include(VersionString)
 include(CPM)
+include(CTest)
+include(VersionString)
 
-option(MXML_BUILD_EXAMPLES "Build example executables" ON)
 option(MXML_BUILD_DOCUMENTATION "Build documentation" OFF)
+option(MXML_BUILD_EXAMPLES "Build example executables" ON)
 
-if(PROJECT_IS_TOP_LEVEL)
-	set(MXML_BUILD_TESTING BUILD_TESTING)
-else()
-	set(MXML_BUILD_TESTING OFF CACHE BOOL "Set this to build testing code")
+# When building with ninja-multiconfig, build both debug and release by default
+if(CMAKE_GENERATOR STREQUAL "Ninja Multi-Config")
+	set(CMAKE_CROSS_CONFIGS "Debug;Release")
+	set(CMAKE_DEFAULT_CONFIGS "Debug;Release")
+endif()
 
-	if(BUILD_TESTING AND NOT MXML_BUILD_TESTING)
-		message(NOTICE "Set MXML_BUILD_TESTING=ON to build testing")
-	endif()
+# New policy for Boost, set it here
+if(CMAKE_VERSION VERSION_GREATER_EQUAL 3.30)
+	cmake_policy(SET CMP0167 NEW)
 endif()
 
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
@@ -35,7 +35,6 @@ elseif(MSVC)
 endif()
 
 set(CPM_USE_LOCAL_PACKAGES ON)
-
 CPMAddPackage("gh:HowardHinnant/date@3.0.3")
 
 try_compile(STD_CHARCONV_COMPILING
@@ -64,9 +63,7 @@ list(APPEND sources
 )
 
 if(NOT STD_CHARCONV_COMPILING)
-	list(APPEND sources
-		src/charconv-fast_float.cpp
-	)
+	list(APPEND sources src/charconv-fast_float.cpp)
 endif()
 
 target_sources(mxml
@@ -99,6 +96,9 @@ endif()
 
 target_compile_definitions(mxml PUBLIC $<$<BOOL:MSVC>:NOMINMAX=1>)
 
+set(CMAKE_DEBUG_POSTFIX d)
+set_target_properties(mxml PROPERTIES DEBUG_POSTFIX "d")
+
 install(TARGETS mxml
 	EXPORT mxml
 	FILE_SET public_modules DESTINATION include)
@@ -127,20 +127,7 @@ install(FILES
 	${CMAKE_CURRENT_BINARY_DIR}/mxml-config-version.cmake
 	DESTINATION lib/cmake/mxml)
 
-set(generator
-	-G "${CMAKE_GENERATOR}")
-
-if(CMAKE_GENERATOR_TOOLSET)
-	list(APPEND generator
-		-T "${CMAKE_GENERATOR_TOOLSET}")
-endif()
-
-if(CMAKE_GENERATOR_PLATFORM)
-	list(APPEND generator
-		-A "${CMAKE_GENERATOR_PLATFORM}")
-endif()
-
-if(MXML_BUILD_TESTING)
+if(BUILD_TESTING AND PROJECT_IS_TOP_LEVEL)
 	add_subdirectory(test)
 endif()
 

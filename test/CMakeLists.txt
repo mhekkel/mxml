@@ -4,7 +4,7 @@
 #          http://www.boost.org/LICENSE_1_0.txt)
 
 CPMAddPackage("gh:catchorg/Catch2@3.4.0")
-CPMAddPackage("https://forge.hekkelman.net/maarten/mcfp.git@1.4.1")
+CPMAddPackage("https://forge.hekkelman.net/maarten/mcfp.git@1.4.2")
 
 # data files for the parser test
 set(XML_CONF_TAR ${CMAKE_CURRENT_SOURCE_DIR}/XML-Test-Suite.tbz)
