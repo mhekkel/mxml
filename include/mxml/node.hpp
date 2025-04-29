@@ -285,7 +285,7 @@ class basic_node_list
 	{
 		constexpr node_type type() const override { return node_type::header; }
 
-		void write(std::ostream &os, format_info fmt) const override {}
+		void write(std::ostream &/* os */, format_info /* fmt */) const override {}
 		std::string str() const override { return {}; }
 
 		friend void swap(node_list_header &a, node_list_header &b)

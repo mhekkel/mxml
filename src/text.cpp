@@ -87,6 +87,16 @@ bool is_valid_xml_1_1_char(char32_t uc)
 	       (uc >= 0x010000 and uc <= 0x010FFFF);
 }
 
+bool is_space(char32_t uc)
+{
+	return uc == ' ' or
+	       uc == '\f' or
+	       uc == '\n' or
+	       uc == '\r' or
+	       uc == '\t' or
+	       uc == '\v';
+}
+
 bool is_valid_system_literal_char(char32_t uc)
 {
 	return uc > 0x1f and
@@ -136,7 +146,7 @@ bool is_valid_public_id(std::string_view s)
 }
 
 /// \brief Append a single unicode character to an utf-8 string
-void append(std::string& s, char32_t uc)
+void append(std::string &s, char32_t uc)
 {
 	if (uc < 0x080)
 		s += (static_cast<char>(uc));
@@ -170,14 +180,14 @@ void append(std::string& s, char32_t uc)
 }
 
 /// \brief remove the last unicode character from an utf-8 string
-char32_t pop_back_char(std::string& s)
+char32_t pop_back_char(std::string &s)
 {
 	char32_t result = 0;
 
 	if (not s.empty())
 	{
 		std::string::iterator ch = s.end() - 1;
-		
+
 		if ((*ch & 0x0080) == 0)
 		{
 			result = *ch;
@@ -186,26 +196,25 @@ char32_t pop_back_char(std::string& s)
 		else
 		{
 			int o = 0;
-			
+
 			do
 			{
 				result |= (*ch & 0x03F) << o;
 				o += 6;
 				--ch;
-			}
-			while (ch != s.begin() and (*ch & 0x0C0) == 0x080);
-			
+			} while (ch != s.begin() and (*ch & 0x0C0) == 0x080);
+
 			switch (o)
 			{
-				case  6: result |= (*ch & 0x01F) <<  6; break;
+				case 6: result |= (*ch & 0x01F) << 6; break;
 				case 12: result |= (*ch & 0x00F) << 12; break;
 				case 18: result |= (*ch & 0x007) << 18; break;
 			}
-			
+
 			s.erase(ch, s.end());
 		}
 	}
-	
+
 	return result;
 }
 
@@ -218,13 +227,14 @@ char32_t pop_front_char(std::string_view::const_iterator &ptr, std::string_view:
 	if (result > 0x07f)
 	{
 		unsigned char ch[3];
-		
+
 		if ((result & 0x0E0) == 0x0C0)
 		{
 			if (ptr >= end)
 				throw mxml::exception("Invalid utf-8");
 
-			ch[0] = static_cast<unsigned char>(*ptr); ++ptr;
+			ch[0] = static_cast<unsigned char>(*ptr);
+			++ptr;
 
 			if ((ch[0] & 0x0c0) != 0x080)
 				throw mxml::exception("Invalid utf-8");
@@ -236,8 +246,10 @@ char32_t pop_front_char(std::string_view::const_iterator &ptr, std::string_view:
 			if (ptr + 1 >= end)
 				throw mxml::exception("Invalid utf-8");
 
-			ch[0] = static_cast<unsigned char>(*ptr); ++ptr;
-			ch[1] = static_cast<unsigned char>(*ptr); ++ptr;
+			ch[0] = static_cast<unsigned char>(*ptr);
+			++ptr;
+			ch[1] = static_cast<unsigned char>(*ptr);
+			++ptr;
 
 			if ((ch[0] & 0x0c0) != 0x080 or (ch[1] & 0x0c0) != 0x080)
 				throw mxml::exception("Invalid utf-8");
@@ -249,9 +261,12 @@ char32_t pop_front_char(std::string_view::const_iterator &ptr, std::string_view:
 			if (ptr + 2 >= end)
 				throw mxml::exception("Invalid utf-8");
 
-			ch[0] = static_cast<unsigned char>(*ptr); ++ptr;
-			ch[1] = static_cast<unsigned char>(*ptr); ++ptr;
-			ch[2] = static_cast<unsigned char>(*ptr); ++ptr;
+			ch[0] = static_cast<unsigned char>(*ptr);
+			++ptr;
+			ch[1] = static_cast<unsigned char>(*ptr);
+			++ptr;
+			ch[2] = static_cast<unsigned char>(*ptr);
+			++ptr;
 
 			if ((ch[0] & 0x0c0) != 0x080 or (ch[1] & 0x0c0) != 0x080 or (ch[2] & 0x0c0) != 0x080)
 				throw mxml::exception("Invalid utf-8");
@@ -277,16 +292,16 @@ char32_t pop_front_char(std::string::const_iterator &ptr, std::string::const_ite
 // --------------------------------------------------------------------
 
 /// \brief A simple implementation of trim, removing white space from start and end of \a s
-void trim(std::string& s)
+void trim(std::string &s)
 {
 	auto in = s.begin(), out = s.begin(), end = s.end();
 
-	while (end != s.begin() and std::isspace(*(end - 1)))
+	while (end != s.begin() and is_space(*(end - 1)))
 		--end;
 
-	while (in != end and std::isspace(*in))
+	while (in != end and is_space(*in))
 		++in;
-	
+
 	if (in == end)
 		s.clear();
 	else if (in != out)

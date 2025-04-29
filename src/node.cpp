@@ -444,7 +444,7 @@ std::string element_container::str() const
 	return result;
 }
 
-void element_container::write(std::ostream &os, format_info fmt) const
+void element_container::write(std::ostream &/* os */, format_info /* fmt */) const
 {
 }
 

@@ -292,13 +292,13 @@ void document::StartElementHandler(std::string name, std::string uri, const pars
 
 	m_cur = (element *)(static_cast<element *>(m_cur)->emplace_back(qname));
 
-	for (const auto &[prefix, uri] : m_namespaces)
+	for (const auto &[prefix, ns_uri] : m_namespaces)
 	{
 		// assert(m_cur->type() == nodes_type::element);
 		if (prefix.empty())
-			static_cast<element *>(m_cur)->attributes().emplace("xmlns", uri);
+			static_cast<element *>(m_cur)->attributes().emplace("xmlns", ns_uri);
 		else
-			static_cast<element *>(m_cur)->attributes().emplace("xmlns:"s + prefix, uri);
+			static_cast<element *>(m_cur)->attributes().emplace("xmlns:"s + prefix, ns_uri);
 	}
 
 	for (auto &a : atts)

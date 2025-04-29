@@ -799,7 +799,7 @@ class node_type_expression : public step_expression
 	object evaluate(expression_context &context) override
 	{
 		if (m_node_type.has_value())
-			return step_expression::evaluate(context, [](const node *n)
+			return step_expression::evaluate(context, [](const node *)
 				{ return true; }, false);
 		else if (*m_node_type == node_type::text)
 			return step_expression::evaluate(context, [](const node *n)
@@ -1508,11 +1508,11 @@ object core_function_expression<CoreFunction::Lang>::evaluate(expression_context
 
 	std::string test = v.as<std::string>();
 	for (auto &ch : test)
-		ch = std::tolower(ch);
+		ch = (char)std::tolower(ch);
 
 	std::string lang = context.m_node->lang();
 	for (auto &ch : lang)
-		ch = std::tolower(ch);
+		ch = (char)std::tolower(ch);
 
 	bool result = test == lang;
 
@@ -1653,8 +1653,12 @@ expression_ptr xpath_parser::parse(std::string_view path)
 	// start by expanding the abbreviations in the path
 	preprocess(path);
 
+	// Since on MSVC it is not allowed to increment an iterator past the end
+	// we have to invent a trick
+
+	m_path.push_back('\0');
 	m_begin = m_next = m_path.begin();
-	m_end = m_path.end();
+	m_end = m_path.end() - 1;
 
 	m_lookahead = get_next_token();
 	auto result = location_path();
@@ -1665,7 +1669,8 @@ expression_ptr xpath_parser::parse(std::string_view path)
 		result.reset(new union_expression(result, location_path()));
 	}
 
-	match(Token::Eof);
+	if (m_lookahead != Token::Eof)
+		throw exception("Unexpected trailing data in xpath");
 
 	return result;
 }

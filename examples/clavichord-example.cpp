@@ -70,7 +70,7 @@ struct Note
     float pitch;
 
     template <typename Archive>
-    void serialize(Archive &ar, unsigned long version)
+    void serialize(Archive &ar, unsigned long)
     {
         // clang-format off
         ar & mxml::make_attribute_nvp("id", name)
@@ -85,7 +85,7 @@ struct Tuning
     std::array<Note, 12> notes;
 
     template <typename Archive>
-    void serialize(Archive &ar, unsigned long version)
+    void serialize(Archive &ar, unsigned long)
     {
         // clang-format off
         ar & mxml::make_attribute_nvp("a", A_frequency)
@@ -100,7 +100,7 @@ struct Binding
     std::string start;
 
     template <typename Archive>
-    void serialize(Archive &ar, unsigned long version)
+    void serialize(Archive &ar, unsigned long)
     {
         // clang-format off
         ar & mxml::make_attribute_nvp("schema", type)
@@ -116,7 +116,7 @@ struct Stringing
     std::optional<Binding> binding;
 
     template <typename Archive>
-    void serialize(Archive &ar, unsigned long version)
+    void serialize(Archive &ar, unsigned long)
     {
         // clang-format off
         ar & mxml::make_attribute_nvp("hoek", angle)
@@ -134,7 +134,7 @@ struct ClavichordSettings
     Stringing strings;
 
     template<typename Archive>
-    void serialize(Archive &ar, unsigned long version)
+    void serialize(Archive &ar, unsigned long)
     {
         // clang-format off
         ar & mxml::make_element_nvp("naam", name)
