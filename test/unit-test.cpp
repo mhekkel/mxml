@@ -7,6 +7,7 @@
 #endif
 
 #include <filesystem>
+#include <iostream>
 
 import mxml;
 
