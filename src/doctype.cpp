@@ -28,6 +28,7 @@
 #include "mxml/error.hpp"
 #include "mxml/text.hpp"
 
+#include <algorithm>
 #include <cassert>
 #include <functional>
 #include <memory>
