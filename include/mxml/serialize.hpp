@@ -65,7 +65,7 @@ template <>
 struct value_serializer<bool>
 {
 	static std::string type_name() { return "xsd:boolean"; }
-	static constexpr std::string_view to_string(bool value) { return value ? "true" : "false"; }
+	static constexpr std::string to_string(bool value) { return value ? "true" : "false"; }
 	static constexpr bool from_string(std::string_view value) { return value == "true" or value == "1" or value == "yes"; }
 };
 
