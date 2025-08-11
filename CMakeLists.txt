@@ -41,7 +41,7 @@ try_compile(STD_CHARCONV_COMPILING
 	SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/cmake/test-charconv.cpp)
 
 if(NOT STD_CHARCONV_COMPILING)
-	message(NOTICE "Using fast_float for std::from_chars")
+	message(NOTICE "mxml: Using fast_float for std::from_chars")
 	CPMAddPackage("gh:fastfloat/fast_float@8.0.2")
 endif()
 
