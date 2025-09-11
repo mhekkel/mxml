@@ -36,16 +36,13 @@
 
 #include <algorithm>
 #include <charconv>
+#include <chrono>
 #include <map>
 #include <optional>
+#include <regex>
 #include <source_location>
 #include <string>
 #include <system_error>
-
-#if __has_include(<date/date.h>)
-# include <date/date.h>
-# include <regex>
-#endif
 
 namespace mxml
 {
@@ -266,9 +263,6 @@ struct value_serializer<T>
 
 // --------------------------------------------------------------------
 // date/time support
-// We're using Howard Hinands date functions here. If available...
-
-#if __has_include(<date/date.h>)
 
 /// \brief to_string/from_string for std::chrono::system_clock::time_point
 /// time is always assumed to be UTC
@@ -284,7 +278,7 @@ struct value_serializer<std::chrono::system_clock::time_point>
 	/// to_string the time as YYYY-MM-DDThh:mm:ssZ (zero UTC offset)
 	static std::string to_string(const time_type &v)
 	{
-		return date::format("%FT%TZ", v);
+		return std::format("{0:%F}T{0:%T}Z", v);
 	}
 
 	/// from_string according to ISO8601 rules.
@@ -307,12 +301,12 @@ struct value_serializer<std::chrono::system_clock::time_point>
 		if (m[1].matched)
 		{
 			if (m[1] == "Z")
-				date::from_stream(is, "%FT%TZ", result);
+				std::chrono::from_stream(is, "%FT%TZ", result);
 			else
-				date::from_stream(is, "%FT%T%0z", result);
+				std::chrono::from_stream(is, "%FT%T%0z", result);
 		}
 		else
-			date::from_stream(is, "%FT%T", result);
+			std::chrono::from_stream(is, "%FT%T", result);
 
 		if (is.bad() or is.fail())
 			throw std::runtime_error("invalid formatted date");
@@ -321,30 +315,28 @@ struct value_serializer<std::chrono::system_clock::time_point>
 	}
 };
 
-/// \brief to_string/from_string for date::sys_days
+/// \brief to_string/from_string for std::chrono::sys_days
 /// For a specification, see https://www.iso20022.org/standardsrepository/type/ISODateTime
 
 template <>
-struct value_serializer<date::sys_days>
+struct value_serializer<std::chrono::sys_days>
 {
 	static std::string type_name() { return "xsd:date"; }
 
 	/// to_string the date as YYYY-MM-DD
-	static std::string to_string(const date::sys_days &v)
+	static std::string to_string(const std::chrono::sys_days &v)
 	{
-		std::ostringstream ss;
-		date::to_stream(ss, "%F", v);
-		return ss.str();
+		return std::format("{:%F}", v);
 	}
 
 	/// from_string according to ISO8601 rules.
-	static date::sys_days from_string(std::string_view s)
+	static std::chrono::sys_days from_string(std::string_view s)
 	{
-		date::sys_days result;
+		std::chrono::sys_days result;
 
 		std::stringstream is;
 		is << s;
-		date::from_stream(is, "%F", result);
+		std::chrono::from_stream(is, "%F", result);
 
 		if (is.bad() or is.fail())
 			throw std::runtime_error("invalid formatted date");
@@ -352,8 +344,6 @@ struct value_serializer<date::sys_days>
 		return result;
 	}
 };
-
-#endif
 
 /** @cond */
 

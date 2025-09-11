@@ -5,7 +5,7 @@
 
 cmake_minimum_required(VERSION 3.23)
 
-project(mxml VERSION 2.0.1 LANGUAGES CXX)
+project(mxml VERSION 2.0.2 LANGUAGES CXX)
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
@@ -35,7 +35,6 @@ elseif(MSVC)
 endif()
 
 set(CPM_USE_LOCAL_PACKAGES ON)
-CPMAddPackage("gh:HowardHinnant/date@3.0.3")
 
 try_compile(STD_CHARCONV_COMPILING
 	SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/cmake/test-charconv.cpp)
@@ -88,8 +87,6 @@ target_sources(mxml
 
 target_compile_features(mxml PUBLIC cxx_std_20)
 
-target_link_libraries(mxml PRIVATE date::date)
-
 if(NOT STD_CHARCONV_COMPILING)
 	target_include_directories(mxml PRIVATE $<TARGET_PROPERTY:fast_float,INTERFACE_INCLUDE_DIRECTORIES>)
 endif()
@@ -107,10 +104,6 @@ install(EXPORT mxml
 	NAMESPACE mxml::
 	DESTINATION lib/cmake/mxml
 	FILE mxml-targets.cmake)
-
-if(date_FOUND)
-	set(FIND_DEPENDENCIES "find_dependency(date REQUIRED)")
-endif()
 
 configure_package_config_file(
 	${PROJECT_SOURCE_DIR}/cmake/mxml-config.cmake.in

@@ -7,3 +7,4 @@ test/.gdb_history
 docs/_static/
 docs/api
 docs/conf.py
+.cache/
