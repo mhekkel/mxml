@@ -12,6 +12,7 @@ list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 include(CMakePackageConfigHelpers)
 include(CPM)
 include(CTest)
+include(CheckCXXSourceCompiles)
 include(VersionString)
 
 option(MXML_BUILD_DOCUMENTATION "Build documentation" OFF)
@@ -41,8 +42,33 @@ try_compile(STD_CHARCONV_COMPILING
 
 if(NOT STD_CHARCONV_COMPILING)
 	message(NOTICE "mxml: Using fast_float for std::from_chars")
-	CPMAddPackage("gh:fastfloat/fast_float@8.0.2")
+	CPMFindPackage(
+		NAME fastfloat
+		GIT_REPOSITORY "https://github.com/fastfloat/fast_float"
+		GIT_TAG v8.0.2
+		EXCLUDE_FROM_ALL YES)
 endif()
+
+try_compile(STD_CHRONO_FROM_STREAM_COMPILING
+	SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/cmake/test-chrono_from_stream.cpp
+	CXX_STANDARD 20
+)
+
+if(NOT STD_CHRONO_FROM_STREAM_COMPILING)
+	message(NOTICE "mxml: Using Howard Hinnants date for from_stream")
+	CPMFindPackage(
+		NAME date
+		GIT_REPOSITORY "https://github.com/HowardHinnant/date"
+		VERSION 3.0.3
+		EXCLUDE_FROM_ALL YES
+		OPTIONS
+		"USE_SYSTEM_TZ_DB ON"
+		"BUILD_TZ_LIB ON")
+	set(MXML_USE_DATE_H ON)
+endif()
+
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/include/mxml/config.hpp.in
+	${CMAKE_CURRENT_SOURCE_DIR}/include/mxml/config.hpp @ONLY)
 
 # Version info
 write_version_header("${CMAKE_CURRENT_SOURCE_DIR}/src" LIB_NAME "libmxml")
@@ -73,6 +99,7 @@ target_sources(mxml
 	${CMAKE_CURRENT_SOURCE_DIR}/include
 	FILES
 	include/mxml.hpp
+	include/mxml/config.hpp
 	include/mxml/detail/charconv.hpp
 	include/mxml/doctype.hpp
 	include/mxml/document.hpp
@@ -89,6 +116,12 @@ target_compile_features(mxml PUBLIC cxx_std_20)
 
 if(NOT STD_CHARCONV_COMPILING)
 	target_include_directories(mxml PRIVATE $<TARGET_PROPERTY:fast_float,INTERFACE_INCLUDE_DIRECTORIES>)
+endif()
+
+if(NOT STD_CHRONO_FROM_STREAM_COMPILING)
+	target_link_libraries(mxml PUBLIC date::date)
+	target_compile_definitions(mxml PUBLIC USE_DATE_H=1)
+	set(FIND_DEPENDENCIES "find_dependency(date REQUIRED)")
 endif()
 
 target_compile_definitions(mxml PUBLIC $<$<BOOL:MSVC>:NOMINMAX=1>)

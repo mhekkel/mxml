@@ -8,3 +8,4 @@ docs/_static/
 docs/api
 docs/conf.py
 .cache/
+include/mxml/config.hpp
