@@ -209,7 +209,7 @@ struct value_serializer<T>
 	/// \brief Initialize a new instance of value_serializer for this enum, with name and a set of name/value pairs
 	static void init(std::string_view name, std::initializer_list<value_map_value_type> values)
 	{
-		instance(name).m_value_map = value_map_type(values);
+		instance(std::string{ name }).m_value_map = value_map_type(values);
 	}
 
 	/// \brief Initialize a new anonymous instance of value_serializer for this enum with a set of name/value pairs
