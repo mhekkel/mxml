@@ -579,7 +579,7 @@ class node_list : public basic_node_list
 	}
 
 	template <typename... Args>
-		requires std::is_same_v<value_type, attribute> or std::is_same_v<value_type, element>
+		requires std::is_same_v<value_type, attribute> or (std::derived_from<value_type, node> and std::is_constructible_v<value_type, Args...>)
 	iterator insert(const_iterator p, Args &&...args)
 	{
 		return insert_impl(p, new value_type(std::forward<Args>(args)...));
