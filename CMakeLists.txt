@@ -49,12 +49,20 @@ if(NOT STD_CHARCONV_COMPILING)
 		EXCLUDE_FROM_ALL YES)
 endif()
 
-try_compile(STD_CHRONO_FROM_STREAM_COMPILING
+try_run(TEST_STD_CHRONO_FROM_STREAM_R TEST_STD_CHRONO_FROM_STREAM_C
 	SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/cmake/test-chrono_from_stream.cpp
 	CXX_STANDARD 20
 )
 
-if(NOT STD_CHRONO_FROM_STREAM_COMPILING)
+if (${TEST_STD_CHRONO_FROM_STREAM_R} EQUAL 0)
+	set(USE_STD_CHRONO_FROM_STREAM TRUE)
+else()
+	set(USE_STD_CHRONO_FROM_STREAM FALSE)
+endif()
+
+message(NOTICE "Output from test: ${USE_STD_CHRONO_FROM_STREAM}")
+
+if(NOT USE_STD_CHRONO_FROM_STREAM)
 	message(NOTICE "mxml: Using Howard Hinnants date for from_stream")
 	CPMFindPackage(
 		NAME date
@@ -118,7 +126,7 @@ if(NOT STD_CHARCONV_COMPILING)
 	target_include_directories(mxml PRIVATE $<TARGET_PROPERTY:fast_float,INTERFACE_INCLUDE_DIRECTORIES>)
 endif()
 
-if(NOT STD_CHRONO_FROM_STREAM_COMPILING)
+if(NOT USE_STD_CHRONO_FROM_STREAM)
 	target_link_libraries(mxml PUBLIC date::date)
 	target_compile_definitions(mxml PUBLIC USE_DATE_H=1)
 	set(FIND_DEPENDENCIES "find_dependency(date REQUIRED)")
