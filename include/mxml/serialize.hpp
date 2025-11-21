@@ -35,6 +35,10 @@
 #include "mxml/detail/charconv.hpp"
 #include "mxml/node.hpp"
 
+#if MXML_USE_DATE_H
+#include <date/date.h>
+#endif
+
 #include <algorithm>
 #include <charconv>
 #include <chrono>

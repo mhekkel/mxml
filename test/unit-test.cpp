@@ -1,3 +1,4 @@
+#include <catch2/catch_test_macros.hpp>
 #define CATCH_CONFIG_RUNNER
 
 #include "mxml.hpp"
@@ -933,4 +934,14 @@ TEST_CASE("sort-1")
 		{ return a.value() < b.value(); });
 
 	CHECK((std::ostringstream() << e).str() == R"(<test aap="1" noot="2" mies="3" boom="4" roos="5" vis="6" vuur="7"/>)");
+}
+
+
+TEST_CASE("emplace-1")
+{
+	mxml::element e1("e");
+
+	mxml::cdata text("test");
+	// e1.emplace_back(text);
+	e1.nodes().insert(e1.end(), std::move(text));
 }

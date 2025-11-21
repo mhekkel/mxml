@@ -35,7 +35,9 @@
 #include <algorithm>
 #include <cassert>
 #include <compare>
+#include <concepts>
 #include <string>
+#include <type_traits>
 #include <utility>
 #include <vector>
 
@@ -579,8 +581,8 @@ class node_list : public basic_node_list
 	}
 
 	template <typename... Args>
-		requires std::is_same_v<value_type, attribute> or (std::derived_from<value_type, node> and std::is_constructible_v<value_type, Args...>)
 	iterator insert(const_iterator p, Args &&...args)
+		requires (sizeof...(Args) > 1 or not std::is_base_of_v<node, std::remove_cvref_t<Args>...>)
 	{
 		return insert_impl(p, new value_type(std::forward<Args>(args)...));
 	}
@@ -625,7 +627,6 @@ class node_list : public basic_node_list
 
 	/// \brief emplace an element at position \a p using arguments \a args
 	template <typename... Args>
-		requires std::is_same_v<value_type, attribute> or std::is_same_v<value_type, element> or std::is_base_of_v<node, std::remove_cvref_t<Args>...>
 	iterator emplace(const_iterator p, Args &&...args)
 	{
 		return insert(p, std::forward<Args>(args)...);
@@ -633,7 +634,6 @@ class node_list : public basic_node_list
 
 	/// \brief emplace an element at the front using arguments \a args
 	template <typename... Args>
-		requires std::is_same_v<value_type, attribute> or std::is_same_v<value_type, element> or std::is_base_of_v<node, std::remove_cvref_t<Args>...>
 	iterator emplace_front(Args &&...args)
 	{
 		return emplace(begin(), std::forward<Args>(args)...);
@@ -641,7 +641,6 @@ class node_list : public basic_node_list
 
 	/// \brief emplace an element at the back using arguments \a args
 	template <typename... Args>
-		requires std::is_same_v<value_type, attribute> or std::is_same_v<value_type, element> or std::is_base_of_v<node, std::remove_cvref_t<Args>...>
 	iterator emplace_back(Args &&...args)
 	{
 		return emplace(end(), std::forward<Args>(args)...);
