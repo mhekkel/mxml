@@ -1,6 +1,6 @@
 version 2.0.3
 - fix value_serializer for bool
-- fix insert/emplace/etc to accept all constructible node types
+- use correct from_chars (for floats on macOS/FreeBSD)
 
 version 2.0.2
 - Replace usage of howard hinnants date with std::chrono
