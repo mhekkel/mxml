@@ -6,7 +6,7 @@
 #include "mxml/detail/charconv.hpp"
 #include "fast_float/fast_float.h"
 
-namespace mxml::detail
+namespace mxml
 {
 	
 template<>
@@ -23,4 +23,4 @@ std::from_chars_result ff_charconv<double>::from_chars(const char *a, const char
 	return { r.ptr, r.ec };
 }
 
-} // namespace mxml::detail
+} // namespace mxml
