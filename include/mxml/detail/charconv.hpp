@@ -5,11 +5,8 @@
 
 #pragma once
 
-#include <algorithm>
 #include <charconv>
 #include <cmath>
-#include <string>
-#include <vector>
 
 #if __has_include(<experimental/type_traits>)
 # include <experimental/type_traits>
@@ -17,7 +14,10 @@
 # include <type_traits>
 #endif
 
-namespace mxml::detail
+namespace mxml
+{
+
+namespace detail
 {
 
 #if (not defined(__cpp_lib_experimental_detect) or (__cpp_lib_experimental_detect < 201505)) and (not defined(_LIBCPP_VERSION) or _LIBCPP_VERSION < 5000)
@@ -79,6 +79,8 @@ constexpr inline bool is_detected_v = std::experimental::is_detected<Op, Args...
 
 #endif
 
+}
+
 template <typename T>
 using from_chars_function = decltype(std::from_chars(std::declval<const char *>(), std::declval<const char *>(), std::declval<T &>()));
 
@@ -101,7 +103,7 @@ struct ff_charconv<T, typename std::enable_if_t<std::is_floating_point_v<T>>>
 };
 
 template <typename T>
-using charconv = typename std::conditional_t<is_detected_v<from_chars_function, T>, std_charconv<T>, ff_charconv<T>>;
+using charconv = typename std::conditional_t<detail::is_detected_v<from_chars_function, T>, std_charconv<T>, ff_charconv<T>>;
 
 template <typename T>
 constexpr auto from_chars(const char *s, const char *e, T &v)

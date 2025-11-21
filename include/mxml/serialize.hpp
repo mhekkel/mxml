@@ -105,7 +105,7 @@ struct char_conv_serializer
 	{
 		value_type result{};
 
-		auto r = std::from_chars(value.data(), value.data() + value.length(), result);
+		auto r = from_chars(value.data(), value.data() + value.length(), result);
 		if (r.ec != std::errc{} or r.ptr != value.data() + value.length())
 			throw std::system_error(std::make_error_code(r.ec), "Error converting value '" + std::string{ value } + "' to type " + derived_type_name());
 

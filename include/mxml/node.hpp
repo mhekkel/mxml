@@ -580,6 +580,12 @@ class node_list : public basic_node_list
 		return insert_impl(pos, new value_type(std::move(e)));
 	}
 
+	/// \brief construct a new node using arguments provided in \a a
+
+	// TODO: When users try to emplace/insert e.g. a cdata node in an element
+	// this will fail, since they need to use the nodes() variant. However,
+	// a better error is required in that case. Perhaps using concepts?
+
 	template <typename... Args>
 	iterator insert(const_iterator p, Args &&...args)
 		requires (sizeof...(Args) > 1 or not std::is_base_of_v<node, std::remove_cvref_t<Args>...>)
