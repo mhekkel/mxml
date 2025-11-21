@@ -35,10 +35,6 @@
 #include "mxml/detail/charconv.hpp"
 #include "mxml/node.hpp"
 
-#if MXML_USE_DATE_H
-# include <date/date.h>
-#endif
-
 #include <algorithm>
 #include <charconv>
 #include <chrono>
@@ -66,8 +62,8 @@ struct value_serializer;
 template <>
 struct value_serializer<bool>
 {
-	static std::string type_name() { return "xsd:boolean"; }
-	static constexpr std::string_view to_string(bool value) { return value ? "true" : "false"; }
+	static constexpr std::string type_name() { return "xsd:boolean"; }
+	static constexpr std::string to_string(bool value) { return value ? "true" : "false"; }
 	static constexpr bool from_string(std::string_view value) { return value == "true" or value == "1" or value == "yes"; }
 };
 
@@ -75,9 +71,9 @@ struct value_serializer<bool>
 template <>
 struct value_serializer<std::string>
 {
-	static std::string type_name() { return "xsd:string"; }
-	static std::string to_string(std::string value) { return value; }
-	static std::string from_string(std::string_view value) { return std::string{ value }; }
+	static constexpr std::string type_name() { return "xsd:string"; }
+	static constexpr std::string to_string(std::string value) { return value; }
+	static constexpr std::string from_string(std::string_view value) { return std::string{ value }; }
 };
 
 /// @ref value_serializer implementation for numbers
@@ -105,7 +101,7 @@ struct char_conv_serializer
 	{
 		value_type result{};
 
-		auto r = detail::from_chars(value.data(), value.data() + value.length(), result);
+		auto r = std::from_chars(value.data(), value.data() + value.length(), result);
 		if (r.ec != std::errc{} or r.ptr != value.data() + value.length())
 			throw std::system_error(std::make_error_code(r.ec), "Error converting value '" + std::string{ value } + "' to type " + derived_type_name());
 
@@ -773,6 +769,7 @@ template <unsigned N>
 struct priority_tag /** @cond */ : priority_tag<N - 1> /** @endcond */
 {
 };
+
 template <>
 struct priority_tag<0>
 {
