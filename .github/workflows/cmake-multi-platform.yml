@@ -19,7 +19,7 @@ jobs:
           - os: windows-latest
             cpp_compiler: cl
           - os: ubuntu-latest
-            cpp_compiler: g++
+            cpp_compiler: g++-14
           - os: macos-latest
             cpp_compiler: clang++
 

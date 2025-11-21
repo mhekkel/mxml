@@ -31,21 +31,19 @@
  * definition of the serializer classes used to (de-)serialize XML data.
  */
 
-#include "mxml/node.hpp"
+#include "mxml/config.hpp"
 #include "mxml/detail/charconv.hpp"
+#include "mxml/node.hpp"
 
 #include <algorithm>
 #include <charconv>
+#include <chrono>
 #include <map>
 #include <optional>
+#include <regex>
 #include <source_location>
 #include <string>
 #include <system_error>
-
-#if __has_include(<date/date.h>)
-# include <date/date.h>
-# include <regex>
-#endif
 
 namespace mxml
 {
@@ -64,7 +62,7 @@ struct value_serializer;
 template <>
 struct value_serializer<bool>
 {
-	static std::string type_name() { return "xsd:boolean"; }
+	static constexpr std::string type_name() { return "xsd:boolean"; }
 	static constexpr std::string to_string(bool value) { return value ? "true" : "false"; }
 	static constexpr bool from_string(std::string_view value) { return value == "true" or value == "1" or value == "yes"; }
 };
@@ -73,9 +71,9 @@ struct value_serializer<bool>
 template <>
 struct value_serializer<std::string>
 {
-	static std::string type_name() { return "xsd:string"; }
-	static std::string to_string(std::string value) { return value; }
-	static std::string from_string(std::string_view value) { return std::string{ value }; }
+	static constexpr std::string type_name() { return "xsd:string"; }
+	static constexpr std::string to_string(std::string value) { return value; }
+	static constexpr std::string from_string(std::string_view value) { return std::string{ value }; }
 };
 
 /// @ref value_serializer implementation for numbers
@@ -103,7 +101,7 @@ struct char_conv_serializer
 	{
 		value_type result{};
 
-		auto r = detail::from_chars(value.data(), value.data() + value.length(), result);
+		auto r = std::from_chars(value.data(), value.data() + value.length(), result);
 		if (r.ec != std::errc{} or r.ptr != value.data() + value.length())
 			throw std::system_error(std::make_error_code(r.ec), "Error converting value '" + std::string{ value } + "' to type " + derived_type_name());
 
@@ -266,9 +264,6 @@ struct value_serializer<T>
 
 // --------------------------------------------------------------------
 // date/time support
-// We're using Howard Hinands date functions here. If available...
-
-#if __has_include(<date/date.h>)
 
 /// \brief to_string/from_string for std::chrono::system_clock::time_point
 /// time is always assumed to be UTC
@@ -284,7 +279,7 @@ struct value_serializer<std::chrono::system_clock::time_point>
 	/// to_string the time as YYYY-MM-DDThh:mm:ssZ (zero UTC offset)
 	static std::string to_string(const time_type &v)
 	{
-		return date::format("%FT%TZ", v);
+		return std::format("{0:%F}T{0:%T}Z", v);
 	}
 
 	/// from_string according to ISO8601 rules.
@@ -293,6 +288,11 @@ struct value_serializer<std::chrono::system_clock::time_point>
 	/// If no UTC offset is present, then the xsd:dateTime is assumed to be local time and converted to UTC.
 	static time_type from_string(std::string_view s)
 	{
+#if MXML_USE_DATE_H
+		using namespace date;
+#else
+		using namespace std::chrono;
+#endif
 		time_type result;
 
 		std::regex kRX(R"(^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?(Z|[-+]\d{2}:\d{2})?)");
@@ -307,12 +307,12 @@ struct value_serializer<std::chrono::system_clock::time_point>
 		if (m[1].matched)
 		{
 			if (m[1] == "Z")
-				date::from_stream(is, "%FT%TZ", result);
+				from_stream(is, "%FT%TZ", result);
 			else
-				date::from_stream(is, "%FT%T%0z", result);
+				from_stream(is, "%FT%T%0z", result);
 		}
 		else
-			date::from_stream(is, "%FT%T", result);
+			from_stream(is, "%FT%T", result);
 
 		if (is.bad() or is.fail())
 			throw std::runtime_error("invalid formatted date");
@@ -321,30 +321,33 @@ struct value_serializer<std::chrono::system_clock::time_point>
 	}
 };
 
-/// \brief to_string/from_string for date::sys_days
+/// \brief to_string/from_string for std::chrono::sys_days
 /// For a specification, see https://www.iso20022.org/standardsrepository/type/ISODateTime
 
 template <>
-struct value_serializer<date::sys_days>
+struct value_serializer<std::chrono::sys_days>
 {
 	static std::string type_name() { return "xsd:date"; }
 
 	/// to_string the date as YYYY-MM-DD
-	static std::string to_string(const date::sys_days &v)
+	static std::string to_string(const std::chrono::sys_days &v)
 	{
-		std::ostringstream ss;
-		date::to_stream(ss, "%F", v);
-		return ss.str();
+		return std::format("{:%F}", v);
 	}
 
 	/// from_string according to ISO8601 rules.
-	static date::sys_days from_string(std::string_view s)
+	static std::chrono::sys_days from_string(std::string_view s)
 	{
-		date::sys_days result;
+#if MXML_USE_DATE_H
+		using namespace date;
+#else
+		using namespace std::chrono;
+#endif
+		std::chrono::sys_days result;
 
 		std::stringstream is;
 		is << s;
-		date::from_stream(is, "%F", result);
+		from_stream(is, "%F", result);
 
 		if (is.bad() or is.fail())
 			throw std::runtime_error("invalid formatted date");
@@ -352,8 +355,6 @@ struct value_serializer<date::sys_days>
 		return result;
 	}
 };
-
-#endif
 
 /** @cond */
 
@@ -768,6 +769,7 @@ template <unsigned N>
 struct priority_tag /** @cond */ : priority_tag<N - 1> /** @endcond */
 {
 };
+
 template <>
 struct priority_tag<0>
 {

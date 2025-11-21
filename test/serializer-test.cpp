@@ -328,13 +328,9 @@ TEST_CASE("test_optional")
 	CHECK(*s == "aap");
 }
 
-#if __has_include(<date/date.h>)
-
-# include <date/date.h>
-
 struct date_t1
 {
-	date::sys_days sd;
+	std::chrono::sys_days sd;
 
 	template <typename Archive>
 	void serialize(Archive &ar, unsigned long)
@@ -346,22 +342,24 @@ struct date_t1
 TEST_CASE("test_date_1")
 {
 	using namespace mxml::literals;
-	using namespace date;
+	using namespace std::chrono;
+	using namespace std::chrono_literals;
 
 	auto doc = "<d>2022-12-06</d>"_xml;
 
 	date_t1 t1;
 	from_xml(doc, t1);
 
-	CHECK(t1.sd == 2022_y / 12 / 6);
+	CHECK(t1.sd == 2022y / 12 / 6);
 }
 
 TEST_CASE("test_date_2")
 {
 	using namespace mxml::literals;
-	using namespace date;
+	using namespace std::chrono;
+	using namespace std::chrono_literals;
 
-	date_t1 t1{ 1966_y / 6 / 27 };
+	date_t1 t1{ 1966y / 6 / 27 };
 
 	mxml::document doc;
 	to_xml(doc, t1);
@@ -383,7 +381,7 @@ struct time_t1
 TEST_CASE("test_time_1")
 {
 	using namespace mxml::literals;
-	using namespace date;
+	using namespace std::chrono;
 	using namespace std::literals;
 
 	auto doc = "<t>2022-12-06T00:01:02.34Z</t>"_xml;
@@ -391,16 +389,16 @@ TEST_CASE("test_time_1")
 	time_t1 t1;
 	from_xml(doc, t1);
 
-	CHECK((t1.st == sys_days{ 2022_y / 12 / 6 } + 0h + 1min + 2.34s) == true);
+	CHECK((t1.st == sys_days{ 2022y / 12 / 6 } + 0h + 1min + 2.34s) == true);
 }
 
 TEST_CASE("test_time_2")
 {
 	using namespace mxml::literals;
-	using namespace date;
 	using namespace std::literals;
+	using namespace std::chrono;
 
-	time_t1 t1{ sys_days{ 2022_y / 12 / 6 } + 1h + 2min + 3s };
+	time_t1 t1{ sys_days{ 2022y / 12 / 6 } + 1h + 2min + 3s };
 
 	mxml::document doc;
 	to_xml(doc, t1);
@@ -414,8 +412,6 @@ TEST_CASE("test_time_2")
 
 	CHECK(std::regex_match(ti_c, rx));
 }
-
-#endif
 
 TEST_CASE("test_s_5")
 {
