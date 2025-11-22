@@ -36,7 +36,7 @@
 #include "mxml/node.hpp"
 
 #if MXML_USE_DATE_H
-#include <date/date.h>
+# include <date/date.h>
 #endif
 
 #include <algorithm>
@@ -292,11 +292,6 @@ struct value_serializer<std::chrono::system_clock::time_point>
 	/// If no UTC offset is present, then the xsd:dateTime is assumed to be local time and converted to UTC.
 	static time_type from_string(std::string_view s)
 	{
-#if MXML_USE_DATE_H
-		using namespace date;
-#else
-		using namespace std::chrono;
-#endif
 		time_type result;
 
 		std::regex kRX(R"(^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?(Z|[-+]\d{2}:\d{2})?)");
@@ -308,15 +303,27 @@ struct value_serializer<std::chrono::system_clock::time_point>
 		std::stringstream is;
 		is << s;
 
+#if MXML_USE_DATE_H
 		if (m[1].matched)
 		{
 			if (m[1] == "Z")
-				from_stream(is, "%FT%TZ", result);
+				date::from_stream(is, "%FT%TZ", result);
 			else
-				from_stream(is, "%FT%T%0z", result);
+				date::from_stream(is, "%FT%T%0z", result);
 		}
 		else
-			from_stream(is, "%FT%T", result);
+			date::from_stream(is, "%FT%T", result);
+#else
+		if (m[1].matched)
+		{
+			if (m[1] == "Z")
+				std::from_stream(is, "%FT%TZ", result);
+			else
+				std::from_stream(is, "%FT%T%0z", result);
+		}
+		else
+			std::from_stream(is, "%FT%T", result);
+#endif
 
 		if (is.bad() or is.fail())
 			throw std::runtime_error("invalid formatted date");
@@ -342,16 +349,16 @@ struct value_serializer<std::chrono::sys_days>
 	/// from_string according to ISO8601 rules.
 	static std::chrono::sys_days from_string(std::string_view s)
 	{
-#if MXML_USE_DATE_H
-		using namespace date;
-#else
-		using namespace std::chrono;
-#endif
 		std::chrono::sys_days result;
 
 		std::stringstream is;
 		is << s;
-		from_stream(is, "%F", result);
+
+#if MXML_USE_DATE_H
+		date::from_stream(is, "%F", result);
+#else
+		std::from_stream(is, "%F", result);
+#endif
 
 		if (is.bad() or is.fail())
 			throw std::runtime_error("invalid formatted date");
