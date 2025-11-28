@@ -123,7 +123,7 @@ target_sources(mxml
 target_compile_features(mxml PUBLIC cxx_std_20)
 
 if(NOT STD_CHARCONV_COMPILING)
-	target_include_directories(mxml PRIVATE $<TARGET_PROPERTY:fast_float,INTERFACE_INCLUDE_DIRECTORIES>)
+	target_include_directories(mxml PRIVATE $<TARGET_PROPERTY:FastFloat::fast_float,INTERFACE_INCLUDE_DIRECTORIES>)
 endif()
 
 if(NOT USE_STD_CHRONO_FROM_STREAM)
