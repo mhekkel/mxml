@@ -5,7 +5,7 @@
 
 cmake_minimum_required(VERSION 3.23)
 
-project(mxml VERSION 2.0.3 LANGUAGES CXX)
+project(mxml VERSION 2.0.4 LANGUAGES CXX)
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
@@ -81,7 +81,7 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/include/mxml/config.hpp.in
 # Version info
 write_version_header("${CMAKE_CURRENT_SOURCE_DIR}/src" LIB_NAME "libmxml")
 
-add_library(mxml STATIC)
+add_library(mxml)
 add_library(mxml::mxml ALIAS mxml)
 
 list(APPEND sources
@@ -136,6 +136,14 @@ target_compile_definitions(mxml PUBLIC $<$<BOOL:MSVC>:NOMINMAX=1>)
 
 set(CMAKE_DEBUG_POSTFIX d)
 set_target_properties(mxml PROPERTIES DEBUG_POSTFIX "d")
+
+set(mxml_MAJOR_VERSION ${PROJECT_VERSION_MAJOR})
+set_target_properties(mxml PROPERTIES
+	VERSION ${PROJECT_VERSION}
+	SOVERSION ${PROJECT_VERSION_MAJOR}
+	INTERFACE_mxml_MAJOR_VERSION ${PROJECT_VERSION_MAJOR}
+	COMPATIBLE_INTERFACE_STRING mxml_MAJOR_VERSION
+)
 
 install(TARGETS mxml
 	EXPORT mxml

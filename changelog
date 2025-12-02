@@ -1,3 +1,6 @@
+version 2.0.4
+- Support for creating shared libs
+
 version 2.0.3
 - fix value_serializer for bool
 - use correct from_chars (for floats on macOS/FreeBSD)
