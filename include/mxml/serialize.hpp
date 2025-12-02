@@ -195,6 +195,7 @@ struct value_serializer<double> : char_conv_serializer<double>
  * A recent addition is the init() call to initialize the instance
  */
 
+/** @cond */
 template <typename T>
 	requires std::is_enum_v<T>
 struct value_serializer<T>
@@ -265,6 +266,8 @@ struct value_serializer<T>
 		return instance().m_value_map.empty();
 	}
 };
+
+/** @endcond */
 
 // --------------------------------------------------------------------
 // date/time support
