@@ -43,7 +43,7 @@ try_compile(STD_CHARCONV_COMPILING
 if(NOT STD_CHARCONV_COMPILING)
 	message(NOTICE "zeem: Using fast_float for std::from_chars")
 	CPMFindPackage(
-		NAME fastfloat
+		NAME fast_float
 		GIT_REPOSITORY "https://github.com/fastfloat/fast_float"
 		GIT_TAG v8.0.2
 		EXCLUDE_FROM_ALL YES)
