@@ -24,12 +24,12 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "mxml/error.hpp"
+#include "zeem/error.hpp"
 
 #include <string>
 #include <vector>
 
-namespace mxml
+namespace zeem
 {
 
 // some very basic code to check the class of scanned characters
@@ -231,20 +231,20 @@ char32_t pop_front_char(std::string_view::const_iterator &ptr, std::string_view:
 		if ((result & 0x0E0) == 0x0C0)
 		{
 			if (ptr >= end)
-				throw mxml::exception("Invalid utf-8");
+				throw zeem::exception("Invalid utf-8");
 
 			ch[0] = static_cast<unsigned char>(*ptr);
 			++ptr;
 
 			if ((ch[0] & 0x0c0) != 0x080)
-				throw mxml::exception("Invalid utf-8");
+				throw zeem::exception("Invalid utf-8");
 
 			result = ((result & 0x01F) << 6) | (ch[0] & 0x03F);
 		}
 		else if ((result & 0x0F0) == 0x0E0)
 		{
 			if (ptr + 1 >= end)
-				throw mxml::exception("Invalid utf-8");
+				throw zeem::exception("Invalid utf-8");
 
 			ch[0] = static_cast<unsigned char>(*ptr);
 			++ptr;
@@ -252,14 +252,14 @@ char32_t pop_front_char(std::string_view::const_iterator &ptr, std::string_view:
 			++ptr;
 
 			if ((ch[0] & 0x0c0) != 0x080 or (ch[1] & 0x0c0) != 0x080)
-				throw mxml::exception("Invalid utf-8");
+				throw zeem::exception("Invalid utf-8");
 
 			result = ((result & 0x00F) << 12) | ((ch[0] & 0x03F) << 6) | (ch[1] & 0x03F);
 		}
 		else if ((result & 0x0F8) == 0x0F0)
 		{
 			if (ptr + 2 >= end)
-				throw mxml::exception("Invalid utf-8");
+				throw zeem::exception("Invalid utf-8");
 
 			ch[0] = static_cast<unsigned char>(*ptr);
 			++ptr;
@@ -269,7 +269,7 @@ char32_t pop_front_char(std::string_view::const_iterator &ptr, std::string_view:
 			++ptr;
 
 			if ((ch[0] & 0x0c0) != 0x080 or (ch[1] & 0x0c0) != 0x080 or (ch[2] & 0x0c0) != 0x080)
-				throw mxml::exception("Invalid utf-8");
+				throw zeem::exception("Invalid utf-8");
 
 			result = ((result & 0x007) << 18) | ((ch[0] & 0x03F) << 12) | ((ch[1] & 0x03F) << 6) | (ch[2] & 0x03F);
 		}
@@ -314,4 +314,4 @@ void trim(std::string &s)
 		s.erase(end, s.end());
 }
 
-} // namespace mxml
+} // namespace zeem

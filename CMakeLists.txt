@@ -5,7 +5,7 @@
 
 cmake_minimum_required(VERSION 3.23)
 
-project(mxml VERSION 2.0.4 LANGUAGES CXX)
+project(zeem VERSION 2.0.4 LANGUAGES CXX)
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
@@ -15,8 +15,8 @@ include(CTest)
 include(CheckCXXSourceCompiles)
 include(VersionString)
 
-option(MXML_BUILD_DOCUMENTATION "Build documentation" OFF)
-option(MXML_BUILD_EXAMPLES "Build example executables" ON)
+option(ZEEM_BUILD_DOCUMENTATION "Build documentation" OFF)
+option(ZEEM_BUILD_EXAMPLES "Build example executables" ON)
 
 # When building with ninja-multiconfig, build both debug and release by default
 if(CMAKE_GENERATOR STREQUAL "Ninja Multi-Config")
@@ -41,7 +41,7 @@ try_compile(STD_CHARCONV_COMPILING
 	SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/cmake/test-charconv.cpp)
 
 if(NOT STD_CHARCONV_COMPILING)
-	message(NOTICE "mxml: Using fast_float for std::from_chars")
+	message(NOTICE "zeem: Using fast_float for std::from_chars")
 	CPMFindPackage(
 		NAME fastfloat
 		GIT_REPOSITORY "https://github.com/fastfloat/fast_float"
@@ -63,7 +63,7 @@ endif()
 message(NOTICE "Output from test: ${USE_STD_CHRONO_FROM_STREAM}")
 
 if(NOT USE_STD_CHRONO_FROM_STREAM)
-	message(NOTICE "mxml: Using Howard Hinnants date for from_stream")
+	message(NOTICE "zeem: Using Howard Hinnants date for from_stream")
 	CPMFindPackage(
 		NAME date
 		GIT_REPOSITORY "https://github.com/HowardHinnant/date"
@@ -72,17 +72,17 @@ if(NOT USE_STD_CHRONO_FROM_STREAM)
 		OPTIONS
 		"USE_SYSTEM_TZ_DB ON"
 		"BUILD_TZ_LIB ON")
-	set(MXML_USE_DATE_H ON)
+	set(ZEEM_USE_DATE_H ON)
 endif()
 
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/include/mxml/config.hpp.in
-	${CMAKE_CURRENT_SOURCE_DIR}/include/mxml/config.hpp @ONLY)
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/include/zeem/config.hpp.in
+	${CMAKE_CURRENT_SOURCE_DIR}/include/zeem/config.hpp @ONLY)
 
 # Version info
-write_version_header("${CMAKE_CURRENT_SOURCE_DIR}/src" LIB_NAME "libmxml")
+write_version_header("${CMAKE_CURRENT_SOURCE_DIR}/src" LIB_NAME "libzeem")
 
-add_library(mxml)
-add_library(mxml::mxml ALIAS mxml)
+add_library(zeem)
+add_library(zeem::zeem ALIAS zeem)
 
 list(APPEND sources
 	src/doctype.cpp
@@ -99,84 +99,84 @@ if(NOT STD_CHARCONV_COMPILING)
 	list(APPEND sources src/charconv-fast_float.cpp)
 endif()
 
-target_sources(mxml
+target_sources(zeem
 	PRIVATE ${sources}
 	PUBLIC
 	FILE_SET public_modules TYPE HEADERS
 	BASE_DIRS
 	${CMAKE_CURRENT_SOURCE_DIR}/include
 	FILES
-	include/mxml.hpp
-	include/mxml/config.hpp
-	include/mxml/detail/charconv.hpp
-	include/mxml/doctype.hpp
-	include/mxml/document.hpp
-	include/mxml/error.hpp
-	include/mxml/node.hpp
-	include/mxml/parser.hpp
-	include/mxml/serialize.hpp
-	include/mxml/text.hpp
-	include/mxml/version.hpp
-	include/mxml/xpath.hpp
+	include/zeem.hpp
+	include/zeem/config.hpp
+	include/zeem/detail/charconv.hpp
+	include/zeem/doctype.hpp
+	include/zeem/document.hpp
+	include/zeem/error.hpp
+	include/zeem/node.hpp
+	include/zeem/parser.hpp
+	include/zeem/serialize.hpp
+	include/zeem/text.hpp
+	include/zeem/version.hpp
+	include/zeem/xpath.hpp
 )
 
-target_compile_features(mxml PUBLIC cxx_std_20)
+target_compile_features(zeem PUBLIC cxx_std_20)
 
 if(NOT STD_CHARCONV_COMPILING)
-	target_include_directories(mxml PRIVATE $<TARGET_PROPERTY:FastFloat::fast_float,INTERFACE_INCLUDE_DIRECTORIES>)
+	target_include_directories(zeem PRIVATE $<TARGET_PROPERTY:FastFloat::fast_float,INTERFACE_INCLUDE_DIRECTORIES>)
 endif()
 
 if(NOT USE_STD_CHRONO_FROM_STREAM)
-	target_link_libraries(mxml PUBLIC date::date)
-	target_compile_definitions(mxml PUBLIC USE_DATE_H=1)
+	target_link_libraries(zeem PUBLIC date::date)
+	target_compile_definitions(zeem PUBLIC USE_DATE_H=1)
 	set(FIND_DEPENDENCIES "find_dependency(date REQUIRED)")
 endif()
 
-target_compile_definitions(mxml PUBLIC $<$<BOOL:MSVC>:NOMINMAX=1>)
+target_compile_definitions(zeem PUBLIC $<$<BOOL:MSVC>:NOMINMAX=1>)
 
 set(CMAKE_DEBUG_POSTFIX d)
-set_target_properties(mxml PROPERTIES DEBUG_POSTFIX "d")
+set_target_properties(zeem PROPERTIES DEBUG_POSTFIX "d")
 
-set(mxml_MAJOR_VERSION ${PROJECT_VERSION_MAJOR})
-set_target_properties(mxml PROPERTIES
+set(zeem_MAJOR_VERSION ${PROJECT_VERSION_MAJOR})
+set_target_properties(zeem PROPERTIES
 	VERSION ${PROJECT_VERSION}
 	SOVERSION ${PROJECT_VERSION_MAJOR}
-	INTERFACE_mxml_MAJOR_VERSION ${PROJECT_VERSION_MAJOR}
-	COMPATIBLE_INTERFACE_STRING mxml_MAJOR_VERSION
+	INTERFACE_zeem_MAJOR_VERSION ${PROJECT_VERSION_MAJOR}
+	COMPATIBLE_INTERFACE_STRING zeem_MAJOR_VERSION
 )
 
-install(TARGETS mxml
-	EXPORT mxml
+install(TARGETS zeem
+	EXPORT zeem
 	FILE_SET public_modules DESTINATION include)
 
-install(EXPORT mxml
-	NAMESPACE mxml::
-	DESTINATION lib/cmake/mxml
-	FILE mxml-targets.cmake)
+install(EXPORT zeem
+	NAMESPACE zeem::
+	DESTINATION lib/cmake/zeem
+	FILE zeem-targets.cmake)
 
 configure_package_config_file(
-	${PROJECT_SOURCE_DIR}/cmake/mxml-config.cmake.in
-	${CMAKE_CURRENT_BINARY_DIR}/mxml-config.cmake
-	INSTALL_DESTINATION lib/cmake/mxml)
+	${PROJECT_SOURCE_DIR}/cmake/zeem-config.cmake.in
+	${CMAKE_CURRENT_BINARY_DIR}/zeem-config.cmake
+	INSTALL_DESTINATION lib/cmake/zeem)
 
 write_basic_package_version_file(
-	"${CMAKE_CURRENT_BINARY_DIR}/mxml-config-version.cmake"
+	"${CMAKE_CURRENT_BINARY_DIR}/zeem-config-version.cmake"
 	COMPATIBILITY AnyNewerVersion
 )
 
 install(FILES
-	${CMAKE_CURRENT_BINARY_DIR}/mxml-config.cmake
-	${CMAKE_CURRENT_BINARY_DIR}/mxml-config-version.cmake
-	DESTINATION lib/cmake/mxml)
+	${CMAKE_CURRENT_BINARY_DIR}/zeem-config.cmake
+	${CMAKE_CURRENT_BINARY_DIR}/zeem-config-version.cmake
+	DESTINATION lib/cmake/zeem)
 
 if(BUILD_TESTING AND PROJECT_IS_TOP_LEVEL)
 	add_subdirectory(test)
 endif()
 
-if(MXML_BUILD_EXAMPLES)
+if(ZEEM_BUILD_EXAMPLES)
 	add_subdirectory(examples)
 endif()
 
-if(MXML_BUILD_DOCUMENTATION)
+if(ZEEM_BUILD_DOCUMENTATION)
 	add_subdirectory(docs)
 endif()

@@ -26,33 +26,16 @@
 
 #pragma once
 
-/**
- * \file
- * definition of the mxml::exception class
- */
+/** @file 
+ * Main module definition for zeem.
+*/
 
-#include <exception>
-#include <string>
-
-namespace mxml
-{
-
-/// \brief base class of the exceptions thrown by mxml
-class exception : public std::exception
-{
-  public:
-	/// \brief Create an exception with the message in \a message
-	exception(std::string message)
-		: m_message(std::move(message))
-	{
-	}
-
-	virtual ~exception() noexcept {}
-
-	virtual const char *what() const noexcept override { return m_message.c_str(); }
-
-  protected:
-	std::string m_message;
-};
-
-} // namespace mxml
+#include "zeem/doctype.hpp"
+#include "zeem/document.hpp"
+#include "zeem/error.hpp"
+#include "zeem/node.hpp"
+#include "zeem/parser.hpp"
+#include "zeem/serialize.hpp"
+#include "zeem/text.hpp"
+#include "zeem/version.hpp"
+#include "zeem/xpath.hpp"

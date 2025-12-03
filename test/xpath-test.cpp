@@ -3,8 +3,8 @@
 #include <fstream>
 #include <filesystem>
 
-#include "mxml.hpp"
-// #include "mxml.ixx"
+#include "zeem.hpp"
+// #include "zeem.ixx"
 
 using namespace std;
 
@@ -12,14 +12,14 @@ namespace fs = std::filesystem;
 
 int VERBOSE;
 
-ostream& operator<<(ostream& os, const mxml::node& n)
+ostream& operator<<(ostream& os, const zeem::node& n)
 {
 	n.write(os , {});
 	return os;
 }
 
 
-bool run_test(const mxml::element& test)
+bool run_test(const zeem::element& test)
 {
 	if (VERBOSE)
 	{
@@ -34,28 +34,28 @@ bool run_test(const mxml::element& test)
 
 	fs::path data_file = fs::current_path() / test.get_attribute("data");
 	if (not fs::exists(data_file))
-		throw mxml::exception("file does not exist");
+		throw zeem::exception("file does not exist");
 	
 	std::ifstream file(data_file, ios::binary);
 
-	mxml::document doc;
+	zeem::document doc;
 	file >> doc;
 	
 	if (VERBOSE)
 		cout << "test doc:" << endl << doc << endl;
 	
-	mxml::xpath xp(test.get_attribute("xpath"));
+	zeem::xpath xp(test.get_attribute("xpath"));
 
-	mxml::context context;
-	for (const mxml::element* e: test.find("var"))
+	zeem::context context;
+	for (const zeem::element* e: test.find("var"))
 		context.set(e->get_attribute("name"), e->get_attribute("value"));
 	
-	auto ns = xp.evaluate<mxml::node>(*doc.root(), context);
+	auto ns = xp.evaluate<zeem::node>(*doc.root(), context);
 
 	if (VERBOSE)
 	{
 		int nr = 1;
-		for (const mxml::node* n: ns)
+		for (const zeem::node* n: ns)
 			cout << nr++ << ">> " << *n << endl;
 	}
 	
@@ -77,9 +77,9 @@ bool run_test(const mxml::element& test)
 		if (VERBOSE)
 			cout << "testing attribute " << test_attr_name << " for " << attr_test << endl;
 		
-		for (const mxml::node* n: ns)
+		for (const zeem::node* n: ns)
 		{
-			const mxml::element* e = dynamic_cast<const mxml::element*>(n);
+			const zeem::element* e = dynamic_cast<const zeem::element*>(n);
 			if (e == NULL)
 				continue;
 			
@@ -100,7 +100,7 @@ bool run_test(const mxml::element& test)
 			cout << "Test failed" << endl;
 			
 			int nr = 1;
-			for (const mxml::node* n: ns)
+			for (const zeem::node* n: ns)
 				cout << nr++ << ") " << *n << endl;
 		}
 	}
@@ -111,11 +111,11 @@ bool run_test(const mxml::element& test)
 void run_tests(const fs::path& file)
 {
 	if (not fs::exists(file))
-		throw mxml::exception("test file does not exist");
+		throw zeem::exception("test file does not exist");
 	
 	std::ifstream input(file, ios::binary);
 
-	mxml::document doc;
+	zeem::document doc;
 	input >> doc;
 
 	fs::path dir = fs::absolute(file).parent_path().parent_path();
@@ -128,7 +128,7 @@ void run_tests(const fs::path& file)
 	
 	int nr_of_tests = 0, failed_nr_of_tests = 0;
 	
-	for (const mxml::element* test: doc.find("//xpath-test"))
+	for (const zeem::element* test: doc.find("//xpath-test"))
 	{
 		++nr_of_tests;
 		if (run_test(*test) == false)

@@ -1,4 +1,4 @@
-project = 'mxml-doc'
+project = 'zeem-doc'
 copyright = '2024, Maarten L. Hekkelman'
 author = 'Maarten L. Hekkelman'
 release = '@PROJECT_VERSION@'
@@ -12,11 +12,11 @@ extensions = [
 ]
 
 breathe_projects = {
-	"mxml": "../build/docs/xml"
+	"zeem": "../build/docs/xml"
 }
 
 myst_enable_extensions = [ "colon_fence" ]
-breathe_default_project = "mxml"
+breathe_default_project = "zeem"
 
 # Setup the exhale extension
 exhale_args = {
@@ -61,7 +61,7 @@ html_theme_options = {
 }
 
 cpp_index_common_prefix = [
-	'mxml::',
+	'zeem::',
 ]
 
 

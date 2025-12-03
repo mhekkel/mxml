@@ -15,8 +15,8 @@
 
 #include <mcfp/mcfp.hpp>
 
-#include "mxml.hpp"
-// #include "mxml.ixx"
+#include "zeem.hpp"
+// #include "zeem.ixx"
 
 namespace fs = std::filesystem;
 
@@ -28,7 +28,7 @@ bool run_valid_test(std::istream &is, fs::path &outfile)
 {
 	bool result = true;
 
-	mxml::document indoc;
+	zeem::document indoc;
 	is >> indoc;
 
 	std::stringstream s;
@@ -39,7 +39,7 @@ bool run_valid_test(std::istream &is, fs::path &outfile)
 	s << indoc;
 
 	std::string s1 = s.str();
-	mxml::trim(s1);
+	zeem::trim(s1);
 
 	if (TRACE)
 		std::cout << s1 << '\n';
@@ -55,7 +55,7 @@ bool run_valid_test(std::istream &is, fs::path &outfile)
 			getline(out, line);
 			s2 += line + "\n";
 		}
-		mxml::trim(s2);
+		zeem::trim(s2);
 
 		if (s1 != s2)
 		{
@@ -67,7 +67,7 @@ bool run_valid_test(std::istream &is, fs::path &outfile)
 			   << s2 << '\n'
 			   << '\n';
 
-			throw mxml::exception(ss.str());
+			throw zeem::exception(ss.str());
 		}
 	}
 	else
@@ -76,7 +76,7 @@ bool run_valid_test(std::istream &is, fs::path &outfile)
 	return result;
 }
 
-void dump(mxml::element &e, int level = 0)
+void dump(zeem::element &e, int level = 0)
 {
 	std::cout << level << "> " << e.get_qname() << '\n';
 	for (auto &[name, ign] : e.attributes())
@@ -85,7 +85,7 @@ void dump(mxml::element &e, int level = 0)
 		dump(c, level + 1);
 }
 
-bool run_test(const mxml::element &test, fs::path base_dir)
+bool run_test(const zeem::element &test, fs::path base_dir)
 {
 	bool result = true;
 
@@ -112,7 +112,7 @@ bool run_test(const mxml::element &test, fs::path base_dir)
 
 	std::ifstream is(input, std::ios::binary);
 	if (not is.is_open())
-		throw mxml::exception("test file not open");
+		throw zeem::exception("test file not open");
 
 	std::string error;
 
@@ -127,31 +127,31 @@ bool run_test(const mxml::element &test, fs::path base_dir)
 			bool failed = false;
 			try
 			{
-				mxml::document doc;
+				zeem::document doc;
 				doc.set_validating(test.get_attribute("TYPE") == "invalid");
 				doc.set_validating_ns(test.get_attribute("RECOMMENDATION") == "NS1.0");
 				is >> doc;
 				++should_have_failed;
 				result = false;
 			}
-			catch (mxml::not_wf_exception &e)
+			catch (zeem::not_wf_exception &e)
 			{
 				if (test.get_attribute("TYPE") != "not-wf")
 				{
 					++wrong_exception;
-					throw mxml::exception(std::string("Wrong exception (should have been invalid):\n\t") + e.what());
+					throw zeem::exception(std::string("Wrong exception (should have been invalid):\n\t") + e.what());
 				}
 
 				failed = true;
 				if (VERBOSE > 1)
 					std::cout << e.what() << '\n';
 			}
-			catch (mxml::invalid_exception &e)
+			catch (zeem::invalid_exception &e)
 			{
 				if (test.get_attribute("TYPE") != "invalid")
 				{
 					++wrong_exception;
-					throw mxml::exception(std::string("Wrong exception (should have been not-wf):\n\t") + e.what());
+					throw zeem::exception(std::string("Wrong exception (should have been not-wf):\n\t") + e.what());
 				}
 
 				failed = true;
@@ -160,18 +160,18 @@ bool run_test(const mxml::element &test, fs::path base_dir)
 			}
 			catch (std::exception &e)
 			{
-				throw mxml::exception(std::string("Wrong exception:\n\t") + e.what());
+				throw zeem::exception(std::string("Wrong exception:\n\t") + e.what());
 			}
 
 			if (VERBOSE and not failed)
-				throw mxml::exception("invalid document, should have failed");
+				throw zeem::exception("invalid document, should have failed");
 		}
 		else
 		{
 			bool failed = false;
 			try
 			{
-				mxml::document doc;
+				zeem::document doc;
 				is >> doc;
 				++should_have_failed;
 				result = false;
@@ -187,9 +187,9 @@ bool run_test(const mxml::element &test, fs::path base_dir)
 			if (VERBOSE and not failed)
 			{
 				if (test.get_attribute("TYPE") == "not-wf")
-					throw mxml::exception("document should have been not well formed");
+					throw zeem::exception("document should have been not well formed");
 				else // or test.attr("TYPE") == "error"
-					throw mxml::exception("document should have been invalid");
+					throw zeem::exception("document should have been invalid");
 			}
 		}
 	}
@@ -217,7 +217,7 @@ bool run_test(const mxml::element &test, fs::path base_dir)
 			std::string line;
 			getline(s, line);
 
-			mxml::trim(line);
+			zeem::trim(line);
 
 			if (line.empty())
 			{
@@ -239,7 +239,7 @@ bool run_test(const mxml::element &test, fs::path base_dir)
 				std::string line;
 				getline(iss, line);
 
-				mxml::trim(line);
+				zeem::trim(line);
 
 				if (line.empty() and iss.eof())
 					break;
@@ -256,7 +256,7 @@ bool run_test(const mxml::element &test, fs::path base_dir)
 	return result;
 }
 
-void run_test_case(const mxml::element &testcase, const std::string &id, const std::set<std::string> &skip,
+void run_test_case(const zeem::element &testcase, const std::string &id, const std::set<std::string> &skip,
 	const std::string &type, int edition, fs::path base_dir, std::vector<std::string> &failed_ids)
 {
 	if (VERBOSE > 1 and id.empty())
@@ -278,7 +278,7 @@ void run_test_case(const mxml::element &testcase, const std::string &id, const s
 
 	std::regex ws_re(" "); // whitespace
 
-	for (const mxml::element *n : mxml::xpath(path).evaluate<mxml::element>(testcase))
+	for (const zeem::element *n : zeem::xpath(path).evaluate<zeem::element>(testcase))
 	{
 		auto testID = n->get_attribute("ID");
 		if (skip.count(testID))
@@ -327,7 +327,7 @@ void test_testcases(const fs::path &testFile, const std::string &id, const std::
 	fs::path base_dir = fs::weakly_canonical(testFile.parent_path());
 	fs::current_path(base_dir);
 
-	mxml::document doc(file);
+	zeem::document doc(file);
 
 	VERBOSE = saved_verbose;
 	TRACE = saved_trace;
@@ -388,7 +388,7 @@ int main(int argc, char *argv[])
 
 			std::ifstream file(path, std::ios::binary);
 			if (not file.is_open())
-				throw mxml::exception("could not open file");
+				throw zeem::exception("could not open file");
 
 			fs::path dir(path.parent_path());
 			fs::current_path(dir);
@@ -401,12 +401,12 @@ int main(int argc, char *argv[])
 
 			std::ifstream file(path, std::ios::binary);
 			if (not file.is_open())
-				throw mxml::exception("could not open file");
+				throw zeem::exception("could not open file");
 
 			fs::path dir(path.parent_path());
 			fs::current_path(dir);
 
-			mxml::document doc;
+			zeem::document doc;
 			file >> doc;
 			dump(doc.front());
 		}

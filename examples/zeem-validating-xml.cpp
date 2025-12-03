@@ -7,7 +7,7 @@
 #include <fstream>
 #include <iostream>
 
-#include "mxml.hpp"
+#include "zeem.hpp"
 
 namespace fs = std::filesystem;
 
@@ -24,14 +24,14 @@ int main()
 	};
 
 	/* Create document and set the entity loader */
-	mxml::document doc;
+	zeem::document doc;
 	doc.set_entity_loader(loader);
 
 	/* Read a file */
 	std::ifstream is("sample.xml");
 	is >> doc;
 
-	using namespace mxml::literals;
+	using namespace zeem::literals;
 
 	/* Compare the doc with an in-memory constructed document, note that spaces are ignored */
 	if (doc == R"(<foo><bar>Hello, world!</bar></foo>)"_xml)

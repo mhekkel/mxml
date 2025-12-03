@@ -24,8 +24,8 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "mxml/document.hpp"
-#include "mxml/error.hpp"
+#include "zeem/document.hpp"
+#include "zeem/error.hpp"
 
 #include "revision.hpp"
 
@@ -35,7 +35,7 @@
 #include <istream>
 #include <memory>
 
-namespace mxml
+namespace zeem
 {
 
 // --------------------------------------------------------------------
@@ -458,7 +458,7 @@ namespace literals
 
 	document operator""_xml(const char *text, size_t length)
 	{
-		mxml::document doc;
+		zeem::document doc;
 		doc.set_preserve_cdata(true);
 
 		struct membuf : public std::streambuf
@@ -477,4 +477,4 @@ namespace literals
 
 } // namespace literals
 
-} // namespace mxml
+} // namespace zeem

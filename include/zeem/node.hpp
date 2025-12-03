@@ -27,10 +27,10 @@
 #pragma once
 
 /// \file
-/// the core of the mxml XML library defining the main classes in the DOM API
+/// the core of the zeem XML library defining the main classes in the DOM API
 
-#include "mxml/error.hpp"
-#include "mxml/version.hpp"
+#include "zeem/error.hpp"
+#include "zeem/version.hpp"
 
 #include <algorithm>
 #include <cassert>
@@ -41,7 +41,7 @@
 #include <utility>
 #include <vector>
 
-namespace mxml
+namespace zeem
 {
 
 // forward declarations
@@ -61,7 +61,7 @@ using node_set = std::vector<node *>;
 using element_set = std::vector<element *>;
 
 template <typename T>
-concept NodeType = std::is_base_of_v<mxml::node, std::remove_cvref_t<T>>;
+concept NodeType = std::is_base_of_v<zeem::node, std::remove_cvref_t<T>>;
 
 /**
  * @brief An enum used as a poor mans RTTI, i.e. you can use this type
@@ -213,7 +213,7 @@ class node
 
 	/// \brief low level routine for writing out XML
 	///
-	/// This method is usually called by operator<<(std::ostream&, mxml::document&)
+	/// This method is usually called by operator<<(std::ostream&, zeem::document&)
 	virtual void write(std::ostream &os, format_info fmt) const = 0;
 
   protected:
@@ -803,14 +803,14 @@ class element_container : public node, public node_list<element>
 	/// \brief return the elements that match XPath \a path.
 	///
 	/// If you need to find other classes than xml::element, of if your XPath
-	/// contains variables, you should create a mxml::xpath object and use
+	/// contains variables, you should create a zeem::xpath object and use
 	/// its evaluate method.
 	element_set find(std::string_view path) const;
 
 	/// \brief return the first element that matches XPath \a path.
 	///
 	/// If you need to find other classes than xml::element, of if your XPath
-	/// contains variables, you should create a mxml::xpath object and use
+	/// contains variables, you should create a zeem::xpath object and use
 	/// its evaluate method.
 	iterator find_first(std::string_view path);
 	const_iterator find_first(std::string_view path) const;
@@ -1332,7 +1332,7 @@ class attribute_set : public node_list<attribute>
 /**
  * @brief the element class modelling a XML element
  * 
- * element is the most important mxml::node object. It encapsulates a
+ * element is the most important zeem::node object. It encapsulates a
  * XML element as found in the XML document. It has a qname, can have children,
  * attributes and a namespace.
  */
@@ -1458,7 +1458,7 @@ class element final : public element_container
 	friend std::ostream &operator<<(std::ostream &os, const element &e);
 	// 	friend class document;
 
-	/// \brief return the concatenation of the content of all enclosed mxml::text nodes
+	/// \brief return the concatenation of the content of all enclosed zeem::text nodes
 	std::string get_content() const;
 
 	/// \brief replace all existing child text nodes with a new single text node containing \a content
@@ -1596,7 +1596,7 @@ void node_list<T>::sort(Pred &&pred)
 
 void fix_namespaces(element &e, const element &source, const element &dest);
 
-} // namespace mxml
+} // namespace zeem
 
 // --------------------------------------------------------------------
 // structured binding support
@@ -1606,21 +1606,21 @@ namespace std
 {
 
 template <>
-struct tuple_size<::mxml::attribute>
+struct tuple_size<::zeem::attribute>
 	: public std::integral_constant<std::size_t, 2>
 {
 };
 
 template <>
-struct tuple_element<0, ::mxml::attribute>
+struct tuple_element<0, ::zeem::attribute>
 {
-	using type = decltype(std::declval<::mxml::attribute>().name());
+	using type = decltype(std::declval<::zeem::attribute>().name());
 };
 
 template <>
-struct tuple_element<1, ::mxml::attribute>
+struct tuple_element<1, ::zeem::attribute>
 {
-	using type = decltype(std::declval<::mxml::attribute>().value());
+	using type = decltype(std::declval<::zeem::attribute>().value());
 };
 
 /** @endcond */

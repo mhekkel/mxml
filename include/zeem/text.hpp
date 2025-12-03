@@ -33,7 +33,7 @@
 
 #include <string>
 
-namespace mxml
+namespace zeem
 {
 
 /// some character classification routines
@@ -47,7 +47,7 @@ bool is_valid_system_literal(std::string_view s); ///< is the character a 'valid
 bool is_valid_public_id_char(char32_t uc);        ///< is the character a 'valid_public_id_char'?
 bool is_valid_public_id(std::string_view s);      ///< is the character a 'valid_public_id'?
 
-/// \brief the (admittedly limited) set of supported text encodings in libmxml
+/// \brief the (admittedly limited) set of supported text encodings in libzeem
 ///
 /// these are the supported encodings. Perhaps we should extend this list a bit?
 enum class encoding_type
@@ -73,4 +73,4 @@ char32_t pop_front_char(std::string_view::const_iterator &ptr, std::string_view:
 /// \brief A simple implementation of trim, removing white space from start and end of \a s
 void trim(std::string &s);
 
-} // namespace mxml
+} // namespace zeem

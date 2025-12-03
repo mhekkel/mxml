@@ -5,26 +5,26 @@
 
 #include <iostream>
 
-#include "mxml.hpp"
+#include "zeem.hpp"
 
 //[ xpath_sample
 int main()
 {
-    using namespace mxml::literals;
+    using namespace zeem::literals;
 
-    auto doc = R"(<bar xmlns:z="https://www.hekkelman.com/mxml">
+    auto doc = R"(<bar xmlns:z="https://www.hekkelman.com/zeem">
         <z:foo>foei</z:foo>
     </bar>)"_xml;
 
     /* Create an xpath context and store our variable */
-    mxml::context ctx;
-    ctx.set("ns", "https://www.hekkelman.com/mxml");
+    zeem::context ctx;
+    ctx.set("ns", "https://www.hekkelman.com/zeem");
 
     /* Create an xpath object with the specified XPath using the variable `ns` */
-    auto xp = mxml::xpath("//*[namespace-uri() = $ns]");
+    auto xp = zeem::xpath("//*[namespace-uri() = $ns]");
 
-    /* Iterate over the result of the evaluation of this XPath, the result will consist of mxml::element object pointers */
-    for (auto n: xp.evaluate<mxml::element>(doc, ctx))
+    /* Iterate over the result of the evaluation of this XPath, the result will consist of zeem::element object pointers */
+    for (auto n: xp.evaluate<zeem::element>(doc, ctx))
         std::cout << n->str() << '\n';
 
     return 0;

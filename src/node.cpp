@@ -24,9 +24,9 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "mxml/node.hpp"
-#include "mxml/text.hpp"
-#include "mxml/xpath.hpp"
+#include "zeem/node.hpp"
+#include "zeem/text.hpp"
+#include "zeem/xpath.hpp"
 
 #include <cassert>
 #include <map>
@@ -35,7 +35,7 @@
 #include <string>
 #include <ostream>
 
-namespace mxml
+namespace zeem
 {
 
 const std::set<std::string> kEmptyHTMLElements{
@@ -920,4 +920,4 @@ void fix_namespaces(element &e, const element &source, const element &dest)
 	}
 }
 
-} // namespace mxml
+} // namespace zeem

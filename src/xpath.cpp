@@ -24,11 +24,11 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "mxml/xpath.hpp"
-#include "mxml/error.hpp"
-#include "mxml/node.hpp"
-#include "mxml/serialize.hpp"
-#include "mxml/text.hpp"
+#include "zeem/xpath.hpp"
+#include "zeem/error.hpp"
+#include "zeem/node.hpp"
+#include "zeem/serialize.hpp"
+#include "zeem/text.hpp"
 
 #include <algorithm>
 #include <charconv>
@@ -41,7 +41,7 @@
 #include <string>
 #include <vector>
 
-namespace mxml
+namespace zeem
 {
 
 // --------------------------------------------------------------------
@@ -2592,4 +2592,4 @@ bool xpath::matches(const node *n, const context &ctxt) const
 	return result;
 }
 
-} // namespace mxml
+} // namespace zeem

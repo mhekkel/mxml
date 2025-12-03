@@ -24,9 +24,9 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "mxml/doctype.hpp"
-#include "mxml/error.hpp"
-#include "mxml/text.hpp"
+#include "zeem/doctype.hpp"
+#include "zeem/error.hpp"
+#include "zeem/text.hpp"
 
 #include <algorithm>
 #include <cassert>
@@ -34,7 +34,7 @@
 #include <memory>
 #include <vector>
 
-namespace mxml::doctype
+namespace zeem::doctype
 {
 
 // --------------------------------------------------------------------
@@ -794,4 +794,4 @@ const attribute_ptr element::get_attribute(std::string_view name) const
 	return result;
 }
 
-} // namespace mxml::doctype
+} // namespace zeem::doctype

@@ -14,7 +14,7 @@
 # include <type_traits>
 #endif
 
-namespace mxml
+namespace zeem
 {
 
 namespace detail
@@ -111,4 +111,4 @@ constexpr auto from_chars(const char *s, const char *e, T &v)
 	return charconv<T>::from_chars(s, e, v);
 }
 
-} // namespace mxml::detail
+} // namespace zeem::detail

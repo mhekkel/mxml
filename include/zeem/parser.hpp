@@ -28,18 +28,18 @@
 
 /**
  * \file
- * definition of the mxml XML parser, a recursive descent parser
+ * definition of the zeem XML parser, a recursive descent parser
  */
 
-#include "mxml/error.hpp"
-#include "mxml/text.hpp"
-#include "mxml/version.hpp"
+#include "zeem/error.hpp"
+#include "zeem/text.hpp"
+#include "zeem/version.hpp"
 
 #include <functional>
 #include <istream>
 #include <string>
 
-namespace mxml
+namespace zeem
 {
 
 /// If an invalid_exception is thrown, it means the XML document is not valid: it does
@@ -77,7 +77,7 @@ class not_wf_exception : public exception
 /**
  * @brief A SAX parser
  *
- * mxml::parser is a SAX parser. After construction, you should assign
+ * zeem::parser is a SAX parser. After construction, you should assign
  * call back handlers for the SAX events and then call parse().
  */
 
@@ -167,4 +167,4 @@ class parser
 	/** @endcond */
 };
 
-} // namespace mxml
+} // namespace zeem

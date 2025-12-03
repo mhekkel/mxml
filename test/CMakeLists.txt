@@ -31,40 +31,40 @@ add_custom_target(XML_CONF ALL DEPENDS ${XML_CONF_FILE})
 
 # add_test(NAME unit-test-1
 # COMMAND $<TARGET_FILE:unit-test-1> --data-dir ${CMAKE_CURRENT_SOURCE_DIR})
-list(APPEND MXML_TESTS
+list(APPEND ZEEM_TESTS
 	unit
 	parser
 	serializer
 	xpath)
 
-foreach(TEST IN LISTS MXML_TESTS)
-	set(MXML_TEST "${TEST}-test")
-	set(MXML_TEST_SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/${MXML_TEST}.cpp")
+foreach(TEST IN LISTS ZEEM_TESTS)
+	set(ZEEM_TEST "${TEST}-test")
+	set(ZEEM_TEST_SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/${ZEEM_TEST}.cpp")
 
-	add_executable(${MXML_TEST} ${MXML_TEST_SOURCE})
+	add_executable(${ZEEM_TEST} ${ZEEM_TEST_SOURCE})
 
-	target_link_libraries(${MXML_TEST} PRIVATE mcfp::mcfp mxml::mxml Catch2::Catch2)
+	target_link_libraries(${ZEEM_TEST} PRIVATE mcfp::mcfp zeem::zeem Catch2::Catch2)
 
-	target_compile_definitions(${MXML_TEST} PUBLIC CATCH22=1)
+	target_compile_definitions(${ZEEM_TEST} PUBLIC CATCH22=1)
 
 	if(MSVC)
 		# Specify unwind semantics so that MSVC knowns how to handle exceptions
-		target_compile_options(${MXML_TEST} PRIVATE /EHsc)
+		target_compile_options(${ZEEM_TEST} PRIVATE /EHsc)
 	endif()
 
 	if("${TEST}" STREQUAL "parser")
 		# Some tests should be skipped
-		list(APPEND MXML_TEST_ARGS
+		list(APPEND ZEEM_TEST_ARGS
 			ibm-valid-P28-ibm28v02.xml ibm-valid-P29-ibm29v01.xml ibm-valid-P29-ibm29v02.xml
 			ibm-1-1-valid-P03-ibm03v09.xml rmt-e2e-34 rmt-e2e-55 rmt-054 rmt-ns10-006 rmt-e3e-13)
-		list(TRANSFORM MXML_TEST_ARGS PREPEND "--questionable=")
-		list(PREPEND MXML_TEST_ARGS ${XML_CONF_FILE} "--print-ids")
-		add_dependencies(${MXML_TEST} XML_CONF)
+		list(TRANSFORM ZEEM_TEST_ARGS PREPEND "--questionable=")
+		list(PREPEND ZEEM_TEST_ARGS ${XML_CONF_FILE} "--print-ids")
+		add_dependencies(${ZEEM_TEST} XML_CONF)
 	else()
-		set(MXML_TEST_ARGS "")
+		set(ZEEM_TEST_ARGS "")
 	endif()
 
-	add_test(NAME ${MXML_TEST}
-		COMMAND $<TARGET_FILE:${MXML_TEST}> ${MXML_TEST_ARGS}
+	add_test(NAME ${ZEEM_TEST}
+		COMMAND $<TARGET_FILE:${ZEEM_TEST}> ${ZEEM_TEST_ARGS}
 		WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/)
 endforeach()

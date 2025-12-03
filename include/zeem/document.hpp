@@ -28,18 +28,18 @@
 
 /**
  * \file
- * definition of the mxml::document class
+ * definition of the zeem::document class
  */
 
-#include "mxml/node.hpp"
-#include "mxml/parser.hpp"
-#include "mxml/version.hpp"
-#include "mxml/text.hpp"
+#include "zeem/node.hpp"
+#include "zeem/parser.hpp"
+#include "zeem/version.hpp"
+#include "zeem/text.hpp"
 
 #include <functional>
 #include <string>
 
-namespace mxml
+namespace zeem
 {
 
 /**
@@ -54,7 +54,7 @@ struct doc_type
 };
 
 /**
- * mxml::document is the class that contains a parsed XML file.
+ * zeem::document is the class that contains a parsed XML file.
  * You can create an empty document and add nodes to it, or you can
  * create it by parsing a string or an std::istream containing XML.
  *
@@ -62,7 +62,7 @@ struct doc_type
  * ios::binary. Otherwise, the detection of text encoding might go wrong
  * or the content can become corrupted.
  *
- * Default is to parse CDATA sections into mxml::text nodes. If you
+ * Default is to parse CDATA sections into zeem::text nodes. If you
  * want to preserve CDATA sections in the DOM tree, you have to call
  * set_preserve_cdata before reading the file.
  *
@@ -71,8 +71,8 @@ struct doc_type
  * set_validating explicitly. The DTD's will be loaded from the base dir
  * specified, but you can change this by assigning a external_entity_ref_handler.
  *
- * A document can have only one mxml::element child node even though it is
- * derived from mxml::element_container. The document object itself is the
+ * A document can have only one zeem::element child node even though it is
+ * derived from zeem::element_container. The document object itself is the
  * so-called root-node.
  */
 
@@ -215,7 +215,7 @@ class document final : public element_container
 	/**
 	 * @brief Set a callback for loading external entities
 	 *
-	 * The default for MXML is to locate the external reference based
+	 * The default for ZEEM is to locate the external reference based
 	 * on sysid and base_dir. Only local files are loaded this way.
 	 *
 	 * You can specify a entity loader here if you want to be able to load
@@ -321,12 +321,12 @@ namespace literals
 	 * documents from strings. As in this example:
 	 *
 	 * @code{.cpp}
-	 * using namespace mxml::literals;
+	 * using namespace zeem::literals;
 	 *
-	 * mxml::document doc = "<text>Hello, world!</text>"_xml;"
+	 * zeem::document doc = "<text>Hello, world!</text>"_xml;"
 	 * @endcode
 	 */
 	document operator""_xml(const char *text, size_t length);
 } // namespace literals
 
-} // namespace mxml
+} // namespace zeem

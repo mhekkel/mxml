@@ -24,13 +24,13 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "mxml/doctype.hpp"
+#include "zeem/doctype.hpp"
 
 #include <map>
 #include <mutex>
 #include <string>
 
-namespace mxml::doctype
+namespace zeem::doctype
 {
 
 struct html5_named_character
@@ -2214,4 +2214,4 @@ const general_entity *get_named_character(std::string_view name)
 	return named_character_table::instance().get(std::string{ name });
 }
 
-} // namespace mxml::doctype
+} // namespace zeem::doctype

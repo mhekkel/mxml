@@ -28,16 +28,16 @@
 
 /**
  * \file
- * definition of the mxml::xpath class, implementing a XPath 1.0 compatible search facility
+ * definition of the zeem::xpath class, implementing a XPath 1.0 compatible search facility
  */
 
-#include "mxml/node.hpp"
+#include "zeem/node.hpp"
 
 #include <memory>
 #include <string>
 #include <vector>
 
-namespace mxml
+namespace zeem
 {
 
 // --------------------------------------------------------------------
@@ -131,7 +131,7 @@ class xpath final
 
 	/**
 	 * @brief Evaluate an XPath and return a node_set. If you're only interested
-	 * in mxml::element results, you should call the evaluate<element>()
+	 * in zeem::element results, you should call the evaluate<element>()
 	 * instantiation.
 	 * Use @a ctxt to provide values for variables.
 	 */
@@ -149,4 +149,4 @@ class xpath final
 	std::shared_ptr<class expression> m_impl;
 };
 
-} // namespace mxml
+} // namespace zeem

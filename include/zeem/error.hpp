@@ -1,17 +1,17 @@
 /*-
  * SPDX-License-Identifier: BSD-2-Clause
- * 
+ *
  * Copyright (c) 2024 Maarten L. Hekkelman
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- * 
+ *
  * 1. Redistributions of source code must retain the above copyright notice, this
  *    list of conditions and the following disclaimer
  * 2. Redistributions in binary form must reproduce the above copyright notice,
  *    this list of conditions and the following disclaimer in the documentation
  *    and/or other materials provided with the distribution.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
  * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -24,43 +24,35 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-//[ synopsis_xml_main
-#include "mxml.hpp"
+#pragma once
 
-#include <iostream>
+/**
+ * \file
+ * definition of the zeem::exception class
+ */
 
-int main()
+#include <exception>
+#include <string>
+
+namespace zeem
 {
-    using namespace mxml::literals; 
 
-    /* Construct an XML document in memory using a string literal */
-    auto doc = 
-        R"(<persons>
-            <person id="1">
-                <firstname>John</firstname>
-                <lastname>Doe</lastname>
-            </person>
-            <person id="2">
-                <firstname>Jane</firstname>
-                <lastname>Jones</lastname>
-            </person>
-        </persons>)"_xml;
+/// \brief base class of the exceptions thrown by zeem
+class exception : public std::exception
+{
+  public:
+	/// \brief Create an exception with the message in \a message
+	exception(std::string message)
+		: m_message(std::move(message))
+	{
+	}
 
-    /* Iterate over an XPath result set */
-    for (auto person: doc.find("//person")) 
-    {
-        std::string firstname, lastname;
+	virtual ~exception() noexcept {}
 
-        /* Iterate over the __element__ nodes inside the person __element__ */
-        for (auto name: *person)
-        {
-            if (name.name() == "firstname")	firstname = name.str();
-            if (name.name() == "lastname")	lastname = name.str();
-        }
+	virtual const char *what() const noexcept override { return m_message.c_str(); }
 
-        std::cout << person->get_attribute("id") << ": " << lastname << ", " << firstname << '\n';
-    }
+  protected:
+	std::string m_message;
+};
 
-    return 0;
-}
-//]
+} // namespace zeem

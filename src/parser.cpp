@@ -24,9 +24,9 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "mxml/parser.hpp"
-#include "mxml/doctype.hpp"
-#include "mxml/text.hpp"
+#include "zeem/parser.hpp"
+#include "zeem/doctype.hpp"
+#include "zeem/text.hpp"
 
 #include <algorithm>
 #include <array>
@@ -41,7 +41,7 @@
 #include <utility>
 #include <vector>
 
-namespace mxml
+namespace zeem
 {
 
 std::string to_hex(uint32_t i)
@@ -4227,4 +4227,4 @@ void parser::report_invalidation(std::string msg)
 		report_invalidation_handler(std::move(msg));
 }
 
-} // namespace mxml
+} // namespace zeem

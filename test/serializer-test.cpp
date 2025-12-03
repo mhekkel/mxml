@@ -9,8 +9,8 @@
 #include <iostream>
 #include <system_error>
 
-#include "mxml.hpp"
-// #include "mxml.ixx"
+#include "zeem.hpp"
+// #include "zeem.ixx"
 
 std::filesystem::path gTestDir = std::filesystem::current_path();
 
@@ -48,8 +48,8 @@ struct st_1
 	void serialize(Archive &ar, unsigned long /*v*/)
 	{
 		// clang-format off
-		ar & mxml::make_element_nvp("i", i)
-		   & mxml::make_element_nvp("s", s);
+		ar & zeem::make_element_nvp("i", i)
+		   & zeem::make_element_nvp("s", s);
 		// clang-format on
 	}
 
@@ -60,8 +60,8 @@ typedef std::vector<st_1> v_st_1;
 
 TEST_CASE("serializer_1")
 {
-	using namespace mxml;
-	using namespace mxml::literals;
+	using namespace zeem;
+	using namespace zeem::literals;
 
 	auto doc = R"(<test>42</test>)"_xml;
 
@@ -88,17 +88,17 @@ struct S
 	void serialize(Archive &ar, unsigned long /*version*/)
 	{
 		// clang-format off
-		ar & mxml::make_element_nvp("a", a)
-		   & mxml::make_element_nvp("b", b)
-		   & mxml::make_element_nvp("c", c);
+		ar & zeem::make_element_nvp("a", a)
+		   & zeem::make_element_nvp("b", b)
+		   & zeem::make_element_nvp("c", c);
 		// clang-format on
 	}
 };
 
 TEST_CASE("serializer_2")
 {
-	using namespace mxml;
-	using namespace mxml::literals;
+	using namespace zeem;
+	using namespace zeem::literals;
 
 	auto doc = R"(<test><a>1</a><b>0.2</b><c>aap</c></test>)"_xml;
 	S s;
@@ -116,7 +116,7 @@ TEST_CASE("serializer_2")
 
 TEST_CASE("test_s_1")
 {
-	using namespace mxml;
+	using namespace zeem;
 
 	st_1 s1{ 1, "aap" };
 
@@ -144,15 +144,15 @@ struct S_arr
 	void serialize(Archive &ar, unsigned long)
 	{
 		// clang-format off
-		ar & mxml::make_element_nvp("vi", vi)
-		   & mxml::make_element_nvp("ds", ds);
+		ar & zeem::make_element_nvp("vi", vi)
+		   & zeem::make_element_nvp("ds", ds);
 		// clang-format on
 	}
 };
 
 TEST_CASE("test_serialize_arrays")
 {
-	using namespace mxml;
+	using namespace zeem;
 
 	std::vector<int> ii{ 1, 2, 3, 4 };
 
@@ -172,7 +172,7 @@ TEST_CASE("test_serialize_arrays")
 
 TEST_CASE("test_serialize_arrays2")
 {
-	using namespace mxml;
+	using namespace zeem;
 
 	S_arr sa{
 		{ 1, 2, 3, 4 },
@@ -192,8 +192,8 @@ TEST_CASE("test_serialize_arrays2")
 
 TEST_CASE("serialize_arrays_2")
 {
-	using namespace mxml;
-	using namespace mxml::literals;
+	using namespace zeem;
+	using namespace zeem::literals;
 
 	element e("test");
 
@@ -207,8 +207,8 @@ TEST_CASE("serialize_arrays_2")
 
 TEST_CASE("serialize_container_1")
 {
-	using namespace mxml;
-	using namespace mxml::literals;
+	using namespace zeem;
+	using namespace zeem::literals;
 
 	element e("test");
 
@@ -240,20 +240,20 @@ struct Se
 	template <typename Archive>
 	void serialize(Archive &ar, unsigned long)
 	{
-		ar &mxml::make_element_nvp("e", m_e);
+		ar &zeem::make_element_nvp("e", m_e);
 	}
 };
 
 TEST_CASE("test_s_2")
 {
-	using namespace mxml;
+	using namespace zeem;
 	value_serializer<E>::instance("my-enum")(E::aap, "aap")(E::noot, "noot")(E::mies, "mies");
 
 	std::vector<E> e = { E::aap, E::noot, E::mies };
 
 	document doc;
 	// cannot create more than one root element in a doc:
-	CHECK_THROWS_AS(to_xml(doc, "test", e), mxml::exception);
+	CHECK_THROWS_AS(to_xml(doc, "test", e), zeem::exception);
 
 	element test("test");
 	serializer sr(test);
@@ -278,7 +278,7 @@ TEST_CASE("test_s_2")
 
 TEST_CASE("test_s_3")
 {
-	using namespace mxml;
+	using namespace zeem;
 	value_serializer<int8_t> s8;
 
 	CHECK(s8.type_name() == "xsd:byte");
@@ -290,7 +290,7 @@ TEST_CASE("test_s_3")
 
 TEST_CASE("test_s_4")
 {
-	using namespace mxml;
+	using namespace zeem;
 	value_serializer<uint8_t> s8;
 
 	CHECK(s8.type_name() == "xsd:unsignedByte");
@@ -304,8 +304,8 @@ TEST_CASE("test_s_4")
 
 TEST_CASE("test_optional")
 {
-	using namespace mxml;
-	using namespace mxml::literals;
+	using namespace zeem;
+	using namespace zeem::literals;
 
 	std::optional<std::string> s;
 
@@ -335,13 +335,13 @@ struct date_t1
 	template <typename Archive>
 	void serialize(Archive &ar, unsigned long)
 	{
-		ar &mxml::make_element_nvp("d", sd);
+		ar &zeem::make_element_nvp("d", sd);
 	}
 };
 
 TEST_CASE("test_date_1")
 {
-	using namespace mxml::literals;
+	using namespace zeem::literals;
 	using namespace std::chrono;
 	using namespace std::chrono_literals;
 
@@ -355,13 +355,13 @@ TEST_CASE("test_date_1")
 
 TEST_CASE("test_date_2")
 {
-	using namespace mxml::literals;
+	using namespace zeem::literals;
 	using namespace std::chrono;
 	using namespace std::chrono_literals;
 
 	date_t1 t1{ 1966y / 6 / 27 };
 
-	mxml::document doc;
+	zeem::document doc;
 	to_xml(doc, t1);
 
 	CHECK(doc == "<d>1966-06-27</d>"_xml);
@@ -374,13 +374,13 @@ struct time_t1
 	template <typename Archive>
 	void serialize(Archive &ar, unsigned long)
 	{
-		ar &mxml::make_element_nvp("t", st);
+		ar &zeem::make_element_nvp("t", st);
 	}
 };
 
 TEST_CASE("test_time_1")
 {
-	using namespace mxml::literals;
+	using namespace zeem::literals;
 	using namespace std::chrono;
 	using namespace std::literals;
 
@@ -394,13 +394,13 @@ TEST_CASE("test_time_1")
 
 TEST_CASE("test_time_2")
 {
-	using namespace mxml::literals;
+	using namespace zeem::literals;
 	using namespace std::literals;
 	using namespace std::chrono;
 
 	time_t1 t1{ sys_days{ 2022y / 12 / 6 } + 1h + 2min + 3s };
 
-	mxml::document doc;
+	zeem::document doc;
 	to_xml(doc, t1);
 
 	auto ti = doc.find_first("//t");
@@ -421,8 +421,8 @@ TEST_CASE("test_s_5")
 	v1.push_back(s1);
 	v1.push_back(s1);
 
-	mxml::document doc;
-	CHECK_THROWS_AS(mxml::to_xml(doc, "v1", v1), mxml::exception);
+	zeem::document doc;
+	CHECK_THROWS_AS(zeem::to_xml(doc, "v1", v1), zeem::exception);
 }
 
 TEST_CASE("test_s_6")
@@ -433,15 +433,15 @@ TEST_CASE("test_s_6")
 	v1.push_back(st[0]);
 	v1.push_back(st[1]);
 
-	mxml::document doc("<v1/>");
-	mxml::to_xml(doc.front(), "s1", v1);
+	zeem::document doc("<v1/>");
+	zeem::to_xml(doc.front(), "s1", v1);
 
 	CHECK((std::ostringstream() << doc).str() == "<v1><s1><i>1</i><s>aap</s></s1><s1><i>2</i><s>noot</s></s1></v1>");
 
 	v_st_1 v2;
-	// CHECK_THROWS_AS(mxml::from_xml(doc, "v1", v2), mxml::exception);
+	// CHECK_THROWS_AS(zeem::from_xml(doc, "v1", v2), zeem::exception);
 
-	mxml::from_xml(doc.front(), "s1", v2);
+	zeem::from_xml(doc.front(), "s1", v2);
 
 	CHECK(v1 == v2);
 }
@@ -454,7 +454,7 @@ struct st_2
 	void serialize(Archive &ar, unsigned long v)
 	{
 		// clang-format off
-		ar & mxml::make_element_nvp("i", s);
+		ar & zeem::make_element_nvp("i", s);
 		// clang-format on
 	}
 };
@@ -481,7 +481,7 @@ struct st_2
 
 // TEST_CASE("type-1")
 // {
-// 	using namespace mxml;
+// 	using namespace zeem;
 
 // 	type_map types;
 // 	schema_creator sc(types, )

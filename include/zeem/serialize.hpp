@@ -31,11 +31,11 @@
  * definition of the serializer classes used to (de-)serialize XML data.
  */
 
-#include "mxml/config.hpp"
-#include "mxml/detail/charconv.hpp"
-#include "mxml/node.hpp"
+#include "zeem/config.hpp"
+#include "zeem/detail/charconv.hpp"
+#include "zeem/node.hpp"
 
-#if MXML_USE_DATE_H
+#if ZEEM_USE_DATE_H
 # include <date/date.h>
 #endif
 
@@ -49,7 +49,7 @@
 #include <string>
 #include <system_error>
 
-namespace mxml
+namespace zeem
 {
 
 // --------------------------------------------------------------------
@@ -306,7 +306,7 @@ struct value_serializer<std::chrono::system_clock::time_point>
 		std::stringstream is;
 		is << s;
 
-#if MXML_USE_DATE_H
+#if ZEEM_USE_DATE_H
 		if (m[1].matched)
 		{
 			if (m[1] == "Z")
@@ -357,7 +357,7 @@ struct value_serializer<std::chrono::sys_days>
 		std::stringstream is;
 		is << s;
 
-#if MXML_USE_DATE_H
+#if ZEEM_USE_DATE_H
 		date::from_stream(is, "%F", result);
 #else
 		std::from_stream(is, "%F", result);
@@ -996,7 +996,7 @@ deserializer &deserializer::deserialize_attribute(std::string_view name, T &valu
  */
 
 template <typename T>
-void to_xml(mxml::element_container &e, const T &value)
+void to_xml(zeem::element_container &e, const T &value)
 {
 	serializer sr(e);
 	sr.serialize_element(value);
@@ -1008,7 +1008,7 @@ void to_xml(mxml::element_container &e, const T &value)
  */
 
 template <typename T>
-void to_xml(mxml::element_container &e, std::string_view name, const T &value)
+void to_xml(zeem::element_container &e, std::string_view name, const T &value)
 {
 	serializer sr(e);
 	sr.serialize_element(name, value);
@@ -1019,7 +1019,7 @@ void to_xml(mxml::element_container &e, std::string_view name, const T &value)
  */
 
 template <typename T>
-void from_xml(const mxml::element_container &e, T &value)
+void from_xml(const zeem::element_container &e, T &value)
 {
 	deserializer dsr(e);
 	dsr.deserialize_element(value);
@@ -1031,10 +1031,10 @@ void from_xml(const mxml::element_container &e, T &value)
  */
 
 template <typename T>
-void from_xml(const mxml::element_container &e, std::string_view name, T &value)
+void from_xml(const zeem::element_container &e, std::string_view name, T &value)
 {
 	deserializer dsr(e);
 	dsr.deserialize_element(name, value);
 }
 
-} // namespace mxml
+} // namespace zeem

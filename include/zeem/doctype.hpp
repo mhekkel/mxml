@@ -28,7 +28,7 @@
 
 /** @file
  * File containing code to support DOCTYPE handling. This is private code
- * to the mxml library. 
+ * to the zeem library. 
  * 
  * @cond
  */
@@ -38,7 +38,7 @@
 #include <string>
 #include <vector>
 
-namespace mxml::doctype
+namespace zeem::doctype
 {
 // --------------------------------------------------------------------
 // doctype support with full validation.
@@ -413,6 +413,6 @@ class parameter_entity : public entity
 
 const general_entity *get_named_character(std::string_view name);
 
-} // namespace mxml::doctype
+} // namespace zeem::doctype
 
 /** @endcond */
