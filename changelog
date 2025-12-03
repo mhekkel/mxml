@@ -1,3 +1,6 @@
+version 2.0.5
+- Renamed to zeem since mxml was already taken
+
 version 2.0.4
 - Support for creating shared libs
 
