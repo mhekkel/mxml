@@ -27,7 +27,6 @@
 #include "zeem/error.hpp"
 
 #include <string>
-#include <vector>
 
 namespace zeem
 {

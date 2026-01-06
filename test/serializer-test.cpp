@@ -4,9 +4,7 @@
 
 #include <array>
 #include <deque>
-#include <exception>
 #include <filesystem>
-#include <iostream>
 #include <system_error>
 
 #include "zeem.hpp"

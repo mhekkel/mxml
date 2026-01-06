@@ -28,8 +28,8 @@
 
 /** @file
  * File containing code to support DOCTYPE handling. This is private code
- * to the zeem library. 
- * 
+ * to the zeem library.
+ *
  * @cond
  */
 
@@ -392,7 +392,7 @@ class general_entity : public entity
   public:
 	general_entity(const general_entity &) = default;
 
-    general_entity(std::string name, std::string replacement,
+	general_entity(std::string name, std::string replacement,
 		bool external = false, bool parsed = true)
 		: entity(std::move(name), std::move(replacement), external, parsed)
 	{

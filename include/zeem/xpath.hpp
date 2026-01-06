@@ -48,7 +48,7 @@ namespace zeem
 
 /**
  * @brief The context class, containing named variables to use in XPaths
- * 
+ *
  */
 
 class context final
@@ -101,7 +101,7 @@ class context final
 
 /**
  * @brief Class encapsulating an XPath
- * 
+ *
  */
 
 class xpath final

@@ -25,9 +25,8 @@
  */
 
 #include "zeem/document.hpp"
-#include "zeem/error.hpp"
 
-#include "revision.hpp"
+#include "zeem/error.hpp"
 
 #include <cassert>
 #include <fstream>

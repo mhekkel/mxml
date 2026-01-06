@@ -33,8 +33,8 @@
 
 #include "zeem/node.hpp"
 #include "zeem/parser.hpp"
-#include "zeem/version.hpp"
 #include "zeem/text.hpp"
+#include "zeem/version.hpp"
 
 #include <functional>
 #include <string>

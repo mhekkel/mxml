@@ -25,13 +25,13 @@
  */
 
 #include "zeem/xpath.hpp"
+
+#include "zeem/detail/charconv.hpp"
 #include "zeem/error.hpp"
 #include "zeem/node.hpp"
-#include "zeem/serialize.hpp"
 #include "zeem/text.hpp"
 
 #include <algorithm>
-#include <charconv>
 #include <cmath>
 #include <functional>
 #include <iterator>
@@ -335,7 +335,7 @@ double object::as<double>() const
 			{
 				auto s = m_node_set.front()->str();
 
-				auto r = from_chars(s.data(), s.data() + s.length(), result);
+				auto r = zeem::from_chars(s.data(), s.data() + s.length(), result);
 				if (r.ec != std::errc{} or r.ptr != s.data() + s.length())
 					result = std::nan("1");
 			}
@@ -343,7 +343,7 @@ double object::as<double>() const
 		}
 		case object_type::string:
 		{
-			auto r = from_chars(m_string.data(), m_string.data() + m_string.length(), result);
+			auto r = zeem::from_chars(m_string.data(), m_string.data() + m_string.length(), result);
 			if (r.ec != std::errc{} or r.ptr != m_string.data() + m_string.length())
 				result = std::nan("1");
 			break;

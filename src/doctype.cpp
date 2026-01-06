@@ -25,6 +25,7 @@
  */
 
 #include "zeem/doctype.hpp"
+
 #include "zeem/error.hpp"
 #include "zeem/text.hpp"
 

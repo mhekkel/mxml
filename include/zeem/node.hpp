@@ -35,7 +35,6 @@
 #include <algorithm>
 #include <cassert>
 #include <compare>
-#include <concepts>
 #include <string>
 #include <type_traits>
 #include <utility>
@@ -68,7 +67,8 @@ concept NodeType = std::is_base_of_v<zeem::node, std::remove_cvref_t<T>>;
  * to find out the actual type of a node
  */
 
-enum class node_type {
+enum class node_type
+{
 	element,
 	text,
 	attribute,
@@ -287,7 +287,7 @@ class basic_node_list
 	{
 		constexpr node_type type() const override { return node_type::header; }
 
-		void write(std::ostream &/* os */, format_info /* fmt */) const override {}
+		void write(std::ostream & /* os */, format_info /* fmt */) const override {}
 		std::string str() const override { return {}; }
 
 		friend void swap(node_list_header &a, node_list_header &b)
@@ -361,7 +361,7 @@ class basic_node_list
  * Iterating over nodes is simply following next/prev. But iterating
  * elements is a bit more difficult, since you then have to skip nodes
  * in between that are not an element, like comments or text.
- * 
+ *
  * This iterator is used for iterators over elements, attributes and
  * simply all nodes
  */
@@ -395,7 +395,7 @@ class iterator_impl
 
 	/**
 	 * @brief Copy constructor
-	 * 
+	 *
 	 * This copy constructor allows to copy from the same value_type
 	 * and from derived types. That means that you can assign an
 	 * iterator pointing to an element to a new iterator pointing
@@ -495,16 +495,16 @@ class iterator_impl
 
 /**
  * @brief An abstract base class for lists of type \a T
- * 
- * This base class should offer all methods required for a 
+ *
+ * This base class should offer all methods required for a
  * SequenceContainer.
- * 
+ *
  * This class is not exported.
- * 
+ *
  * Note that this class can act as a real container, which
  * stores data, or it can act as a view on another node_list
  * optionally changing what is made visible.
- * 
+ *
  * An element derives from node_list<element>, so it exposes
  * access to all its children of type element. However, since
  * node_lists store pointers to nodes, the list can contain
@@ -512,7 +512,7 @@ class iterator_impl
  * you can use a node_list<node> constructed with an element
  * as parameter. This node_list<node> will expose all nodes
  * in the element.
- * 
+ *
  * @tparam T The type of node contained, either element, attribute or node
  */
 
@@ -531,7 +531,7 @@ class node_list : public basic_node_list
 
 	/**
 	 * @brief Construct a new node list for an element_container \a e
-	 * 
+	 *
 	 * @param e The element_container
 	 */
 	node_list(element_container *e);
@@ -588,7 +588,7 @@ class node_list : public basic_node_list
 
 	template <typename... Args>
 	iterator insert(const_iterator p, Args &&...args)
-		requires (sizeof...(Args) > 1 or not std::is_base_of_v<node, std::remove_cvref_t<Args>...>)
+		requires(sizeof...(Args) > 1 or not std::is_base_of_v<node, std::remove_cvref_t<Args>...>)
 	{
 		return insert_impl(p, new value_type(std::forward<Args>(args)...));
 	}
@@ -732,22 +732,21 @@ class node_list : public basic_node_list
 
 /**
  * @brief internal class as base class for element and document
- * 
+ *
  * Both element and document can have a list of child nodes and
  * both are nodes implementing the namespace routines e.g.
- * 
+ *
  * However, element has attributes whereas document does not.
  * And document has the constraint that it can have at most
  * one child element. But since the rest is so similar they
  * have a common base class: element_container.
- * 
+ *
  * element_container is not exported.
  */
 
 class element_container : public node, public node_list<element>
 {
   public:
-
 	/// @brief Default constructor
 	element_container()
 		: node_list<element>(this)
@@ -782,17 +781,17 @@ class element_container : public node, public node_list<element>
 	// children
 
 	/**
-	 * @brief This method allows access to the nodes not visible using 
+	 * @brief This method allows access to the nodes not visible using
 	 * the regular interface of this class itself.
-	 * 
+	 *
 	 * @return node_list<> The node_list for nodes of all types
 	 */
 	node_list<> nodes() { return node_list<node>(this); }
 
 	/**
-	 * @brief This method allows read access to the nodes not visible using 
+	 * @brief This method allows read access to the nodes not visible using
 	 * the regular interface of this class itself.
-	 * 
+	 *
 	 * @return node_list<> The node_list for nodes of all types
 	 */
 	const node_list<> nodes() const { return node_list<node>(const_cast<element_container *>(this)); }
@@ -826,7 +825,7 @@ class element_container : public node, public node_list<element>
 
 /**
  * @brief An abstract base class for nodes that contain text
- * 
+ *
  */
 
 class node_with_text : public node
@@ -880,7 +879,7 @@ class node_with_text : public node
 
 /**
  * @brief A node containing a XML comment
- * 
+ *
  */
 
 class comment final : public node_with_text
@@ -927,7 +926,7 @@ class comment final : public node_with_text
 // --------------------------------------------------------------------
 /**
  * @brief A node containing a XML processing instruction (like e.g. \<?php ?\>)
- * 
+ *
  */
 
 class processing_instruction final : public node_with_text
@@ -1005,7 +1004,7 @@ class processing_instruction final : public node_with_text
 // --------------------------------------------------------------------
 /**
  * @brief A node containing text.
- * 
+ *
  */
 
 class text final : public node_with_text
@@ -1056,7 +1055,7 @@ class text final : public node_with_text
 /**
  * @brief A node containing the contents of a CDATA section. Normally, these nodes are
  * converted to text nodes but you can specify to preserve them when parsing a document.
- * 
+ *
  */
 
 class cdata final : public node_with_text
@@ -1106,7 +1105,7 @@ class cdata final : public node_with_text
 // --------------------------------------------------------------------
 /**
  * @brief An attribute is a node, has an element as parent, but is not a child of this parent (!)
- * 
+ *
  */
 
 class attribute final : public node
@@ -1236,7 +1235,7 @@ class attribute final : public node
 // --------------------------------------------------------------------
 /**
  * @brief set of attributes and name_spaces. Is a node_list but with a set interface
- * 
+ *
  */
 
 class attribute_set : public node_list<attribute>
@@ -1331,7 +1330,7 @@ class attribute_set : public node_list<attribute>
 // --------------------------------------------------------------------
 /**
  * @brief the element class modelling a XML element
- * 
+ *
  * element is the most important zeem::node object. It encapsulates a
  * XML element as found in the XML document. It has a qname, can have children,
  * attributes and a namespace.
@@ -1565,7 +1564,8 @@ void node_list<T>::sort(Pred &&pred)
 	for (auto n = m_header->m_next; n != m_header; n = n->m_next)
 		t.push_back(n);
 
-	std::sort(t.begin(), t.end(), [pred](node *a, node *b) { return pred(static_cast<T&>(*a), static_cast<T&>(*b)); });
+	std::sort(t.begin(), t.end(), [pred](node *a, node *b)
+		{ return pred(static_cast<T &>(*a), static_cast<T &>(*b)); });
 
 	auto p = m_header;
 	for (auto n : t)
