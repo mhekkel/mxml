@@ -36,6 +36,9 @@
 #include <cassert>
 #include <memory>
 #include <string>
+#include <string_view>
+#include <tuple>
+#include <utility>
 #include <vector>
 
 namespace zeem::doctype
@@ -43,10 +46,9 @@ namespace zeem::doctype
 // --------------------------------------------------------------------
 // doctype support with full validation.
 
-class element;
-class attlist;
-class entity;
 class attribute;
+class element;
+class entity;
 
 using entity_ptr = std::shared_ptr<entity>;
 using entity_list = std::vector<entity_ptr>;
@@ -88,7 +90,7 @@ class validator
 	validator &operator=(const validator &other) = delete;
 
 	bool allow(std::string_view name);
-	content_spec_type get_content_spec() const;
+	[[nodiscard]] content_spec_type get_content_spec() const;
 	bool done();
 
   private:
@@ -106,10 +108,10 @@ struct content_spec_base
 
 	virtual ~content_spec_base() = default;
 
-	virtual state_base_ptr create_state() const = 0;
-	virtual bool element_content() const { return false; }
+	[[nodiscard]] virtual state_base_ptr create_state() const = 0;
+	[[nodiscard]] virtual bool element_content() const { return false; }
 
-	content_spec_type get_content_spec() const { return m_content_spec; }
+	[[nodiscard]] content_spec_type get_content_spec() const { return m_content_spec; }
 
   protected:
 	content_spec_base(content_spec_type contentSpec)
@@ -127,7 +129,7 @@ struct content_spec_any : public content_spec_base
 	{
 	}
 
-	state_base_ptr create_state() const override;
+	[[nodiscard]] state_base_ptr create_state() const override;
 };
 
 struct content_spec_empty : public content_spec_base
@@ -137,7 +139,7 @@ struct content_spec_empty : public content_spec_base
 	{
 	}
 
-	state_base_ptr create_state() const override;
+	[[nodiscard]] state_base_ptr create_state() const override;
 };
 
 struct content_spec_element : public content_spec_base
@@ -148,8 +150,8 @@ struct content_spec_element : public content_spec_base
 	{
 	}
 
-	state_base_ptr create_state() const override;
-	bool element_content() const override { return true; }
+	[[nodiscard]] state_base_ptr create_state() const override;
+	[[nodiscard]] bool element_content() const override { return true; }
 
 	std::string m_name;
 };
@@ -164,8 +166,8 @@ struct content_spec_repeated : public content_spec_base
 		assert(allowed);
 	}
 
-	state_base_ptr create_state() const override;
-	bool element_content() const override;
+	[[nodiscard]] state_base_ptr create_state() const override;
+	[[nodiscard]] bool element_content() const override;
 
 	content_spec_base_ptr m_allowed;
 	char m_repetition;
@@ -181,8 +183,8 @@ struct content_spec_seq : public content_spec_base
 
 	void add(content_spec_base_ptr a);
 
-	state_base_ptr create_state() const override;
-	bool element_content() const override;
+	[[nodiscard]] state_base_ptr create_state() const override;
+	[[nodiscard]] bool element_content() const override;
 
 	content_spec_list m_allowed;
 };
@@ -203,8 +205,8 @@ struct content_spec_choice : public content_spec_base
 
 	void add(content_spec_base_ptr a);
 
-	state_base_ptr create_state() const override;
-	bool element_content() const override;
+	[[nodiscard]] state_base_ptr create_state() const override;
+	[[nodiscard]] bool element_content() const override;
 
 	content_spec_list m_allowed;
 	bool m_mixed;
@@ -256,7 +258,7 @@ class attribute
 	{
 	}
 
-	const std::string &name() const { return m_name; }
+	[[nodiscard]] const std::string &name() const { return m_name; }
 
 	bool validate_value(std::string &value, const entity_list &entities) const;
 
@@ -266,15 +268,14 @@ class attribute
 		m_default_value = std::move(value);
 	}
 
-	std::tuple<attribute_default, std::string>
-	get_default() const { return std::make_tuple(m_default, m_default_value); }
+	[[nodiscard]] std::tuple<attribute_default, std::string> get_default() const { return std::make_tuple(m_default, m_default_value); }
 
-	attribute_type get_type() const { return m_type; }
-	attribute_default get_default_type() const { return m_default; }
-	const std::vector<std::string> &get_enums() const { return m_enum; }
+	[[nodiscard]] attribute_type get_type() const { return m_type; }
+	[[nodiscard]] attribute_default get_default_type() const { return m_default; }
+	[[nodiscard]] const std::vector<std::string> &get_enums() const { return m_enum; }
 
 	void set_external(bool external) { m_external = external; }
-	bool is_external() const { return m_external; }
+	[[nodiscard]] bool is_external() const { return m_external; }
 
   private:
 	// routines used to check _and_ reformat attribute value strings
@@ -283,7 +284,7 @@ class attribute
 	bool is_nmtoken(std::string &s) const;
 	bool is_nmtokens(std::string &s) const;
 
-	bool is_unparsed_entity(std::string_view s, const entity_list &l) const;
+	[[nodiscard]] bool is_unparsed_entity(std::string_view s, const entity_list &l) const;
 
 	std::string m_name;
 	attribute_type m_type;
@@ -305,28 +306,28 @@ class element
 		: m_name(std::move(name))
 		, m_allowed(nullptr)
 		, m_declared(declared)
-		, m_external(external)
+	// , m_external(external)
 	{
 	}
 
-	const attribute_list &get_attributes() const { return m_attlist; }
+	[[nodiscard]] const attribute_list &get_attributes() const { return m_attlist; }
 
 	void add_attribute(attribute_ptr attr);
 
-	const attribute_ptr get_attribute(std::string_view name) const;
+	[[nodiscard]] const attribute_ptr get_attribute(std::string_view name) const;
 
-	const std::string &name() const { return m_name; }
+	[[nodiscard]] const std::string &name() const { return m_name; }
 
-	bool is_declared() const { return m_declared; }
+	[[nodiscard]] bool is_declared() const { return m_declared; }
 
 	void set_allowed(content_spec_base_ptr allowed);
-	content_spec_base_ptr get_allowed() const { return m_allowed; }
+	[[nodiscard]] content_spec_base_ptr get_allowed() const { return m_allowed; }
 
   private:
 	std::string m_name;
 	attribute_list m_attlist;
 	content_spec_base_ptr m_allowed;
-	bool m_declared, m_external;
+	bool m_declared /* , m_external */;
 };
 
 // --------------------------------------------------------------------
@@ -337,18 +338,18 @@ class entity
 	entity(const entity &) = default;
 	entity &operator=(const entity &) = default;
 
-	const std::string &name() const { return m_name; }
-	const std::string &get_replacement() const { return m_replacement; }
-	const std::string &get_path() const { return m_path; }
+	[[nodiscard]] const std::string &name() const { return m_name; }
+	[[nodiscard]] const std::string &get_replacement() const { return m_replacement; }
+	[[nodiscard]] const std::string &get_path() const { return m_path; }
 
-	bool is_parsed() const { return m_parsed; }
+	[[nodiscard]] bool is_parsed() const { return m_parsed; }
 
-	const std::string &get_ndata() const { return m_ndata; }
+	[[nodiscard]] const std::string &get_ndata() const { return m_ndata; }
 	void set_ndata(std::string ndata) { m_ndata = std::move(ndata); }
 
-	bool is_external() const { return m_external; }
+	[[nodiscard]] bool is_external() const { return m_external; }
 
-	bool is_externally_defined() const { return m_externally_defined; }
+	[[nodiscard]] bool is_externally_defined() const { return m_externally_defined; }
 	void set_externally_defined(bool externally_defined)
 	{
 		m_externally_defined = externally_defined;

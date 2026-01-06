@@ -29,6 +29,9 @@
 #include <map>
 #include <mutex>
 #include <string>
+#include <string_view>
+#include <tuple>
+#include <utility>
 
 namespace zeem::doctype
 {

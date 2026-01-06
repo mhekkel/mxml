@@ -30,16 +30,34 @@
 #include "zeem/xpath.hpp"
 
 #include <cassert>
+#include <exception>
+#include <functional>
+#include <initializer_list>
+#include <iostream>
 #include <map>
-#include <ostream>
 #include <set>
 #include <stack>
 #include <string>
+#include <tuple>
 
 namespace zeem
 {
 
-const std::set<std::string> kEmptyHTMLElements{
+struct my_set : std::set<std::string>
+{
+	explicit my_set(std::initializer_list<const char *> strings,
+		const std::string::allocator_type &alloc = std::string::allocator_type{}) noexcept
+	try
+		: std
+		::set<std::string>(strings.begin(), strings.end(), alloc) {}
+	catch (...)
+	{
+		std::clog << "Error initializing set of html elements\n";
+		std::terminate();
+	}
+};
+
+const my_set kEmptyHTMLElements{
 	"area", "base", "br", "col", "embed", "hr", "img", "input", "keygen", "link", "meta", "param", "source", "track", "wbr"
 };
 
@@ -121,10 +139,6 @@ void write_string(std::ostream &os, std::string_view s, bool escape_whitespace, 
 }
 
 // --------------------------------------------------------------------
-
-node::~node()
-{
-}
 
 element_container *node::root()
 {
@@ -520,7 +534,7 @@ bool element::equals(const node *n) const
 
 	if (type() == n->type())
 	{
-		const element *e = static_cast<const element *>(n);
+		const auto *e = static_cast<const element *>(n);
 
 		result = name() == e->name() and get_ns() == e->get_ns();
 
@@ -853,7 +867,7 @@ void element::write(std::ostream &os, format_info fmt) const
 
 std::ostream &operator<<(std::ostream &os, const element &e)
 {
-	auto flags = os.flags({});
+	auto flags = os.flags();
 	auto width = os.width(0);
 
 	format_info fmt;

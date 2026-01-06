@@ -32,15 +32,19 @@
  */
 
 #include "zeem/error.hpp"
-#include "zeem/text.hpp"
-#include "zeem/version.hpp"
 
 #include <functional>
 #include <istream>
 #include <string>
+#include <string_view>
+#include <utility>
+#include <vector>
 
 namespace zeem
 {
+
+enum class encoding_type;
+struct version_type;
 
 /// If an invalid_exception is thrown, it means the XML document is not valid: it does
 /// not conform the DTD specified in the XML document.
@@ -55,7 +59,7 @@ class invalid_exception : public exception
 		: exception(std::move(msg))
 	{
 	}
-	~invalid_exception() noexcept {}
+	~invalid_exception() noexcept override = default;
 };
 
 /// If an not_wf_exception is thrown, it means the XML document is not well formed.
@@ -71,7 +75,7 @@ class not_wf_exception : public exception
 		: exception(std::move(msg))
 	{
 	}
-	~not_wf_exception() noexcept {}
+	~not_wf_exception() noexcept override = default;
 };
 
 /**
@@ -162,7 +166,7 @@ class parser
 		std::string_view pubid, std::string_view uri);
 
 	struct parser_imp *m_impl;
-	std::istream *m_istream;
+	std::istream *m_istream = nullptr;
 
 	/** @endcond */
 };

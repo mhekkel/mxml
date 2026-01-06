@@ -459,10 +459,10 @@ class name_value_pair
 	name_value_pair &operator=(name_value_pair &&) = default;
 	/** @endcond */
 
-	const std::string &name() const { return m_name; }
+	[[nodiscard]] const std::string &name() const { return m_name; }
 
 	// T &value() { return m_value; }
-	T &value() const { return m_value; }
+	[[nodiscard]] T &value() const { return m_value; }
 
 	/** @cond */
   private:
@@ -721,7 +721,7 @@ struct type_serializer<T>
 		}
 		else
 		{
-			element *e = (element *)n.emplace_back(name);
+			element *e = static_cast<element *>(n.emplace_back(name));
 			serializer sr(*e);
 			const_cast<value_type &>(value).serialize(sr, 0Ul);
 		}

@@ -47,9 +47,9 @@ class exception : public std::exception
 	{
 	}
 
-	virtual ~exception() noexcept {}
+	~exception() noexcept override = default;
 
-	virtual const char *what() const noexcept override { return m_message.c_str(); }
+	[[nodiscard]] const char *what() const noexcept override { return m_message.c_str(); }
 
   protected:
 	std::string m_message;

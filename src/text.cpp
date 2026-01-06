@@ -27,6 +27,7 @@
 #include "zeem/error.hpp"
 
 #include <string>
+#include <string_view>
 
 namespace zeem
 {
@@ -208,6 +209,7 @@ char32_t pop_back_char(std::string &s)
 				case 6: result |= (*ch & 0x01F) << 6; break;
 				case 12: result |= (*ch & 0x00F) << 12; break;
 				case 18: result |= (*ch & 0x007) << 18; break;
+				default: break;
 			}
 
 			s.erase(ch, s.end());

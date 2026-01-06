@@ -35,7 +35,12 @@
 #include <algorithm>
 #include <cassert>
 #include <compare>
+#include <cstddef>
+#include <initializer_list>
+#include <iosfwd>
+#include <iterator>
 #include <string>
+#include <string_view>
 #include <type_traits>
 #include <utility>
 #include <vector>
@@ -44,17 +49,11 @@ namespace zeem
 {
 
 // forward declarations
-
-class node;
-class element;
-class text;
 class attribute;
-class name_space;
-class comment;
-class cdata;
-class processing_instruction;
-class document;
+class element;
 class element_container;
+class node;
+class text;
 
 using node_set = std::vector<node *>;
 using element_set = std::vector<element *>;
@@ -126,14 +125,21 @@ class node
 {
   public:
 	/** @cond */
-	virtual ~node();
+
+	node(const node &n) = delete;
+	node(node &&n) = delete;
+	node &operator=(const node &n) = delete;
+	node &operator=(node &&n) = delete;
+
+	virtual ~node() = default;
+
 	/** @endcond */
 
 	/// \brief node_type to be returned by each implementation of this node class
-	virtual constexpr node_type type() const = 0;
+	[[nodiscard]] virtual constexpr node_type type() const = 0;
 
 	/// content of a xml:lang attribute of this element, or its nearest ancestor
-	virtual std::string lang() const;
+	[[nodiscard]] virtual std::string lang() const;
 
 	/**
 	 * @brief Get the qualified name
@@ -147,7 +153,7 @@ class node
 	 *
 	 * @return std::string
 	 */
-	virtual std::string get_qname() const;
+	[[nodiscard]] virtual std::string get_qname() const;
 
 	/**
 	 * @brief Set the qualified name to @a qn
@@ -171,21 +177,21 @@ class node
 		set_qname(prefix.empty() ? std::move(name) : prefix + ':' + name);
 	}
 
-	virtual std::string name() const;       ///< The name for the node as parsed from the qname.
-	virtual std::string get_prefix() const; ///< The prefix for the node as parsed from the qname.
-	virtual std::string get_ns() const;     ///< Returns the namespace URI for the node, if it can be resolved.
+	[[nodiscard]] virtual std::string name() const;       ///< The name for the node as parsed from the qname.
+	[[nodiscard]] virtual std::string get_prefix() const; ///< The prefix for the node as parsed from the qname.
+	[[nodiscard]] virtual std::string get_ns() const;     ///< Returns the namespace URI for the node, if it can be resolved.
 
 	/// Return the namespace URI for a prefix
-	virtual std::string namespace_for_prefix(std::string_view prefix) const;
+	[[nodiscard]] virtual std::string namespace_for_prefix(std::string_view prefix) const;
 
 	/// Return the prefix for a namespace URI
-	virtual std::pair<std::string, bool> prefix_for_namespace(std::string_view uri) const;
+	[[nodiscard]] virtual std::pair<std::string, bool> prefix_for_namespace(std::string_view uri) const;
 
 	/// Prefix the \a tag with the namespace prefix for \a uri
-	virtual std::string prefix_tag(std::string tag, std::string_view uri) const;
+	[[nodiscard]] virtual std::string prefix_tag(std::string tag, std::string_view uri) const;
 
 	/// return all content concatenated, including that of children.
-	virtual std::string str() const = 0;
+	[[nodiscard]] virtual std::string str() const = 0;
 
 	// --------------------------------------------------------------------
 	// low level routines
@@ -193,20 +199,20 @@ class node
 	// basic access
 
 	// All nodes should have a single root node
-	virtual element_container *root();             ///< The root node for this node
-	virtual const element_container *root() const; ///< The root node for this node
+	virtual element_container *root();                           ///< The root node for this node
+	[[nodiscard]] virtual const element_container *root() const; ///< The root node for this node
 
-	void parent(element_container *p) noexcept { m_parent = p; } ///< Set parent to \a p
-	element_container *parent() { return m_parent; }             ///< The parent node for this node
-	const element_container *parent() const { return m_parent; } ///< The parent node for this node
+	void parent(element_container *p) noexcept { m_parent = p; }               ///< Set parent to \a p
+	element_container *parent() { return m_parent; }                           ///< The parent node for this node
+	[[nodiscard]] const element_container *parent() const { return m_parent; } ///< The parent node for this node
 
 	void next(const node *n) noexcept { m_next = const_cast<node *>(n); } ///< Set next to \a n
 	node *next() { return m_next; }                                       ///< The next sibling
-	const node *next() const { return m_next; }                           ///< The next sibling
+	[[nodiscard]] const node *next() const { return m_next; }             ///< The next sibling
 
 	void prev(const node *n) noexcept { m_prev = const_cast<node *>(n); } ///< Set prev to \a n
 	node *prev() { return m_prev; }                                       ///< The previous sibling
-	const node *prev() const { return m_prev; }                           ///< The previous sibling
+	[[nodiscard]] const node *prev() const { return m_prev; }             ///< The previous sibling
 
 	/// Compare the node with \a n
 	virtual bool equals(const node *n) const;
@@ -228,11 +234,6 @@ class node
 	{
 		init();
 	}
-
-	node(const node &n) = delete;
-	node(node &&n) = delete;
-	node &operator=(const node &n) = delete;
-	node &operator=(node &&n) = delete;
 
 	friend void swap(node &a, node &b) noexcept
 	{
@@ -285,10 +286,10 @@ class basic_node_list
   protected:
 	struct node_list_header : public node
 	{
-		constexpr node_type type() const override { return node_type::header; }
+		[[nodiscard]] constexpr node_type type() const override { return node_type::header; }
 
 		void write(std::ostream & /* os */, format_info /* fmt */) const override {}
-		std::string str() const override { return {}; }
+		[[nodiscard]] std::string str() const override { return {}; }
 
 		friend void swap(node_list_header &a, node_list_header &b)
 		{
@@ -317,9 +318,10 @@ class basic_node_list
 	}
 
   public:
-	virtual ~basic_node_list()
-	{
-	}
+	basic_node_list(basic_node_list &&nl) = delete;
+	basic_node_list &operator=(const basic_node_list &nl) = delete;
+	basic_node_list &operator=(basic_node_list &&nl) = delete;
+	virtual ~basic_node_list() = default;
 
 	bool operator==(const basic_node_list &b) const;
 
@@ -327,10 +329,6 @@ class basic_node_list
 	virtual void clear();
 
   protected:
-	basic_node_list(basic_node_list &&nl) = delete;
-	basic_node_list &operator=(const basic_node_list &nl) = delete;
-	basic_node_list &operator=(basic_node_list &&nl) = delete;
-
 	friend void swap(basic_node_list &a, basic_node_list &b) noexcept
 	{
 		if (a.m_header != &a.m_header_node and b.m_header != &b.m_header_node)
@@ -534,12 +532,12 @@ class node_list : public basic_node_list
 	 *
 	 * @param e The element_container
 	 */
+  private:
 	node_list(element_container *e);
+	friend class element_container;
+	friend class attribute_set;
 
-	/** @cond */
-	node_list(const node_list &nl) = delete;
-	node_list &operator=(const node_list &) = delete;
-	/** @endcond */
+  public:
 
 	/// @brief The iterator class
 	using iterator = iterator_impl<value_type>;
@@ -547,25 +545,25 @@ class node_list : public basic_node_list
 	/// @brief The const iterator class
 	using const_iterator = iterator_impl<const value_type>;
 
-	iterator begin() { return iterator(m_header->m_next); }
-	iterator end() { return iterator(m_header); }
+	[[nodiscard]] iterator begin() { return iterator(m_header->m_next); }
+	[[nodiscard]] iterator end() { return iterator(m_header); }
 
-	const_iterator cbegin() { return const_iterator(m_header->m_next); }
-	const_iterator cend() { return const_iterator(m_header); }
+	[[nodiscard]] const_iterator cbegin() { return const_iterator(m_header->m_next); }
+	[[nodiscard]] const_iterator cend() { return const_iterator(m_header); }
 
-	const_iterator begin() const { return const_iterator(m_header->m_next); }
-	const_iterator end() const { return const_iterator(m_header); }
+	[[nodiscard]] const_iterator begin() const { return const_iterator(m_header->m_next); }
+	[[nodiscard]] const_iterator end() const { return const_iterator(m_header); }
 
-	value_type &front() { return *begin(); }
-	const value_type &front() const { return *begin(); }
+	[[nodiscard]] value_type &front() { return *begin(); }
+	[[nodiscard]] const value_type &front() const { return *begin(); }
 
-	value_type &back() { return *std::prev(end()); }
-	const value_type &back() const { return *std::prev(end()); }
+	[[nodiscard]] value_type &back() { return *std::prev(end()); }
+	[[nodiscard]] const value_type &back() const { return *std::prev(end()); }
 
 	/// @brief The size of the visible items
 	/// @return The count of items visible
-	size_t size() const { return std::distance(begin(), end()); }
-	bool empty() const { return size() == 0; }
+	[[nodiscard]] size_t size() const { return std::distance(begin(), end()); }
+	[[nodiscard]] bool empty() const { return size() == 0; }
 	explicit operator bool() const { return not empty(); }
 
 	/// \brief insert a copy of \a e
@@ -726,6 +724,7 @@ class node_list : public basic_node_list
 	{
 		return basic_node_list::erase_impl(&*pos);
 	}
+	friend T;
 };
 
 // --------------------------------------------------------------------
@@ -763,7 +762,7 @@ class element_container : public node, public node_list<element>
 	}
 
 	/// @brief Destructor
-	~element_container()
+	~element_container() override
 	{
 		clear();
 	}
@@ -786,7 +785,7 @@ class element_container : public node, public node_list<element>
 	 *
 	 * @return node_list<> The node_list for nodes of all types
 	 */
-	node_list<> nodes() { return node_list<node>(this); }
+	node_list<> nodes() { return {this}; }
 
 	/**
 	 * @brief This method allows read access to the nodes not visible using
@@ -794,25 +793,25 @@ class element_container : public node, public node_list<element>
 	 *
 	 * @return node_list<> The node_list for nodes of all types
 	 */
-	const node_list<> nodes() const { return node_list<node>(const_cast<element_container *>(this)); }
+	[[nodiscard]] const node_list<> nodes() const { return node_list<node>(const_cast<element_container *>(this)); }
 
 	/// \brief will return the concatenation of str() from all child nodes
-	std::string str() const override;
+	[[nodiscard]] std::string str() const override;
 
 	/// \brief return the elements that match XPath \a path.
 	///
 	/// If you need to find other classes than xml::element, of if your XPath
 	/// contains variables, you should create a zeem::xpath object and use
 	/// its evaluate method.
-	element_set find(std::string_view path) const;
+	[[nodiscard]] element_set find(std::string_view path) const;
 
 	/// \brief return the first element that matches XPath \a path.
 	///
 	/// If you need to find other classes than xml::element, of if your XPath
 	/// contains variables, you should create a zeem::xpath object and use
 	/// its evaluate method.
-	iterator find_first(std::string_view path);
-	const_iterator find_first(std::string_view path) const;
+	[[nodiscard]] iterator find_first(std::string_view path);
+	[[nodiscard]] const_iterator find_first(std::string_view path) const;
 
   protected:
 	/** @cond */
@@ -854,10 +853,10 @@ class node_with_text : public node
 	/** @endcond */
 
 	/// \brief return the text content
-	std::string str() const override { return m_text; }
+	[[nodiscard]] std::string str() const override { return m_text; }
 
 	/// \brief return the text content, same as str()
-	virtual std::string get_text() const { return m_text; }
+	[[nodiscard]] virtual std::string get_text() const { return m_text; }
 
 	/// \brief set the text content
 	virtual void set_text(std::string text) { m_text = std::move(text); }
@@ -885,7 +884,7 @@ class node_with_text : public node
 class comment final : public node_with_text
 {
   public:
-	constexpr node_type type() const override { return node_type::comment; }
+	[[nodiscard]] constexpr node_type type() const override { return node_type::comment; }
 
 	/// @brief default constructor
 	comment(std::string text = {})
@@ -894,10 +893,7 @@ class comment final : public node_with_text
 	}
 
 	/// @brief copy constructor
-	comment(const comment &c)
-		: node_with_text(c)
-	{
-	}
+	comment(const comment &c) = default;
 
 	/// @brief move constructor
 	comment(comment &&c) noexcept
@@ -932,7 +928,7 @@ class comment final : public node_with_text
 class processing_instruction final : public node_with_text
 {
   public:
-	constexpr node_type type() const override { return node_type::processing_instruction; }
+	[[nodiscard]] constexpr node_type type() const override { return node_type::processing_instruction; }
 
 	/// @brief default constructor
 	processing_instruction() = default;
@@ -949,11 +945,7 @@ class processing_instruction final : public node_with_text
 	}
 
 	/// @brief copy constructor
-	processing_instruction(const processing_instruction &pi)
-		: node_with_text(pi)
-		, m_target(pi.m_target)
-	{
-	}
+	processing_instruction(const processing_instruction &pi) = default;
 
 	/// @brief move constructor
 	processing_instruction(processing_instruction &&pi) noexcept
@@ -978,10 +970,10 @@ class processing_instruction final : public node_with_text
 	/** @endcond */
 
 	/// \brief return the qname which is the same as the target in this case
-	std::string get_qname() const override { return m_target; }
+	[[nodiscard]] std::string get_qname() const override { return m_target; }
 
 	/// \brief return the target
-	std::string get_target() const { return m_target; }
+	[[nodiscard]] std::string get_target() const { return m_target; }
 
 	/// \brief set the target
 	void set_target(std::string target) { m_target = std::move(target); }
@@ -1010,7 +1002,7 @@ class processing_instruction final : public node_with_text
 class text final : public node_with_text
 {
   public:
-	constexpr node_type type() const override { return node_type::text; }
+	[[nodiscard]] constexpr node_type type() const override { return node_type::text; }
 
 	/// @brief default constructor
 	text(std::string text = {})
@@ -1019,10 +1011,7 @@ class text final : public node_with_text
 	}
 
 	/// @brief copy constructor
-	text(const text &t)
-		: node_with_text(t)
-	{
-	}
+	text(const text &t) = default;
 
 	/// @brief move constructor
 	text(text &&t) noexcept
@@ -1044,7 +1033,7 @@ class text final : public node_with_text
 	bool equals(const node *n) const override;
 
 	/// \brief returns true if this text contains only whitespace characters
-	bool is_space() const;
+	[[nodiscard]] bool is_space() const;
 
 	/** @cond */
 	void write(std::ostream &os, format_info fmt) const override;
@@ -1061,7 +1050,7 @@ class text final : public node_with_text
 class cdata final : public node_with_text
 {
   public:
-	constexpr node_type type() const override { return node_type::cdata; }
+	[[nodiscard]] constexpr node_type type() const override { return node_type::cdata; }
 
 	/// @brief default constructor
 	cdata(std::string s = {})
@@ -1070,10 +1059,7 @@ class cdata final : public node_with_text
 	}
 
 	/// @brief copy constructor
-	cdata(const cdata &cd)
-		: node_with_text(cd)
-	{
-	}
+	cdata(const cdata &cd) = default;
 
 	/// @brief move constructor
 	cdata(cdata &&cd) noexcept
@@ -1111,7 +1097,7 @@ class cdata final : public node_with_text
 class attribute final : public node
 {
   public:
-	constexpr node_type type() const override { return node_type::attribute; }
+	[[nodiscard]] constexpr node_type type() const override { return node_type::attribute; }
 
 	/// @brief constructor
 	/// @param qname The qualified name
@@ -1173,7 +1159,7 @@ class attribute final : public node
 	}
 
 	/// @brief Get the qualified name for this attribute
-	std::string get_qname() const override { return m_qname; }
+	[[nodiscard]] std::string get_qname() const override { return m_qname; }
 
 	/// @brief Set the qualified name to \a qn
 	void set_qname(std::string qn) override { m_qname = std::move(qn); }
@@ -1181,22 +1167,22 @@ class attribute final : public node
 	using node::set_qname;
 
 	/// \brief Is this attribute an xmlns attribute?
-	bool is_namespace() const
+	[[nodiscard]] bool is_namespace() const
 	{
-		return m_qname.compare(0, 5, "xmlns") == 0 and (m_qname[5] == 0 or m_qname[5] == ':');
+		return m_qname.starts_with("xmlns") and (m_qname[5] == 0 or m_qname[5] == ':');
 	}
 
 	/// @brief Return the value of this attribute
-	std::string value() const { return m_value; }
+	[[nodiscard]] std::string value() const { return m_value; }
 
 	/// @brief Set the value of this attribute to \a v
 	void set_value(std::string v) { m_value = std::move(v); }
 
 	/// \brief same as value, but checks to see if this really is a namespace attribute
-	std::string uri() const;
+	[[nodiscard]] std::string uri() const;
 
 	/// @brief Returns the value of this attribute
-	std::string str() const override { return m_value; }
+	[[nodiscard]] std::string str() const override { return m_value; }
 
 	/// \brief compare nodes for equality
 	bool equals(const node *n) const override
@@ -1211,11 +1197,11 @@ class attribute final : public node
 	}
 
 	/// \brief returns whether this attribute is an ID attribute, as defined in an accompanying DTD
-	bool is_id() const { return m_id; }
+	[[nodiscard]] bool is_id() const { return m_id; }
 
 	/// \brief support for structured binding
 	template <size_t N>
-	decltype(auto) get() const
+	[[nodiscard]] decltype(auto) get() const
 	{
 		if constexpr (N == 0)
 			return name();
@@ -1248,7 +1234,7 @@ class attribute_set : public node_list<attribute>
 	}
 
 	/// @brief destructor
-	~attribute_set()
+	~attribute_set() override
 	{
 		clear();
 	}
@@ -1261,13 +1247,13 @@ class attribute_set : public node_list<attribute>
 	/** @endcond */
 
 	/// \brief return true if the attribute with name \a key is defined
-	bool contains(std::string_view key) const
+	[[nodiscard]] bool contains(std::string_view key) const
 	{
 		return find(key) != end();
 	}
 
 	/// \brief return const_iterator to the attribute with name \a key
-	const_iterator find(std::string_view key) const
+	[[nodiscard]] const_iterator find(std::string_view key) const
 	{
 		for (auto i = begin(); i != end(); ++i)
 		{
@@ -1339,7 +1325,7 @@ class attribute_set : public node_list<attribute>
 class element final : public element_container
 {
   public:
-	constexpr node_type type() const override { return node_type::element; }
+	[[nodiscard]] constexpr node_type type() const override { return node_type::element; }
 
 	/// @brief default constructor
 	element()
@@ -1400,17 +1386,17 @@ class element final : public element_container
 	using node::set_qname;
 
 	/// @brief Return the qualified name
-	std::string get_qname() const override { return m_qname; }
+	[[nodiscard]] std::string get_qname() const override { return m_qname; }
 
 	/// @brief Set the qualified name to \a qn
 	void set_qname(std::string qn) override { m_qname = std::move(qn); }
 
 	/// \brief content of a xml:lang attribute of this element, or its nearest ancestor
-	std::string lang() const override;
+	[[nodiscard]] std::string lang() const override;
 
 	/// \brief content of the xml:id attribute, or the attribute that was defined to be
 	/// of type ID by the DOCTYPE.
-	std::string id() const;
+	[[nodiscard]] std::string id() const;
 
 	/// @brief Compare two elements for equality
 	bool operator==(const element &e) const
@@ -1428,18 +1414,18 @@ class element final : public element_container
 	attribute_set &attributes() { return m_attributes; }
 
 	/// \brief return the set of attributes for this element
-	const attribute_set &attributes() const { return m_attributes; }
+	[[nodiscard]] const attribute_set &attributes() const { return m_attributes; }
 
 	// --------------------------------------------------------------------
 
 	/// \brief return the URI of the namespace for \a prefix
-	std::string namespace_for_prefix(std::string_view prefix) const override;
+	[[nodiscard]] std::string namespace_for_prefix(std::string_view prefix) const override;
 
 	/// \brief return the prefix for the XML namespace with uri \a uri.
 	/// \return The result is a pair of a std::string containing the actual prefix value
 	/// and a boolean indicating if the namespace was found at all, needed since empty prefixes
 	/// are allowed.
-	std::pair<std::string, bool> prefix_for_namespace(std::string_view uri) const override;
+	[[nodiscard]] std::pair<std::string, bool> prefix_for_namespace(std::string_view uri) const override;
 
 	/// \brief move this element and optionally everyting beneath it to the
 	///        specified namespace/prefix
@@ -1458,13 +1444,13 @@ class element final : public element_container
 	// 	friend class document;
 
 	/// \brief return the concatenation of the content of all enclosed zeem::text nodes
-	std::string get_content() const;
+	[[nodiscard]] std::string get_content() const;
 
 	/// \brief replace all existing child text nodes with a new single text node containing \a content
 	void set_content(std::string content);
 
 	/// \brief return the value of attribute name \a qname or the empty string if not found
-	std::string get_attribute(std::string_view qname) const;
+	[[nodiscard]] std::string get_attribute(std::string_view qname) const;
 
 	/// \brief set the value of attribute named \a qname to the value \a value
 	void set_attribute(std::string_view qname, std::string_view value);

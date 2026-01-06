@@ -31,14 +31,16 @@
  * definition of the zeem::xpath class, implementing a XPath 1.0 compatible search facility
  */
 
-#include "zeem/node.hpp"
-
 #include <memory>
 #include <string>
+#include <string_view>
+#include <type_traits>
 #include <vector>
 
 namespace zeem
 {
+
+class node;
 
 // --------------------------------------------------------------------
 /// XPath's can contain variables. And variables can contain all kinds of data
@@ -58,10 +60,7 @@ class context final
 	context();
 
 	/// @brief Constructor to create a new scope
-	context(const context &ctxt)
-		: m_impl(ctxt.m_impl)
-	{
-	}
+	context(const context &ctxt) = default;
 
 	/// @brief move constructor
 	context(context &&ctxt)
@@ -111,10 +110,7 @@ class xpath final
 	xpath(std::string_view path);
 
 	/// @brief copy constructor
-	xpath(const xpath &rhs)
-		: m_impl(rhs.m_impl)
-	{
-	}
+	xpath(const xpath &rhs) = default;
 
 	/// @brief move constructor
 	xpath(xpath &&rhs) noexcept
@@ -137,7 +133,7 @@ class xpath final
 	 */
 
 	template <typename T>
-	std::vector<T *> evaluate(const node &root, const context &ctxt = {}) const;
+	[[nodiscard]] std::vector<T *> evaluate(const node &root, const context &ctxt = {}) const;
 
 	/**
 	 * @brief Returns true if the \a n node matches the XPath

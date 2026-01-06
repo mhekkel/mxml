@@ -36,8 +36,14 @@
 #include "zeem/text.hpp"
 #include "zeem/version.hpp"
 
+#include <cstddef>
 #include <functional>
+#include <iosfwd>
 #include <string>
+#include <string_view>
+#include <type_traits>
+#include <utility>
+#include <vector>
 
 namespace zeem
 {
@@ -80,7 +86,7 @@ class document final : public element_container
 {
   public:
 	/// \brief node_type of a document
-	node_type type() const override { return node_type::document; }
+	[[nodiscard]] node_type type() const override { return node_type::document; }
 
 	/// \brief Constructor for an empty document.
 	document();
@@ -112,64 +118,64 @@ class document final : public element_container
 	/// constructor will also validate the input using DTD's found in \a base_dir
 	document(std::istream &is, std::string base_dir);
 
-	~document() = default;
+	~document() override = default;
 
 	friend void swap(document &a, document &b) noexcept;
 
 	/// options for parsing
 	/// validating uses a DTD if it is defined
-	bool is_validating() const { return m_validating; }
+	[[nodiscard]] bool is_validating() const { return m_validating; }
 	void set_validating(bool validate) { m_validating = validate; }
 
 	/// validating_ns: when validating take the NS 1.0 specification into account
-	bool is_validating_ns() const { return m_validating_ns; }
+	[[nodiscard]] bool is_validating_ns() const { return m_validating_ns; }
 	void set_validating_ns(bool validate) { m_validating_ns = validate; }
 
 	/// preserve cdata, preserves CDATA sections instead of converting them
 	/// into text nodes.
-	bool preserves_cdata() const { return m_preserve_cdata; }
+	[[nodiscard]] bool preserves_cdata() const { return m_preserve_cdata; }
 
 	/// \brief if \a p is true, the CDATA sections will be preserved when parsing XML, if \a p is false, the content of the CDATA will be treated as text
 	void set_preserve_cdata(bool p) { m_preserve_cdata = p; }
 
 	/// \brief collapse means replacing e.g. `<foo></foo>` with `<foo/>`
-	bool collapses_empty_tags() const { return m_fmt.collapse_tags; }
+	[[nodiscard]] bool collapses_empty_tags() const { return m_fmt.collapse_tags; }
 
 	/// \brief if \a c is true, empty tags will be replaced, i.e. write `<foo/>` instead of `<foo></foo>`
 	void set_collapse_empty_tags(bool c) { m_fmt.collapse_tags = c; }
 
 	/// \brief collapse 'empty elements' according to HTML rules
-	bool write_html() const { return m_fmt.html; }
+	[[nodiscard]] bool write_html() const { return m_fmt.html; }
 
 	/// \brief if \a c is true, 'empty elements' will be collapsed according to HTML rules
 	void set_write_html(bool f) { m_fmt.html = f; }
 
 	/// \brief whether to write out comments
-	bool suppresses_comments() const { return m_fmt.suppress_comments; }
+	[[nodiscard]] bool suppresses_comments() const { return m_fmt.suppress_comments; }
 
 	/// \brief if \a s is true, comments will not be written
 	void set_suppress_comments(bool s) { m_fmt.suppress_comments = s; }
 
 	/// \brief whether to escape white space
-	bool escapes_white_space() const { return m_fmt.escape_white_space; }
+	[[nodiscard]] bool escapes_white_space() const { return m_fmt.escape_white_space; }
 
 	/// \brief if \a e is true, white space will be written as XML entities
 	void set_escape_white_space(bool e) { m_fmt.escape_white_space = e; }
 
 	/// \brief whether to escape double quotes
-	bool escapes_double_quote() const { return m_fmt.escape_double_quote; }
+	[[nodiscard]] bool escapes_double_quote() const { return m_fmt.escape_double_quote; }
 
 	/// \brief if \a e is true, double quotes will be written as &quot;
 	void set_escape_double_quote(bool e) { m_fmt.escape_double_quote = e; }
 
 	/// \brief whether to place a newline after a prolog
-	bool wraps_prolog() const { return m_wrap_prolog; }
+	[[nodiscard]] bool wraps_prolog() const { return m_wrap_prolog; }
 
 	/// \brief if \a w is true, a newline will be written after the XML prolog
 	void set_wrap_prolog(bool w) { m_wrap_prolog = w; }
 
 	/// \brief Get the doctype as parsed
-	doc_type get_doctype() const { return m_doctype; }
+	[[nodiscard]] doc_type get_doctype() const { return m_doctype; }
 
 	/// \brief Set the doctype to write out
 	void set_doctype(std::string root, std::string pubid, std::string dtd)
@@ -185,19 +191,19 @@ class document final : public element_container
 	}
 
 	/// \brief whether to write a XML prolog
-	bool writes_xml_decl() const { return m_write_xml_decl; }
+	[[nodiscard]] bool writes_xml_decl() const { return m_write_xml_decl; }
 
 	/// \brief if \a w is true, an XML prolog will be written
 	void set_write_xml_decl(bool w) { m_write_xml_decl = w; }
 
 	/// \brief whether to write a DOCTYPE
-	bool writes_doctype() const { return m_write_doctype; }
+	[[nodiscard]] bool writes_doctype() const { return m_write_doctype; }
 
 	/// \brief if \a f is true a DOCTYPE will be written
 	void set_write_doctype(bool f) { m_write_doctype = f; }
 
 	/// \brief Check the doctype to see if this is supposed to be HTML5
-	bool is_html5() const;
+	[[nodiscard]] bool is_html5() const;
 
 	/// \brief Write out the document
 	friend std::ostream &operator<<(std::ostream &os, const document &doc);
@@ -227,14 +233,14 @@ class document final : public element_container
 		m_external_entity_ref_loader = cb;
 	}
 
-	encoding_type get_encoding() const;   ///< The text encoding as detected in the input.
-	void set_encoding(encoding_type enc); ///< The text encoding to use for output
+	[[nodiscard]] encoding_type get_encoding() const; ///< The text encoding as detected in the input.
+	void set_encoding(encoding_type enc);             ///< The text encoding to use for output
 
-	version_type get_version() const; ///< XML version, should be either 1.0 or 1.1
-	void set_version(version_type v); ///< XML version, should be either 1.0 or 1.1
+	[[nodiscard]] version_type get_version() const; ///< XML version, should be either 1.0 or 1.1
+	void set_version(version_type v);               ///< XML version, should be either 1.0 or 1.1
 
-	element_container *root() override { return this; }             ///< The root node, which is the document of course
-	const element_container *root() const override { return this; } ///< The root node, which is the document of course
+	element_container *root() override { return this; }                           ///< The root node, which is the document of course
+	[[nodiscard]] const element_container *root() const override { return this; } ///< The root node, which is the document of course
 
 	/// @brief Return the single child, or nullptr in case the document is empty
 	element *child()
@@ -243,7 +249,7 @@ class document final : public element_container
 	}
 
 	/// @brief Return the single child, or nullptr in case the document is empty
-	const element *child() const { return const_cast<document *>(this)->child(); }
+	[[nodiscard]] const element *child() const { return const_cast<document *>(this)->child(); }
 
 	/// @brief Emplace a single element using \a args for the construction
 	template <typename... Args>
@@ -254,7 +260,7 @@ class document final : public element_container
 	}
 
 	/// @brief Return the concatenation of all contained text nodes
-	std::string str() const override;
+	[[nodiscard]] std::string str() const override;
 
   protected:
 	/** @cond */

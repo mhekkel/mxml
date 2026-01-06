@@ -29,10 +29,11 @@
 #include "zeem/error.hpp"
 #include "zeem/text.hpp"
 
-#include <algorithm>
 #include <cassert>
+#include <cctype>
 #include <functional>
 #include <memory>
+#include <ranges>
 #include <vector>
 
 namespace zeem::doctype
@@ -59,27 +60,26 @@ struct state_base : std::enable_shared_from_this<state_base>
 
 struct state_any : public state_base
 {
-	virtual std::tuple<bool, bool> allow(std::string_view /*name*/) override { return std::make_tuple(true, true); }
-	virtual bool allow_char_data() override { return true; }
-	virtual bool allow_empty() override { return true; }
+	std::tuple<bool, bool> allow(std::string_view /*name*/) override { return std::make_tuple(true, true); }
+	bool allow_char_data() override { return true; }
+	bool allow_empty() override { return true; }
 };
 
 struct state_empty : public state_base
 {
-	virtual std::tuple<bool, bool> allow(std::string_view /*name*/) override { return std::make_tuple(false, true); }
-	virtual bool allow_empty() override { return true; }
-	virtual bool must_be_empty() override { return true; }
+	std::tuple<bool, bool> allow(std::string_view /*name*/) override { return std::make_tuple(false, true); }
+	bool allow_empty() override { return true; }
+	bool must_be_empty() override { return true; }
 };
 
 struct state_element : public state_base
 {
 	state_element(std::string name)
 		: m_name(std::move(name))
-		, m_done(false)
 	{
 	}
 
-	virtual std::tuple<bool, bool> allow(std::string_view name) override
+	std::tuple<bool, bool> allow(std::string_view name) override
 	{
 		bool result = false;
 		if (not m_done and m_name == name)
@@ -88,30 +88,29 @@ struct state_element : public state_base
 		return std::make_tuple(result, m_done);
 	}
 
-	virtual void reset() override { m_done = false; }
+	void reset() override { m_done = false; }
 
 	std::string m_name;
-	bool m_done;
+	bool m_done{};
 };
 
 struct state_repeated : public state_base
 {
 	state_repeated(content_spec_base_ptr sub)
 		: m_sub(sub->create_state())
-		, m_state(0)
 	{
 	}
 
-	virtual void reset() override
+	void reset() override
 	{
 		m_sub->reset();
 		m_state = 0;
 	}
 
-	virtual bool allow_char_data() override { return m_sub->allow_char_data(); }
+	bool allow_char_data() override { return m_sub->allow_char_data(); }
 
 	state_base_ptr m_sub;
-	int m_state;
+	int m_state{};
 };
 
 // repeat for ?
@@ -125,7 +124,7 @@ struct state_repeated_zero_or_once : public state_repeated
 
 	std::tuple<bool, bool> allow(std::string_view name) override;
 
-	virtual bool allow_empty() override { return true; }
+	bool allow_empty() override { return true; }
 };
 
 std::tuple<bool, bool> state_repeated_zero_or_once::allow(std::string_view name)
@@ -154,6 +153,9 @@ std::tuple<bool, bool> state_repeated_zero_or_once::allow(std::string_view name)
 			if (result == false and done)
 				done = true;
 			break;
+
+		default:
+			break;
 	}
 
 	return std::make_tuple(result, done);
@@ -168,7 +170,7 @@ struct state_repeated_any : public state_repeated
 
 	std::tuple<bool, bool> allow(std::string_view name) override;
 
-	virtual bool allow_empty() override { return true; }
+	bool allow_empty() override { return true; }
 };
 
 std::tuple<bool, bool> state_repeated_any::allow(std::string_view name)
@@ -202,6 +204,9 @@ std::tuple<bool, bool> state_repeated_any::allow(std::string_view name)
 					done = true;
 			}
 			break;
+
+		default:
+			break;
 	}
 
 	return std::make_tuple(result, done);
@@ -216,7 +221,7 @@ struct state_repeated_at_least_once : public state_repeated
 
 	std::tuple<bool, bool> allow(std::string_view name) override;
 
-	virtual bool allow_empty() override { return m_sub->allow_empty(); }
+	bool allow_empty() override { return m_sub->allow_empty(); }
 };
 
 std::tuple<bool, bool> state_repeated_at_least_once::allow(std::string_view name)
@@ -260,6 +265,9 @@ std::tuple<bool, bool> state_repeated_at_least_once::allow(std::string_view name
 					done = true;
 			}
 			break;
+
+		default:
+			break;
 	}
 
 	return std::make_tuple(result, done);
@@ -270,15 +278,14 @@ std::tuple<bool, bool> state_repeated_at_least_once::allow(std::string_view name
 struct state_seq : public state_base
 {
 	state_seq(const content_spec_list &allowed)
-		: m_state(0)
 	{
 		for (auto a : allowed)
 			m_states.emplace_back(a->create_state());
 	}
 
-	virtual std::tuple<bool, bool> allow(std::string_view name) override;
+	std::tuple<bool, bool> allow(std::string_view name) override;
 
-	virtual void reset() override
+	void reset() override
 	{
 		m_state = 0;
 		for (auto state : m_states)
@@ -286,7 +293,7 @@ struct state_seq : public state_base
 		;
 	}
 
-	virtual bool allow_char_data() override
+	bool allow_char_data() override
 	{
 		bool result = false;
 		for (auto s : m_states)
@@ -301,11 +308,11 @@ struct state_seq : public state_base
 		return result;
 	}
 
-	virtual bool allow_empty() override;
+	bool allow_empty() override;
 
 	std::vector<state_base_ptr> m_states;
 	std::vector<state_base_ptr>::iterator m_next;
-	int m_state;
+	int m_state{};
 };
 
 std::tuple<bool, bool> state_seq::allow(std::string_view name)
@@ -345,6 +352,9 @@ std::tuple<bool, bool> state_seq::allow(std::string_view name)
 				std::tie(result, done) = (*m_next)->allow(name);
 			}
 			break;
+
+		default:
+			break;
 	}
 
 	return std::make_tuple(result, done);
@@ -372,28 +382,27 @@ struct state_choice : public state_base
 {
 	state_choice(const content_spec_list &allowed, bool mixed)
 		: m_mixed(mixed)
-		, m_state(0)
 	{
 		for (auto a : allowed)
 			m_states.push_back(a->create_state());
 	}
 
-	virtual std::tuple<bool, bool> allow(std::string_view name) override;
+	std::tuple<bool, bool> allow(std::string_view name) override;
 
-	virtual void reset() override
+	void reset() override
 	{
 		m_state = 0;
 		for (auto state : m_states)
 			state->reset();
 	}
 
-	virtual bool allow_char_data() override { return m_mixed; }
+	bool allow_char_data() override { return m_mixed; }
 
-	virtual bool allow_empty() override;
+	bool allow_empty() override;
 
 	std::vector<state_base_ptr> m_states;
 	bool m_mixed;
-	int m_state;
+	int m_state{};
 	state_base_ptr m_sub;
 };
 
@@ -425,6 +434,9 @@ std::tuple<bool, bool> state_choice::allow(std::string_view name)
 		case State::Choice:
 			std::tie(result, done) = m_sub->allow(name);
 			break;
+
+		default:
+			break;
 	}
 
 	return std::make_tuple(result, done);
@@ -434,7 +446,8 @@ bool state_choice::allow_empty()
 {
 	using namespace std::placeholders;
 	return m_mixed or
-	       std::find_if(m_states.begin(), m_states.end(), std::bind(&state_base::allow_empty, _1)) != m_states.end();
+	       std::ranges::find_if(m_states, [](auto &&s)
+			   { return s->allow_empty(); }) != m_states.end();
 }
 
 // --------------------------------------------------------------------
@@ -744,7 +757,7 @@ bool attribute::validate_value(std::string &value, const entity_list &entities) 
 	else if (m_type == attribute_type::Enumerated or m_type == attribute_type::Notation)
 	{
 		trim(value);
-		result = find(m_enum.begin(), m_enum.end(), value) != m_enum.end();
+		result = std::ranges::find(m_enum, value) != m_enum.end();
 	}
 
 	if (result and m_default == attribute_default::Fixed and value != m_default_value)
@@ -757,7 +770,7 @@ bool attribute::is_unparsed_entity(std::string_view s, const entity_list &l) con
 {
 	bool result = false;
 
-	entity_list::const_iterator i = std::find_if(l.begin(), l.end(), [s](auto e)
+	auto i = std::ranges::find_if(l, [s](auto e)
 		{ return e->name() == s; });
 	if (i != l.end())
 		result = (*i)->is_parsed() == false;
@@ -774,7 +787,7 @@ void element::set_allowed(content_spec_base_ptr allowed)
 
 void element::add_attribute(attribute_ptr attrib)
 {
-	if (find_if(m_attlist.begin(), m_attlist.end(), [attrib](auto a)
+	if (std::ranges::find_if(m_attlist, [attrib](auto a)
 			{ return a->name() == attrib->name(); }) == m_attlist.end())
 		m_attlist.push_back(attrib);
 }
