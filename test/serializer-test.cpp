@@ -1,19 +1,56 @@
+/*-
+ * SPDX-License-Identifier: BSD-2-Clause
+ *
+ * Copyright (c) 2026 Maarten L. Hekkelman
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice, this
+ *    list of conditions and the following disclaimer
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
+ * ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+ * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+ * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+ * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
+/* code */
+
 #define CATCH_CONFIG_RUNNER
 
-#include <catch2/catch_all.hpp>
+#include "zeem.hpp"
 
 #include <array>
+#include <catch2/catch_session.hpp>
+#include <catch2/catch_test_macros.hpp>
+#include <chrono>
 #include <deque>
 #include <filesystem>
+#include <format>
+#include <optional>
+#include <regex>
+#include <sstream>
+#include <cstdint>
+#include <string>
 #include <system_error>
+#include <vector>
 
-#include "zeem.hpp"
-// #include "zeem.ixx"
-
-std::filesystem::path gTestDir = std::filesystem::current_path();
+std::filesystem::path gTestDir;
 
 int main(int argc, char *argv[])
 {
+	gTestDir = std::filesystem::current_path();
+
 	Catch::Session session; // There must be exactly one instance
 
 	// Build a new parser on top of Catch2's
@@ -54,7 +91,7 @@ struct st_1
 	bool operator==(const st_1 &rhs) const { return i == rhs.i and s == rhs.s; }
 };
 
-typedef std::vector<st_1> v_st_1;
+using v_st_1 = std::vector<st_1>;
 
 TEST_CASE("serializer_1")
 {
@@ -323,7 +360,7 @@ TEST_CASE("test_optional")
 	from_xml(doc, "test", s);
 
 	CHECK((bool)s);
-	CHECK(*s == "aap");
+	CHECK(s.value_or("") == "aap");
 }
 
 struct date_t1

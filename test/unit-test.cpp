@@ -24,21 +24,32 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <catch2/catch_test_macros.hpp>
 #define CATCH_CONFIG_RUNNER
 
 #include "zeem.hpp"
 
-#include <catch2/catch_all.hpp>
+#include <cassert>
+#include <catch2/catch_session.hpp>
+#include <catch2/catch_test_macros.hpp>
+#include <compare>
+#include <cstddef>
 #include <filesystem>
+#include <initializer_list>
+#include <iomanip>
 #include <iostream>
+#include <iterator>
+#include <sstream>
+#include <string>
+#include <utility>
 
 // #include "zeem.ixx"
 
-std::filesystem::path gTestDir = std::filesystem::current_path();
+std::filesystem::path gTestDir;
 
 int main(int argc, char *argv[])
 {
+	gTestDir = std::filesystem::current_path();
+
 	Catch::Session session; // There must be exactly one instance
 
 	// Build a new parser on top of Catch2's
@@ -152,7 +163,7 @@ TEST_CASE("test_1")
 
 		auto n3(std::move(n2));
 
-		CHECK(n2.name().empty());
+		CHECK(n2.name().empty()); // NOLINT(bugprone-use-after-move)
 		CHECK(n2.empty());
 		CHECK(n3.name() == "test");
 		CHECK(n3.size() == 4);
@@ -170,7 +181,7 @@ TEST_CASE("test_1")
 		zeem::element n4;
 		n4 = std::move(n3);
 
-		CHECK(n3.empty());
+		CHECK(n3.empty()); // NOLINT(bugprone-use-after-move)
 		CHECK(n4.size() == 4);
 		CHECK(n4.front().name() == "c0");
 		CHECK(n4.back().name() == "c3");
@@ -292,6 +303,8 @@ TEST_CASE("xml_1")
 				CHECK(name == "attr2");
 				CHECK(value == "value-2");
 				break;
+			
+			default:;
 		}
 	}
 
@@ -337,7 +350,7 @@ TEST_CASE("xml_3")
 	CHECK((std::ostringstream() << e).str() == R"(<test><aap/></test>)");
 
 	e.nodes().emplace(e.end(), std::move(a));
-	CHECK(a.name() == "");
+	CHECK(a.name() == ""); // NOLINT(bugprone-use-after-move)
 	CHECK((std::ostringstream() << e).str() == R"(<test><aap/><aap/></test>)");
 
 	zeem::element b("noot");
@@ -353,7 +366,7 @@ TEST_CASE("xml_3")
 
 	auto &&n3 = std::move(b);
 	CHECK(e.nodes().emplace(e.end(), std::move(n3))->name() == "noot");
-	CHECK(b.name() == "");
+	CHECK(b.name() == ""); // NOLINT(bugprone-use-after-move)
 	CHECK((std::ostringstream() << e).str() == R"(<test><aap/><aap/><noot/><noot/><noot/></test>)");
 
 	e.attributes().emplace("attr1", "value1");

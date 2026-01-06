@@ -3,30 +3,32 @@
 //     (See accompanying file LICENSE_1_0.txt or copy at
 //           http://www.boost.org/LICENSE_1_0.txt)
 
-#include <iostream>
-
 #include "zeem.hpp"
+
+#include <iostream>
+#include <string>
+#include <vector>
 
 //[ xpath_sample
 int main()
 {
-    using namespace zeem::literals;
+	using namespace zeem::literals;
 
-    auto doc = R"(<bar xmlns:z="https://www.hekkelman.com/zeem">
+	auto doc = R"(<bar xmlns:z="https://www.hekkelman.com/zeem">
         <z:foo>foei</z:foo>
     </bar>)"_xml;
 
-    /* Create an xpath context and store our variable */
-    zeem::context ctx;
-    ctx.set("ns", "https://www.hekkelman.com/zeem");
+	/* Create an xpath context and store our variable */
+	zeem::context ctx;
+	ctx.set("ns", "https://www.hekkelman.com/zeem");
 
-    /* Create an xpath object with the specified XPath using the variable `ns` */
-    auto xp = zeem::xpath("//*[namespace-uri() = $ns]");
+	/* Create an xpath object with the specified XPath using the variable `ns` */
+	auto xp = zeem::xpath("//*[namespace-uri() = $ns]");
 
-    /* Iterate over the result of the evaluation of this XPath, the result will consist of zeem::element object pointers */
-    for (auto n: xp.evaluate<zeem::element>(doc, ctx))
-        std::cout << n->str() << '\n';
+	/* Iterate over the result of the evaluation of this XPath, the result will consist of zeem::element object pointers */
+	for (auto n : xp.evaluate<zeem::element>(doc, ctx))
+		std::cout << n->str() << '\n';
 
-    return 0;
+	return 0;
 }
 //]

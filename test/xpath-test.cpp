@@ -1,17 +1,17 @@
 /*-
  * SPDX-License-Identifier: BSD-2-Clause
- * 
+ *
  * Copyright (c) 2026 Maarten L. Hekkelman
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- * 
+ *
  * 1. Redistributions of source code must retain the above copyright notice, this
  *    list of conditions and the following disclaimer
  * 2. Redistributions in binary form must reproduce the above copyright notice,
  *    this list of conditions and the following disclaimer in the documentation
  *    and/or other materials provided with the distribution.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
  * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -26,11 +26,12 @@
 
 #include "zeem.hpp"
 
+#include <exception>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <string>
-// #include "zeem.ixx"
+#include <vector>
 
 using namespace std;
 
@@ -105,8 +106,8 @@ bool run_test(const zeem::element &test)
 
 		for (const zeem::node *n : ns)
 		{
-			const zeem::element *e = dynamic_cast<const zeem::element *>(n);
-			if (e == NULL)
+			const auto *e = dynamic_cast<const zeem::element *>(n);
+			if (e == nullptr)
 				continue;
 
 			if (e->get_attribute(test_attr_name) != attr_test)

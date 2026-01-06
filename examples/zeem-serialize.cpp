@@ -7,6 +7,7 @@
 #include "zeem.hpp"
 
 #include <fstream>
+#include <string>
 #include <vector>
 
 struct Person
