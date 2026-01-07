@@ -110,10 +110,10 @@ class document final : public element_container
 	}
 
 	/// \brief Constructor that will parse the XML passed in argument \a s using default settings
-	document(std::string_view s);
+	explicit document(std::string_view s);
 
 	/// \brief Constructor that will parse the XML passed in argument \a is using default settings
-	document(std::istream &is);
+	explicit document(std::istream &is);
 
 	/// \brief Constructor that will parse the XML passed in argument \a is. This
 	/// constructor will also validate the input using DTD's found in \a base_dir
@@ -231,7 +231,7 @@ class document final : public element_container
 	template <typename Callback>
 	void set_entity_loader(Callback &&cb)
 	{
-		m_external_entity_ref_loader = cb;
+		m_external_entity_ref_loader = std::forward<Callback>(cb);
 	}
 
 	[[nodiscard]] encoding_type get_encoding() const; ///< The text encoding as detected in the input.
@@ -250,7 +250,10 @@ class document final : public element_container
 	}
 
 	/// @brief Return the single child, or nullptr in case the document is empty
-	[[nodiscard]] const element *child() const { return const_cast<document *>(this)->child(); }
+	[[nodiscard]] const element *child() const
+	{
+		return empty() ? nullptr : &front();
+	}
 
 	/// @brief Emplace a single element using \a args for the construction
 	template <typename... Args>

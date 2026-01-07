@@ -40,7 +40,7 @@ struct html5_named_character
 {
 	const char *name;
 	const char *value;
-} kNamedHTMLCharacters[] = {
+} const kNamedHTMLCharacters[] = {
 	{ "AElig", "Æ" },
 	{ "AMP", "&" },
 	{ "Aacute", "Á" },

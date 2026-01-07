@@ -10,17 +10,18 @@ Checks: >
     -modernize-avoid-c-arrays,
     -modernize-use-designated-initializers,
     performance-*,
-    -performance-enum-size
+    -performance-enum-size,
+    hicpp-*,
+    -hicpp-braces-around-statements,
+    -hicpp-avoid-c-arrays,
+    -hicpp-no-array-decay,
+    -hicpp-special-member-functions,
+    -hicpp-signed-bitwise,
+    -hicpp-uppercase-literal-suffix
 
     # -clang-analyzer-*,
-    # cppcoreguidelines-*
-    
+  
     # ,
-    # darwin-dispatch-once-nonstatic,
-    # fuchsia-header-anon-namespaces,
-    # fuchsia-multiple-inheritance,
-    # fuchsia-trailing-return,
-    # fuchsia-virtual-inheritance,
     # google-build-explicit-make-pair,
     # google-build-namespaces,
     # google-build-using-namespace,

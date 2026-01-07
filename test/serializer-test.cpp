@@ -76,7 +76,7 @@ int main(int argc, char *argv[])
 
 struct st_1
 {
-	int i;
+	int i{};
 	std::string s;
 
 	template <class Archive>
@@ -113,8 +113,8 @@ TEST_CASE("serializer_1")
 
 struct S
 {
-	int8_t a;
-	float b;
+	int8_t a{};
+	float b{};
 	std::string c;
 
 	bool operator==(const S &s) const { return a == s.a and b == s.b and c == s.c; }
@@ -176,7 +176,7 @@ struct S_arr
 	std::deque<S> ds;
 
 	template <typename Archive>
-	void serialize(Archive &ar, unsigned long)
+	void serialize(Archive &ar, unsigned long version)
 	{
 		// clang-format off
 		ar & zeem::make_element_nvp("vi", vi)
@@ -252,7 +252,7 @@ TEST_CASE("serialize_container_1")
 	serializer sr(e);
 	sr.serialize_element("i", i);
 
-	std::array<int, 3> j;
+	std::array<int, 3> j{};
 	deserializer dsr(e);
 	dsr.deserialize_element("i", j);
 
@@ -273,7 +273,7 @@ struct Se
 	E m_e;
 
 	template <typename Archive>
-	void serialize(Archive &ar, unsigned long)
+	void serialize(Archive &ar, unsigned long version)
 	{
 		ar &zeem::make_element_nvp("e", m_e);
 	}
@@ -368,7 +368,7 @@ struct date_t1
 	std::chrono::sys_days sd;
 
 	template <typename Archive>
-	void serialize(Archive &ar, unsigned long)
+	void serialize(Archive &ar, unsigned long version)
 	{
 		ar &zeem::make_element_nvp("d", sd);
 	}
@@ -407,7 +407,7 @@ struct time_t1
 	std::chrono::system_clock::time_point st;
 
 	template <typename Archive>
-	void serialize(Archive &ar, unsigned long)
+	void serialize(Archive &ar, unsigned long version)
 	{
 		ar &zeem::make_element_nvp("t", st);
 	}

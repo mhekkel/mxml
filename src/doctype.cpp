@@ -31,7 +31,6 @@
 
 #include <cassert>
 #include <cctype>
-#include <cstdint>
 #include <functional>
 #include <memory>
 #include <ranges>
@@ -55,7 +54,6 @@ struct state_base : std::enable_shared_from_this<state_base>
 
 	virtual void reset() {}
 
-  protected:
 	virtual ~state_base() = default;
 };
 
@@ -75,7 +73,7 @@ struct state_empty : public state_base
 
 struct state_element : public state_base
 {
-	state_element(std::string name)
+	explicit state_element(std::string name)
 		: m_name(std::move(name))
 	{
 	}
@@ -97,7 +95,7 @@ struct state_element : public state_base
 
 struct state_repeated : public state_base
 {
-	state_repeated(const content_spec_base_ptr& sub)
+	explicit state_repeated(const content_spec_base_ptr& sub)
 		: m_sub(sub->create_state())
 	{
 	}
@@ -118,7 +116,7 @@ struct state_repeated : public state_base
 
 struct state_repeated_zero_or_once : public state_repeated
 {
-	state_repeated_zero_or_once(const content_spec_base_ptr& sub)
+	explicit state_repeated_zero_or_once(const content_spec_base_ptr& sub)
 		: state_repeated(sub)
 	{
 	}
@@ -164,7 +162,7 @@ std::tuple<bool, bool> state_repeated_zero_or_once::allow(std::string_view name)
 
 struct state_repeated_any : public state_repeated
 {
-	state_repeated_any(const content_spec_base_ptr& sub)
+	explicit state_repeated_any(const content_spec_base_ptr& sub)
 		: state_repeated(sub)
 	{
 	}
@@ -215,7 +213,7 @@ std::tuple<bool, bool> state_repeated_any::allow(std::string_view name)
 
 struct state_repeated_at_least_once : public state_repeated
 {
-	state_repeated_at_least_once(const content_spec_base_ptr& sub)
+	explicit state_repeated_at_least_once(const content_spec_base_ptr& sub)
 		: state_repeated(sub)
 	{
 	}
@@ -278,7 +276,7 @@ std::tuple<bool, bool> state_repeated_at_least_once::allow(std::string_view name
 
 struct state_seq : public state_base
 {
-	state_seq(const content_spec_list &allowed)
+	explicit state_seq(const content_spec_list &allowed)
 	{
 		for (const auto& a : allowed)
 			m_states.emplace_back(a->create_state());
@@ -682,26 +680,24 @@ bool attribute::is_nmtokens(std::string &s) const
 	{
 		result = false;
 
-		do
+		while (c != s.end())
 		{
 			if (not is_name_char(*c))
 				break;
 			result = true;
 			t += *c;
 			++c;
-		} while (c != s.end());
+		}
 
 		if (not result or c == s.end())
 			break;
 
 		result = false;
-		do
+		while (c != s.end() and *c == ' ')
 		{
-			if (*c != ' ')
-				break;
 			result = true;
 			++c;
-		} while (c != s.end() and *c == ' ');
+		}
 
 		t += ' ';
 	}

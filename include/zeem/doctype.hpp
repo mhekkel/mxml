@@ -34,7 +34,6 @@
  */
 
 #include <cassert>
-#include <cstdint>
 #include <memory>
 #include <string>
 #include <string_view>
@@ -84,8 +83,8 @@ using content_spec_list = std::vector<content_spec_base_ptr>;
 class validator
 {
   public:
-	validator(content_spec_base &allowed);
-	validator(const element_ptr &e);
+	explicit validator(content_spec_base &allowed);
+	explicit validator(const element_ptr &e);
 
 	validator(const validator &other) = delete;
 	validator &operator=(const validator &other) = delete;
@@ -115,7 +114,7 @@ struct content_spec_base
 	[[nodiscard]] content_spec_type get_content_spec() const { return m_content_spec; }
 
   protected:
-	content_spec_base(content_spec_type contentSpec)
+	explicit content_spec_base(content_spec_type contentSpec)
 		: m_content_spec(contentSpec)
 	{
 	}
@@ -145,7 +144,7 @@ struct content_spec_empty : public content_spec_base
 
 struct content_spec_element : public content_spec_base
 {
-	content_spec_element(std::string name)
+	explicit content_spec_element(std::string name)
 		: content_spec_base(content_spec_type::Children)
 		, m_name(std::move(name))
 	{
@@ -176,7 +175,7 @@ struct content_spec_repeated : public content_spec_base
 
 struct content_spec_seq : public content_spec_base
 {
-	content_spec_seq(const content_spec_base_ptr& a)
+	explicit content_spec_seq(const content_spec_base_ptr& a)
 		: content_spec_base(a->get_content_spec())
 	{
 		add(a);
@@ -192,7 +191,7 @@ struct content_spec_seq : public content_spec_base
 
 struct content_spec_choice : public content_spec_base
 {
-	content_spec_choice(bool mixed)
+	explicit content_spec_choice(bool mixed)
 		: content_spec_base(mixed ? content_spec_type::Mixed : content_spec_type::Children)
 		, m_mixed(mixed)
 	{

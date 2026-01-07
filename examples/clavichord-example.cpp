@@ -72,7 +72,7 @@ struct Note
 	float pitch;
 
 	template <typename Archive>
-	void serialize(Archive &ar, unsigned long)
+	void serialize(Archive &ar, unsigned long version)
 	{
 		// clang-format off
         ar & zeem::make_attribute_nvp("id", name)
@@ -83,11 +83,11 @@ struct Note
 
 struct Tuning
 {
-	float A_frequency;
-	std::array<Note, 12> notes;
+	float A_frequency{};
+	std::array<Note, 12> notes{};
 
 	template <typename Archive>
-	void serialize(Archive &ar, unsigned long)
+	void serialize(Archive &ar, unsigned long version)
 	{
 		// clang-format off
         ar & zeem::make_attribute_nvp("a", A_frequency)
@@ -98,11 +98,11 @@ struct Tuning
 
 struct Binding
 {
-	BindingType type;
+	BindingType type{};
 	std::string start;
 
 	template <typename Archive>
-	void serialize(Archive &ar, unsigned long)
+	void serialize(Archive &ar, unsigned long version)
 	{
 		// clang-format off
         ar & zeem::make_attribute_nvp("schema", type)
@@ -113,12 +113,12 @@ struct Binding
 
 struct Stringing
 {
-	float angle;
-	float stress;
+	float angle{};
+	float stress{};
 	std::optional<Binding> binding;
 
 	template <typename Archive>
-	void serialize(Archive &ar, unsigned long)
+	void serialize(Archive &ar, unsigned long version)
 	{
 		// clang-format off
         ar & zeem::make_attribute_nvp("hoek", angle)
@@ -132,11 +132,11 @@ struct ClavichordSettings
 {
 	std::string name;
 	std::string description;
-	Tuning tuning;
+	Tuning tuning{};
 	Stringing strings;
 
 	template <typename Archive>
-	void serialize(Archive &ar, unsigned long)
+	void serialize(Archive &ar, unsigned long version)
 	{
 		// clang-format off
         ar & zeem::make_element_nvp("naam", name)

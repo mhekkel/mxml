@@ -42,16 +42,14 @@ class exception : public std::exception
 {
   public:
 	/// \brief Create an exception with the message in \a message
-	exception(std::string message)
+	explicit exception(std::string message)
 		: m_message(std::move(message))
 	{
 	}
 
-	~exception() noexcept override = default;
-
 	[[nodiscard]] const char *what() const noexcept override { return m_message.c_str(); }
 
-  protected:
+  private:
 	std::string m_message;
 };
 

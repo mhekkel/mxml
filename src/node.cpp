@@ -46,7 +46,7 @@ namespace zeem
 
 struct my_set : std::set<std::string>
 {
-	explicit my_set(std::initializer_list<const char *> strings,
+	my_set(std::initializer_list<const char *> strings,
 		const std::string::allocator_type &alloc = std::string::allocator_type{}) noexcept
 	try
 		: std

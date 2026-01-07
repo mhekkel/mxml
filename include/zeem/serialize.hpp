@@ -460,8 +460,6 @@ class name_value_pair
 	/** @endcond */
 
 	[[nodiscard]] const std::string &name() const { return m_name; }
-
-	// T &value() { return m_value; }
 	[[nodiscard]] T &value() const { return m_value; }
 
 	/** @cond */
@@ -525,7 +523,7 @@ constexpr element_nvp<T> make_element_nvp(std::string name, T &value)
 struct serializer
 {
 	/// @brief constructor, write to \a node
-	serializer(element_container &node)
+	explicit serializer(element_container &node)
 		: m_node(node)
 	{
 	}
@@ -566,7 +564,7 @@ struct serializer
 struct deserializer
 {
 	/// @brief constructor, read from \a node
-	deserializer(const element_container &node)
+	explicit deserializer(const element_container &node)
 		: m_node(node)
 	{
 	}
@@ -717,13 +715,13 @@ struct type_serializer<T>
 		if (name.empty() or name == ".")
 		{
 			serializer sr(n);
-			const_cast<value_type &>(value).serialize(sr, 0Ul);
+			const_cast<value_type &>(value).serialize(sr, 0UL);
 		}
 		else
 		{
 			element *e = static_cast<element *>(n.emplace_back(name));
 			serializer sr(*e);
-			const_cast<value_type &>(value).serialize(sr, 0Ul);
+			const_cast<value_type &>(value).serialize(sr, 0UL);
 		}
 	}
 
@@ -807,7 +805,7 @@ struct type_serializer<T>
 
 	template <size_t N>
 	static auto deserialize_array(const element_container &n, std::string_view name,
-		std::array<value_type, N> &value, priority_tag<2>)
+		std::array<value_type, N> &value, priority_tag<2> pt)
 	{
 		size_t ix = 0;
 		for (auto &e : n)
@@ -827,7 +825,7 @@ struct type_serializer<T>
 	}
 
 	template <typename A>
-	static auto deserialize_array(const element_container &n, std::string_view name, A &arr, priority_tag<1>)
+	static auto deserialize_array(const element_container &n, std::string_view name, A &arr, priority_tag<1> pt)
 		-> decltype(arr.reserve(std::declval<typename container_type::size_type>()),
 			void())
 	{
@@ -845,7 +843,7 @@ struct type_serializer<T>
 		}
 	}
 
-	static void deserialize_array(const element_container &n, std::string_view name, container_type &arr, priority_tag<0>)
+	static void deserialize_array(const element_container &n, std::string_view name, container_type &arr, priority_tag<0> pt)
 	{
 		for (auto &e : n)
 		{

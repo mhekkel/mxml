@@ -56,11 +56,10 @@ struct version_type;
 class invalid_exception : public exception
 {
   public:
-	invalid_exception(std::string msg)
+	explicit invalid_exception(std::string msg)
 		: exception(std::move(msg))
 	{
 	}
-	~invalid_exception() noexcept override = default;
 };
 
 /// If an not_wf_exception is thrown, it means the XML document is not well formed.
@@ -72,11 +71,10 @@ class invalid_exception : public exception
 class not_wf_exception : public exception
 {
   public:
-	not_wf_exception(std::string msg)
+	explicit not_wf_exception(std::string msg)
 		: exception(std::move(msg))
 	{
 	}
-	~not_wf_exception() noexcept override = default;
 };
 
 /**
@@ -98,13 +96,13 @@ class parser
 		std::string m_ns;    ///< The namespace for this attribute
 		std::string m_name;  ///< The name of the attribute
 		std::string m_value; ///< The value of the attribute
-		bool m_id;           ///< Flag indicating the attribute is defined as type ID in its ATTLIST decl
+		bool m_id{};         ///< Flag indicating the attribute is defined as type ID in its ATTLIST decl
 	};
 
 	using attr_list_type = std::vector<attr>;
 
 	/// @brief constructor taking a std::istream in \a is
-	parser(std::istream &is);
+	explicit parser(std::istream &is);
 
 	/// @brief destructor
 	virtual ~parser();

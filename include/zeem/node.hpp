@@ -270,8 +270,8 @@ class node
 	}
 
 	element_container *m_parent = nullptr;
-	node *m_next;
-	node *m_prev;
+	node *m_next{};
+	node *m_prev{};
 
 	/** @endcond */
 };
@@ -306,13 +306,13 @@ class basic_node_list
 
 	node_list_header m_header_node;
 	node *m_header = nullptr;
-	bool m_owner;
+	bool m_owner = false;
 
 	template <typename T>
 	friend class node_list;
 
   protected:
-	basic_node_list(element_container *e)
+	explicit basic_node_list(element_container *e)
 		: m_header(&m_header_node)
 	{
 		m_header_node.parent(e);
@@ -384,10 +384,17 @@ class iterator_impl
 
 	iterator_impl() = default;
 
-	iterator_impl(const node *current)
-		: m_current(const_cast<node *>(current))
+	// NOLINTBEGIN(hicpp-explicit-conversions)
+	iterator_impl(node *current)
+		: m_current(current)
 	{
 		skip();
+	}
+
+	iterator_impl(const node *current)
+		requires(std::is_const_v<value_type>)
+		: iterator_impl(const_cast<node *>(current))
+	{
 	}
 
 	iterator_impl(const iterator_impl &i) = default;
@@ -407,6 +414,8 @@ class iterator_impl
 	{
 		skip();
 	}
+
+	// NOLINTEND(hicpp-explicit-conversions)
 
 	iterator_impl &operator=(iterator_impl i)
 	{
@@ -534,7 +543,7 @@ class node_list : public basic_node_list
 	 * @param e The element_container
 	 */
   private:
-	node_list(element_container *e);
+	node_list(element_container *e); // NOLINT(hicpp-explicit-conversions)
 	friend class element_container;
 	friend class attribute_set;
 
@@ -569,13 +578,13 @@ class node_list : public basic_node_list
 	/// \brief insert a copy of \a e
 	iterator insert(const_iterator pos, const value_type &e)
 	{
-		return insert_impl(pos, new value_type(e));
+		return iterator{ insert_impl(pos, new value_type(e)) };
 	}
 
 	/// \brief insert a copy of \a e at position \a pos, moving its data
 	iterator insert(const_iterator pos, value_type &&e)
 	{
-		return insert_impl(pos, new value_type(std::move(e)));
+		return iterator{ insert_impl(pos, new value_type(std::move(e))) };
 	}
 
 	/// \brief construct a new node using arguments provided in \a a
@@ -708,7 +717,7 @@ class node_list : public basic_node_list
 
 	/// \brief Sort the nodes
 	template <typename Pred>
-	void sort(Pred &&pred);
+	void sort(const Pred &pred);
 
   protected:
 	using basic_node_list::insert_impl;
@@ -834,7 +843,7 @@ class node_with_text : public node
 
 	node_with_text() = default;
 
-	node_with_text(std::string s)
+	explicit node_with_text(std::string s)
 		: m_text(std::move(s))
 	{
 	}
@@ -887,7 +896,7 @@ class comment final : public node_with_text
 	[[nodiscard]] constexpr node_type type() const override { return node_type::comment; }
 
 	/// @brief default constructor
-	comment(std::string text = {})
+	explicit comment(std::string text = {})
 		: node_with_text(std::move(text))
 	{
 	}
@@ -1005,7 +1014,7 @@ class text final : public node_with_text
 	[[nodiscard]] constexpr node_type type() const override { return node_type::text; }
 
 	/// @brief default constructor
-	text(std::string text = {})
+	explicit text(std::string text = {})
 		: node_with_text(std::move(text))
 	{
 	}
@@ -1053,7 +1062,7 @@ class cdata final : public node_with_text
 	[[nodiscard]] constexpr node_type type() const override { return node_type::cdata; }
 
 	/// @brief default constructor
-	cdata(std::string s = {})
+	explicit cdata(std::string s = {})
 		: node_with_text(std::move(s))
 	{
 	}
@@ -1166,7 +1175,7 @@ class attribute final : public node
 	/// \brief Is this attribute an xmlns attribute?
 	[[nodiscard]] bool is_namespace() const
 	{
-		return m_qname.starts_with("xmlns") and (m_qname[5] == 0 or m_qname[5] == ':');
+		return m_qname.starts_with("xmlns") and (m_qname.length() == 5 or m_qname[5] == ':');
 	}
 
 	/// @brief Return the value of this attribute
@@ -1228,7 +1237,7 @@ class attribute_set : public node_list<attribute>
 {
   public:
 	/// @brief constructor to create an attribute_set for an element
-	attribute_set(element_container *el)
+	explicit attribute_set(element_container *el)
 		: node_list(el)
 	{
 	}
@@ -1266,7 +1275,7 @@ class attribute_set : public node_list<attribute>
 	/// \brief return iterator to the attribute with name \a key
 	iterator find(std::string_view key)
 	{
-		return const_cast<const attribute_set &>(*this).find(key);
+		return iterator{ const_cast<const attribute_set &>(*this).find(key) };
 	}
 
 	/// \brief emplace a newly constructed attribute with argumenst \a args
@@ -1290,7 +1299,7 @@ class attribute_set : public node_list<attribute>
 			*i = std::move(a); // move assign value of a
 		else
 		{
-			i = node_list::insert_impl(node_list::end(), new attribute(std::move(a)));
+			i = iterator{ node_list::insert_impl(node_list::end(), new attribute(std::move(a))) };
 			inserted = true;
 		}
 
@@ -1334,7 +1343,7 @@ class element final : public element_container
 	}
 
 	/// @brief constructor taking a \a qname and a list of \a attributes
-	element(std::string_view qname, std::initializer_list<attribute> attributes = {})
+	explicit element(std::string_view qname, std::initializer_list<attribute> attributes = {})
 		: m_qname(qname)
 		, m_attributes(this)
 	{
@@ -1485,6 +1494,7 @@ inline node_list<T>::node_list(element_container *e)
 		m_header = e->m_header;
 }
 
+// NOLINTBEGIN(cppcoreguidelines-owning-memory,cppcoreguidelines-pro-type-static-cast-downcast)
 template <>
 inline auto node_list<node>::insert(const_iterator pos, const value_type &e) -> iterator
 {
@@ -1520,31 +1530,33 @@ inline auto node_list<node>::insert(const_iterator pos, value_type &&e) -> itera
 	switch (e.type())
 	{
 		case node_type::element:
-			return insert_impl(pos, new element(static_cast<element &&>(e)));
+			return insert_impl(pos, new element(std::forward<element &&>(static_cast<element &&>(e))));
 			break;
 		case node_type::text:
-			return insert_impl(pos, new text(static_cast<text &&>(e)));
+			return insert_impl(pos, new text(std::forward<text &&>(static_cast<text &&>(e))));
 			break;
 		case node_type::attribute:
-			return insert_impl(pos, new attribute(static_cast<attribute &&>(e)));
+			return insert_impl(pos, new attribute(std::forward<attribute &&>(static_cast<attribute &&>(e))));
 			break;
 		case node_type::comment:
-			return insert_impl(pos, new comment(static_cast<comment &&>(e)));
+			return insert_impl(pos, new comment(std::forward<comment &&>(static_cast<comment &&>(e))));
 			break;
 		case node_type::cdata:
-			return insert_impl(pos, new cdata(static_cast<cdata &&>(e)));
+			return insert_impl(pos, new cdata(std::forward<cdata &&>(static_cast<cdata &&>(e))));
 			break;
 		case node_type::processing_instruction:
-			return insert_impl(pos, new processing_instruction(static_cast<processing_instruction &&>(e)));
+			return insert_impl(pos, new processing_instruction(std::forward<processing_instruction &&>(static_cast<processing_instruction &&>(e))));
 			break;
 		default:
 			throw exception("internal error");
 	}
 }
 
+// NOLINTEND(cppcoreguidelines-owning-memory,cppcoreguidelines-pro-type-static-cast-downcast)
+
 template <typename T>
 template <typename Pred>
-void node_list<T>::sort(Pred &&pred)
+void node_list<T>::sort(const Pred &pred)
 {
 	std::vector<node *> t;
 	for (auto n = m_header->m_next; n != m_header; n = n->m_next)

@@ -123,7 +123,7 @@ bool is_valid_url(std::string_view url)
 class source_exception : public exception
 {
   public:
-	source_exception(std::string msg)
+	explicit source_exception(std::string msg)
 		: exception(msg)
 		, m_wmsg(std::move(msg))
 	{
@@ -182,14 +182,14 @@ class data_source
 class istream_data_source : public data_source
 {
   public:
-	istream_data_source(std::istream &data)
+	explicit istream_data_source(std::istream &data)
 		: m_data(&data)
 		, m_owns_data(false)
 	{
 		guess_encoding();
 	}
 
-	istream_data_source(std::istream *data)
+	explicit istream_data_source(std::istream *data)
 		: m_data(data)
 	{
 		guess_encoding();
@@ -231,7 +231,7 @@ class istream_data_source : public data_source
 
 	using next_func = char32_t (istream_data_source::*)();
 
-	next_func m_next;
+	next_func m_next{};
 	bool m_has_bom = false;
 };
 
@@ -473,7 +473,7 @@ char32_t istream_data_source::get_next_char()
 class string_data_source : public data_source
 {
   public:
-	string_data_source(std::string data)
+	explicit string_data_source(std::string data)
 		: m_data(std::move(data))
 		, m_ptr(m_data.cbegin())
 	{
@@ -526,7 +526,7 @@ class parameter_entity_data_source : public string_data_source
 class valid_nesting_validator
 {
   public:
-	valid_nesting_validator(data_source &source)
+	explicit valid_nesting_validator(data_source &source)
 		: m_id(source.id())
 	{
 	}
@@ -734,7 +734,7 @@ struct parser_imp
 	version_type parse_version();
 
 	// error handling routines
-	void not_well_formed(const std::string &msg) const;
+	[[noreturn]] void not_well_formed(const std::string &msg) const;
 	void not_valid(std::string msg) const;
 
 	// doctype support
@@ -795,7 +795,7 @@ struct parser_imp
 
 		parser_imp &m_impl;
 		data_source *m_source;
-		std::array<char32_t, 4> m_buffer;
+		std::array<char32_t, 4> m_buffer{};
 		std::ptrdiff_t m_buffer_offset;
 		XMLToken m_lookahead;
 		std::string m_token;
@@ -818,7 +818,7 @@ struct parser_imp
 	class ns_state
 	{
 	  public:
-		ns_state(parser_imp *imp)
+		explicit ns_state(parser_imp *imp)
 			: m_parser_imp(imp)
 			, m_next(imp->m_ns)
 		{
@@ -938,7 +938,7 @@ struct parser_imp
 
 	parser &m_parser;
 	bool m_validating{};
-	bool m_validating_ns;
+	bool m_validating_ns{};
 	bool m_has_dtd{};
 	bool m_is_html5 = false; // needed to see if we can use built in named characters
 	XMLToken m_lookahead{ XMLToken::Eof };
@@ -946,7 +946,7 @@ struct parser_imp
 
 	std::stack<source_state> m_source;
 
-	std::array<char32_t, 4> m_buffer;
+	std::array<char32_t, 4> m_buffer{};
 	std::array<char32_t, 4>::iterator m_buffer_ptr = m_buffer.begin();
 
 	version_type m_version{ 1, 0 };
@@ -1043,7 +1043,6 @@ const doctype::entity &parser_imp::get_general_entity(std::string_view name) con
 	}
 
 	not_well_formed("undefined entity reference '" + std::string{ name } + "'");
-	throw 0;
 }
 
 const doctype::entity &parser_imp::get_parameter_entity(std::string_view name) const
@@ -1055,7 +1054,6 @@ const doctype::entity &parser_imp::get_parameter_entity(std::string_view name) c
 	}
 
 	not_well_formed("Undefined parameter entity '" + m_token + '\'');
-	throw 0;
 }
 
 const doctype::element_ptr parser_imp::get_element(std::string_view name) const

@@ -163,7 +163,7 @@ TEST_CASE("test_1")
 
 		auto n3(std::move(n2));
 
-		CHECK(n2.name().empty()); // NOLINT(bugprone-use-after-move)
+		CHECK(n2.name().empty()); // NOLINT(bugprone-use-after-move,hicpp-invalid-access-moved)
 		CHECK(n2.empty());
 		CHECK(n3.name() == "test");
 		CHECK(n3.size() == 4);
@@ -181,7 +181,7 @@ TEST_CASE("test_1")
 		zeem::element n4;
 		n4 = std::move(n3);
 
-		CHECK(n3.empty()); // NOLINT(bugprone-use-after-move)
+		CHECK(n3.empty()); // NOLINT(bugprone-use-after-move,hicpp-invalid-access-moved)
 		CHECK(n4.size() == 4);
 		CHECK(n4.front().name() == "c0");
 		CHECK(n4.back().name() == "c3");
@@ -350,7 +350,7 @@ TEST_CASE("xml_3")
 	CHECK((std::ostringstream() << e).str() == R"(<test><aap/></test>)");
 
 	e.nodes().emplace(e.end(), std::move(a));
-	CHECK(a.name() == ""); // NOLINT(bugprone-use-after-move)
+	CHECK(a.name() == ""); // NOLINT(bugprone-use-after-move,hicpp-invalid-access-moved)
 	CHECK((std::ostringstream() << e).str() == R"(<test><aap/><aap/></test>)");
 
 	zeem::element b("noot");
@@ -365,8 +365,8 @@ TEST_CASE("xml_3")
 	CHECK((std::ostringstream() << e).str() == R"(<test><aap/><aap/><noot/><noot/></test>)");
 
 	auto &&n3 = std::move(b);
-	CHECK(e.nodes().emplace(e.end(), std::move(n3))->name() == "noot"); // NOLINT(bugprone-use-after-move)
-	CHECK(b.name() == ""); // NOLINT(bugprone-use-after-move)
+	CHECK(e.nodes().emplace(e.end(), std::move(n3))->name() == "noot"); // NOLINT(bugprone-use-after-move,hicpp-invalid-access-moved)
+	CHECK(b.name() == ""); // NOLINT(bugprone-use-after-move,hicpp-invalid-access-moved)
 	CHECK((std::ostringstream() << e).str() == R"(<test><aap/><aap/><noot/><noot/><noot/></test>)");
 
 	e.attributes().emplace("attr1", "value1");
@@ -480,7 +480,7 @@ TEST_CASE("xml_container_and_iterators")
 	CHECK(e.size() == 1);
 	CHECK(e.front().name() == "c");
 
-	e.push_front({ "aa" });
+	e.emplace_front("aa");
 	CHECK(e.size() == 2);
 	CHECK(e.front().name() == "aa");
 

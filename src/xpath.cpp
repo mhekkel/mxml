@@ -219,16 +219,50 @@ enum class object_type
 class object
 {
   public:
-	object();
+	// NOLINTBEGIN(hicpp-explicit-conversions)
 	object(node_set ns);
 	object(bool b);
 	object(double n);
 	object(std::string s);
-	object(const object &o);
-	object &operator=(const object &o);
+	// NOLINTEND(hicpp-explicit-conversions)
+
+	object() = default;
+	object(const object &o) = default;
+
+	object(object &&o) noexcept
+	{
+		swap(*this, o);
+	}
+
+	object &operator=(object o) noexcept
+	{
+		swap(*this, o);
+		return *this;
+	}
+
+	friend void swap(object &a, object &b) noexcept
+	{
+		std::swap(a.m_type, b.m_type);
+		std::swap(a.m_node_set, b.m_node_set);
+		std::swap(a.m_boolean, b.m_boolean);
+		std::swap(a.m_number, b.m_number);
+		std::swap(a.m_string, b.m_string);
+	}
 
 	bool operator==(const object &o) const;
 	bool operator<(const object &o) const;
+
+	friend object operator*(const object &lhs, const object &rhs);
+	friend object operator%(const object &lhs, const object &rhs);
+	friend object operator/(const object &lhs, const object &rhs);
+	friend object operator+(const object &lhs, const object &rhs);
+	friend object operator-(const object &lhs, const object &rhs);
+	object operator-() const;
+
+	friend object operator and(const object &lhs, const object &rhs);
+	friend object operator or(const object &lhs, const object &rhs);
+
+	explicit operator bool() const;
 
 	[[nodiscard]] object_type type() const { return m_type; }
 
@@ -236,22 +270,12 @@ class object
 	[[nodiscard]] T as() const;
 
   private:
-	object_type m_type;
+	object_type m_type{ object_type::undef };
 	node_set m_node_set;
-	bool m_boolean;
-	double m_number;
+	bool m_boolean{};
+	double m_number{};
 	std::string m_string;
 };
-
-object operator%(const object &lhs, const object &rhs);
-object operator/(const object &lhs, const object &rhs);
-object operator+(const object &lhs, const object &rhs);
-object operator-(const object &lhs, const object &rhs);
-
-object::object()
-	: m_type(object_type::undef)
-{
-}
 
 object::object(node_set ns)
 	: m_type(object_type::node_set)
@@ -275,36 +299,6 @@ object::object(std::string s)
 	: m_type(object_type::string)
 	, m_string(std::move(s))
 {
-}
-
-object::object(const object &o)
-	: m_type(o.m_type)
-{
-	switch (m_type)
-	{
-		case object_type::node_set: m_node_set = o.m_node_set; break;
-		case object_type::boolean: m_boolean = o.m_boolean; break;
-		case object_type::number: m_number = o.m_number; break;
-		case object_type::string: m_string = o.m_string; break;
-		default: break;
-	}
-}
-
-object &object::operator=(const object &o)
-{
-	if (&o != this)
-	{
-		m_type = o.m_type;
-		switch (m_type)
-		{
-			case object_type::node_set: m_node_set = o.m_node_set; break;
-			case object_type::boolean: m_boolean = o.m_boolean; break;
-			case object_type::number: m_number = o.m_number; break;
-			case object_type::string: m_string = o.m_string; break;
-			default: break;
-		}
-	}
-	return *this;
 }
 
 template <>
@@ -401,6 +395,16 @@ std::string object::as<std::string>() const
 	return result;
 }
 
+object::operator bool() const
+{
+	return as<bool>();
+}
+
+object object::operator-() const
+{
+	return -as<double>();
+}
+
 bool object::operator==(const object &o) const
 {
 	bool result = false;
@@ -441,6 +445,41 @@ bool object::operator<(const object &o) const
 		default: break;
 	}
 	return result;
+}
+
+object operator%(const object &lhs, const object &rhs)
+{
+	return lhs.as<double>() + rhs.as<int>();
+}
+
+object operator*(const object &lhs, const object &rhs)
+{
+	return lhs.as<double>() * rhs.as<double>();
+}
+
+object operator/(const object &lhs, const object &rhs)
+{
+	return lhs.as<double>() / rhs.as<double>();
+}
+
+object operator+(const object &lhs, const object &rhs)
+{
+	return lhs.as<double>() + rhs.as<double>();
+}
+
+object operator-(const object &lhs, const object &rhs)
+{
+	return lhs.as<double>() - rhs.as<double>();
+}
+
+object operator and(const object &lhs, const object &rhs)
+{
+	return lhs.as<bool>() and rhs.as<bool>();
+}
+
+object operator or(const object &lhs, const object &rhs)
+{
+	return lhs.as<bool>() or rhs.as<bool>();
 }
 
 // --------------------------------------------------------------------
@@ -667,7 +706,7 @@ using expression_list = std::vector<expression_ptr>;
 class step_expression : public expression
 {
   public:
-	step_expression(AxisType axis)
+	explicit step_expression(AxisType axis)
 		: m_axis(axis)
 	{
 	}
@@ -805,7 +844,7 @@ class node_type_expression : public step_expression
 	{
 	}
 
-	node_type_expression(AxisType axis)
+	explicit node_type_expression(AxisType axis)
 		: step_expression(axis)
 	{
 	}
@@ -866,7 +905,7 @@ object operator_expression<Token::OperatorAdd>::evaluate(expression_context &con
 	object v1 = m_lhs->evaluate(context);
 	object v2 = m_rhs->evaluate(context);
 
-	return v1.as<double>() + v2.as<double>();
+	return v1 + v2;
 }
 
 template <>
@@ -875,7 +914,7 @@ object operator_expression<Token::OperatorSubstract>::evaluate(expression_contex
 	object v1 = m_lhs->evaluate(context);
 	object v2 = m_rhs->evaluate(context);
 
-	return v1.as<double>() - v2.as<double>();
+	return v1 - v2;
 }
 
 template <>
@@ -938,7 +977,7 @@ object operator_expression<Token::OperatorAnd>::evaluate(expression_context &con
 	object v1 = m_lhs->evaluate(context);
 	object v2 = m_rhs->evaluate(context);
 
-	return v1.as<bool>() and v2.as<bool>();
+	return v1 and v2;
 }
 
 template <>
@@ -947,7 +986,7 @@ object operator_expression<Token::OperatorOr>::evaluate(expression_context &cont
 	object v1 = m_lhs->evaluate(context);
 	object v2 = m_rhs->evaluate(context);
 
-	return v1.as<bool>() or v2.as<bool>();
+	return v1 or v2;
 }
 
 template <>
@@ -965,7 +1004,7 @@ object operator_expression<Token::OperatorDiv>::evaluate(expression_context &con
 	object v1 = m_lhs->evaluate(context);
 	object v2 = m_rhs->evaluate(context);
 
-	return v1.as<double>() / v2.as<double>();
+	return v1 / v2;
 }
 
 template <>
@@ -974,7 +1013,7 @@ object operator_expression<Token::Asterisk>::evaluate(expression_context &contex
 	object v1 = m_lhs->evaluate(context);
 	object v2 = m_rhs->evaluate(context);
 
-	return v1.as<double>() * v2.as<double>();
+	return v1 * v2;
 }
 
 // --------------------------------------------------------------------
@@ -982,7 +1021,7 @@ object operator_expression<Token::Asterisk>::evaluate(expression_context &contex
 class negate_expression : public expression
 {
   public:
-	negate_expression(expression_ptr expr)
+	explicit negate_expression(expression_ptr expr)
 		: m_expr(std::move(expr))
 	{
 	}
@@ -996,7 +1035,7 @@ class negate_expression : public expression
 object negate_expression::evaluate(expression_context &context)
 {
 	object v = m_expr->evaluate(context);
-	return -v.as<double>();
+	return -v;
 }
 
 // --------------------------------------------------------------------
@@ -1081,7 +1120,7 @@ object predicate_expression::evaluate(expression_context &context)
 class variable_expression : public expression
 {
   public:
-	variable_expression(std::string_view name)
+	explicit variable_expression(std::string_view name)
 		: m_var(name)
 	{
 	}
@@ -1102,7 +1141,7 @@ object variable_expression::evaluate(expression_context &context)
 class literal_expression : public expression
 {
   public:
-	literal_expression(std::string_view lit)
+	explicit literal_expression(std::string_view lit)
 		: m_lit(lit)
 	{
 	}
@@ -1123,7 +1162,7 @@ object literal_expression::evaluate(expression_context & /*context*/)
 class number_expression : public expression
 {
   public:
-	number_expression(double number)
+	explicit number_expression(double number)
 		: m_number(number)
 	{
 	}
@@ -1145,7 +1184,7 @@ template <CoreFunction CF>
 class core_function_expression : public expression
 {
   public:
-	core_function_expression(expression_list &arguments)
+	explicit core_function_expression(expression_list &arguments)
 		: m_args(arguments)
 	{
 	}
@@ -1607,7 +1646,7 @@ object union_expression::evaluate(expression_context &context)
 
 struct xpath_parser
 {
-	xpath_parser() = default;
+	explicit xpath_parser() = default;
 
 	expression_ptr parse(std::string_view path);
 
@@ -1647,11 +1686,11 @@ struct xpath_parser
 	std::u32string::const_iterator
 		m_begin,
 		m_next, m_end;
-	Token m_lookahead;
+	Token m_lookahead{ Token::Eof };
 	std::string m_token_string;
-	double m_token_number;
-	AxisType m_token_axis;
-	CoreFunction m_token_function;
+	double m_token_number{};
+	AxisType m_token_axis{};
+	CoreFunction m_token_function{};
 };
 
 // --------------------------------------------------------------------

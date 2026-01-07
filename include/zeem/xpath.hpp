@@ -107,7 +107,7 @@ class xpath final
 {
   public:
 	/// @brief constructor taking a UTF-8 encoded xpath in \a path
-	xpath(std::string_view path);
+	explicit xpath(std::string_view path);
 
 	/// @brief copy constructor
 	xpath(const xpath &rhs) = default;
