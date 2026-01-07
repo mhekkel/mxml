@@ -808,7 +808,7 @@ struct type_serializer<T>
 
 	template <size_t N>
 	static auto deserialize_array(const element_container &n, std::string_view name,
-		std::array<value_type, N> &value, priority_tag<2> pt)
+		std::array<value_type, N> &value, [[maybe_unused]] priority_tag<2> pt)
 	{
 		size_t ix = 0;
 		for (auto &e : n)
@@ -828,7 +828,7 @@ struct type_serializer<T>
 	}
 
 	template <typename A>
-	static auto deserialize_array(const element_container &n, std::string_view name, A &arr, priority_tag<1> pt)
+	static auto deserialize_array(const element_container &n, std::string_view name, A &arr, [[maybe_unused]] priority_tag<1> pt)
 		-> decltype(arr.reserve(std::declval<typename container_type::size_type>()),
 			void())
 	{
@@ -846,7 +846,7 @@ struct type_serializer<T>
 		}
 	}
 
-	static void deserialize_array(const element_container &n, std::string_view name, container_type &arr, priority_tag<0> pt)
+	static void deserialize_array(const element_container &n, std::string_view name, container_type &arr, [[maybe_unused]] priority_tag<0> pt)
 	{
 		for (auto &e : n)
 		{

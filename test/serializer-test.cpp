@@ -486,7 +486,7 @@ struct st_2
 	std::vector<std::string> s;
 
 	template <class Archive>
-	void serialize(Archive &ar, uint64_t v)
+	void serialize(Archive &ar, [[maybe_unused]] uint64_t version)
 	{
 		// clang-format off
 		ar & zeem::make_element_nvp("i", s);

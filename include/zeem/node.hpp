@@ -161,7 +161,7 @@ class node
 	 *
 	 * @param qn
 	 */
-	virtual void set_qname(std::string qn) {} // NOLINT(performance-unnecessary-value-param)
+	virtual void set_qname([[maybe_unused]] std::string qn) {} // NOLINT(performance-unnecessary-value-param)
 
 	/**
 	 * \brief set the qname with two parameters, if \a prefix is empty the qname will be simply \a name
