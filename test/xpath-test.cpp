@@ -33,13 +33,11 @@
 #include <string>
 #include <vector>
 
-using namespace std;
-
 namespace fs = std::filesystem;
 
 int VERBOSE;
 
-ostream &operator<<(ostream &os, const zeem::node &n)
+std::ostream &operator<<(std::ostream &os, const zeem::node &n)
 {
 	n.write(os, {});
 	return os;
@@ -49,27 +47,27 @@ bool run_test(const zeem::element &test)
 {
 	if (VERBOSE)
 	{
-		cout << "----------------------------------------------------------" << endl
-			 << "ID: " << test.get_attribute("ID")
-			 << endl
-			 << "xpath: " << test.get_attribute("xpath") << endl
-			 //		 << "data: " << test.content() << endl
-		     //		 << "expected-size: " << test.attr("expected-size") << endl
-			 << endl;
+		std::cout << "----------------------------------------------------------\n"
+				  << "ID: " << test.get_attribute("ID")
+				  << '\n'
+				  << "xpath: " << test.get_attribute("xpath") << '\n'
+				  //		 << "data: " << test.content() << '\n'
+		          //		 << "expected-size: " << test.attr("expected-size") << '\n'
+				  << '\n';
 	}
 
 	fs::path data_file = fs::current_path() / test.get_attribute("data");
 	if (not fs::exists(data_file))
 		throw zeem::exception("file does not exist");
 
-	std::ifstream file(data_file, ios::binary);
+	std::ifstream file(data_file, std::ios::binary);
 
 	zeem::document doc;
 	file >> doc;
 
 	if (VERBOSE)
-		cout << "test doc:" << endl
-			 << doc << endl;
+		std::cout << "test doc:\n"
+				  << doc << '\n';
 
 	zeem::xpath xp(test.get_attribute("xpath"));
 
@@ -83,26 +81,26 @@ bool run_test(const zeem::element &test)
 	{
 		int nr = 1;
 		for (const zeem::node *n : ns)
-			cout << nr++ << ">> " << *n << endl;
+			std::cout << nr++ << ">> " << *n << '\n';
 	}
 
 	bool result = true;
 
 	if (ns.size() != std::stoul(test.get_attribute("expected-size")))
 	{
-		cout << "incorrect number of nodes in returned node-set" << endl
-			 << "expected: " << test.get_attribute("expected-size") << endl;
+		std::cout << "incorrect number of nodes in returned node-set\n"
+				  << "expected: " << test.get_attribute("expected-size") << '\n';
 
 		result = false;
 	}
 
-	string test_attr_name = test.get_attribute("test-name");
-	string attr_test = test.get_attribute("test-attr");
+	std::string test_attr_name = test.get_attribute("test-name");
+	std::string attr_test = test.get_attribute("test-attr");
 
 	if (not attr_test.empty())
 	{
 		if (VERBOSE)
-			cout << "testing attribute " << test_attr_name << " for " << attr_test << endl;
+			std::cout << "testing attribute " << test_attr_name << " for " << attr_test << '\n';
 
 		for (const zeem::node *n : ns)
 		{
@@ -112,7 +110,7 @@ bool run_test(const zeem::element &test)
 
 			if (e->get_attribute(test_attr_name) != attr_test)
 			{
-				cout << "expected attribute content is not found for node " << e->get_qname() << endl;
+				std::cout << "expected attribute content is not found for node " << e->get_qname() << '\n';
 				result = false;
 			}
 		}
@@ -121,14 +119,14 @@ bool run_test(const zeem::element &test)
 	if (VERBOSE)
 	{
 		if (result)
-			cout << "Test passed" << endl;
+			std::cout << "Test passed\n";
 		else
 		{
-			cout << "Test failed" << endl;
+			std::cout << "Test failed\n";
 
 			int nr = 1;
 			for (const zeem::node *n : ns)
-				cout << nr++ << ") " << *n << endl;
+				std::cout << nr++ << ") " << *n << '\n';
 		}
 	}
 
@@ -140,7 +138,7 @@ void run_tests(const fs::path &file)
 	if (not fs::exists(file))
 		throw zeem::exception("test file does not exist");
 
-	std::ifstream input(file, ios::binary);
+	std::ifstream input(file, std::ios::binary);
 
 	zeem::document doc;
 	input >> doc;
@@ -149,7 +147,7 @@ void run_tests(const fs::path &file)
 	if (not dir.empty())
 		fs::current_path(dir);
 
-	string base = doc.front().get_attribute("xml:base");
+	std::string base = doc.front().get_attribute("xml:base");
 	if (not base.empty())
 		fs::current_path(base);
 
@@ -162,14 +160,14 @@ void run_tests(const fs::path &file)
 			++failed_nr_of_tests;
 	}
 
-	cout << endl;
+	std::cout << '\n';
 	if (failed_nr_of_tests == 0)
-		cout << "*** No errors detected" << endl;
+		std::cout << "*** No errors detected\n";
 	else
 	{
-		cout << failed_nr_of_tests << " out of " << nr_of_tests << " failed" << endl;
+		std::cout << failed_nr_of_tests << " out of " << nr_of_tests << " failed\n";
 		if (not VERBOSE)
-			cout << "Run with --verbose to see the errors" << endl;
+			std::cout << "Run with --verbose to see the errors\n";
 	}
 }
 
@@ -195,7 +193,7 @@ int main(int argc, char *argv[])
 	}
 	catch (std::exception &e)
 	{
-		cout << "exception: " << e.what() << endl;
+		std::cout << "exception: " << e.what() << '\n';
 		return 1;
 	}
 

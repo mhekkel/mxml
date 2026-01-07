@@ -365,7 +365,7 @@ TEST_CASE("xml_3")
 	CHECK((std::ostringstream() << e).str() == R"(<test><aap/><aap/><noot/><noot/></test>)");
 
 	auto &&n3 = std::move(b);
-	CHECK(e.nodes().emplace(e.end(), std::move(n3))->name() == "noot");
+	CHECK(e.nodes().emplace(e.end(), std::move(n3))->name() == "noot"); // NOLINT(bugprone-use-after-move)
 	CHECK(b.name() == ""); // NOLINT(bugprone-use-after-move)
 	CHECK((std::ostringstream() << e).str() == R"(<test><aap/><aap/><noot/><noot/><noot/></test>)");
 
@@ -393,7 +393,7 @@ TEST_CASE("xml_attributes_1")
 		CHECK(a.get_ns() == "http://www.hekkelman.com");
 	}
 
-	for (auto a : t.attributes())
+	for (auto a : t.attributes()) // NOLINT
 	{
 		CHECK(a.name() == "a");
 		CHECK(a.get_qname() == "m:a");

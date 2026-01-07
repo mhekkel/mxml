@@ -1,0 +1,50 @@
+Checks: >
+    abseil-*,
+    -abseil-string-find-str-contains,
+    bugprone-*,
+    -bugprone-easily-swappable-parameters,
+    cert-*,
+    -cert-int09-c,
+    modernize*,
+    -modernize-use-trailing-return-type,
+    -modernize-avoid-c-arrays,
+    -modernize-use-designated-initializers,
+    performance-*,
+    -performance-enum-size
+
+    # -clang-analyzer-*,
+    # cppcoreguidelines-*
+    
+    # ,
+    # darwin-dispatch-once-nonstatic,
+    # fuchsia-header-anon-namespaces,
+    # fuchsia-multiple-inheritance,
+    # fuchsia-trailing-return,
+    # fuchsia-virtual-inheritance,
+    # google-build-explicit-make-pair,
+    # google-build-namespaces,
+    # google-build-using-namespace,
+    # google-default-arguments,
+    # google-explicit-constructor,
+    # google-global-names-in-headers,
+    # google-readability-avoid-underscore-in-googletest-name,
+    # google-readability-function-size,
+    # google-readability-namespace-comments,
+    # google-runtime-operator,
+    # google-upgrade-googletest-case,
+    # hicpp-*,
+    # -llvm-header-guard,
+    # llvm-include-order,
+    # llvm-namespace-comment,
+    # llvm-prefer-isa-or-dyn-cast-in-conditionals,
+    # llvm-prefer-register-over-unsigned,
+    # llvm-twine-local,
+    # misc-*,
+    # portability-restrict-system-includes,
+    # portability-simd-intrinsics,
+    # portability-std-allocator-const,
+    # readability-*,
+    # zircon-temporary-objects
+
+HeaderFilterRegex: '.*'
+ExcludeHeaderFilterRegex: 'date.h'

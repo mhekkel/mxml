@@ -38,6 +38,7 @@
 #include <set>
 #include <stack>
 #include <string>
+#include <string_view>
 #include <tuple>
 
 namespace zeem
@@ -69,7 +70,7 @@ void write_string(std::ostream &os, std::string_view s, bool escape_whitespace, 
 
 	auto sp = s.cbegin();
 	auto se = s.cend();
-
+	
 	while (sp < se)
 	{
 		auto sb = sp;
@@ -133,8 +134,6 @@ void write_string(std::ostream &os, std::string_view s, bool escape_whitespace, 
 				last_is_space = false;
 				break;
 		}
-
-		sb = sp;
 	}
 }
 
@@ -219,7 +218,7 @@ std::pair<std::string, bool> node::prefix_for_namespace(std::string_view uri) co
 	return result;
 }
 
-std::string node::prefix_tag(std::string tag, std::string_view uri) const
+std::string node::prefix_tag(const std::string &tag, std::string_view uri) const
 {
 	auto prefix = prefix_for_namespace(uri);
 	return prefix.second ? prefix.first + ':' + tag : tag;
@@ -743,7 +742,7 @@ std::pair<std::string, bool> element::prefix_for_namespace(std::string_view uri)
 	return make_pair(result, found);
 }
 
-void element::move_to_name_space(std::string prefix, std::string uri,
+void element::move_to_name_space(const std::string &prefix, std::string_view uri,
 	bool recursive, bool including_attributes)
 {
 	// first some sanity checks

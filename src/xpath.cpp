@@ -54,7 +54,7 @@ namespace zeem
 
 // --------------------------------------------------------------------
 
-enum class Token // NOLINT(cert-int09-c)
+enum class Token
 {
 	Undef = 0,
 	Eof = 256,
@@ -227,8 +227,8 @@ class object
 	object(const object &o);
 	object &operator=(const object &o);
 
-	bool operator==(const object o);
-	bool operator<(const object o);
+	bool operator==(const object &o) const;
+	bool operator<(const object &o) const;
 
 	[[nodiscard]] object_type type() const { return m_type; }
 
@@ -401,7 +401,7 @@ std::string object::as<std::string>() const
 	return result;
 }
 
-bool object::operator==(const object o)
+bool object::operator==(const object &o) const
 {
 	bool result = false;
 
@@ -429,7 +429,7 @@ bool object::operator==(const object o)
 	return result;
 }
 
-bool object::operator<(const object o)
+bool object::operator<(const object &o) const
 {
 	bool result = false;
 	switch (m_type)
@@ -447,7 +447,7 @@ bool object::operator<(const object o)
 // visiting (or better, collecting) other nodes in the hierarchy is done here.
 
 template <typename PREDICATE>
-void iterate_child_elements(element_container *context, node_set &s, bool deep, PREDICATE pred)
+void iterate_child_elements(element_container *context, node_set &s, bool deep, const PREDICATE &pred)
 {
 	for (element &child : *context)
 	{
@@ -463,7 +463,7 @@ void iterate_child_elements(element_container *context, node_set &s, bool deep, 
 }
 
 template <typename PREDICATE>
-void iterate_child_nodes(element_container *context, node_set &s, bool deep, PREDICATE pred)
+void iterate_child_nodes(element_container *context, node_set &s, bool deep, const PREDICATE &pred)
 {
 	for (node &child : context->nodes())
 	{
@@ -482,7 +482,7 @@ void iterate_child_nodes(element_container *context, node_set &s, bool deep, PRE
 }
 
 template <typename PREDICATE>
-inline void iterate_children(element_container *context, node_set &s, bool deep, PREDICATE pred, bool elementsOnly)
+inline void iterate_children(element_container *context, node_set &s, bool deep, const PREDICATE &pred, bool elementsOnly)
 {
 	if (elementsOnly)
 		iterate_child_elements(context, s, deep, pred);
@@ -491,7 +491,7 @@ inline void iterate_children(element_container *context, node_set &s, bool deep,
 }
 
 template <typename PREDICATE>
-void iterate_ancestor(element_container *e, node_set &s, PREDICATE pred)
+void iterate_ancestor(element_container *e, node_set &s, const PREDICATE &pred)
 {
 	auto n = e->parent();
 	while (n != nullptr and n->type() != node_type::document)
@@ -503,7 +503,7 @@ void iterate_ancestor(element_container *e, node_set &s, PREDICATE pred)
 }
 
 template <typename PREDICATE>
-void iterate_preceding(node *n, node_set &s, bool sibling, PREDICATE pred, bool elementsOnly)
+void iterate_preceding(node *n, node_set &s, bool sibling, const PREDICATE &pred, bool elementsOnly)
 {
 	while (n != nullptr and n->type() != node_type::document)
 	{
@@ -530,7 +530,7 @@ void iterate_preceding(node *n, node_set &s, bool sibling, PREDICATE pred, bool 
 }
 
 template <typename PREDICATE>
-void iterate_following(node *n, node_set &s, bool sibling, PREDICATE pred, bool elementsOnly)
+void iterate_following(node *n, node_set &s, bool sibling, const PREDICATE &pred, bool elementsOnly)
 {
 	while (n != nullptr and n->type() != node_type::document)
 	{
@@ -557,7 +557,7 @@ void iterate_following(node *n, node_set &s, bool sibling, PREDICATE pred, bool 
 }
 
 template <typename PREDICATE>
-void iterate_attributes(element *e, node_set &s, PREDICATE pred)
+void iterate_attributes(element *e, node_set &s, const PREDICATE &pred)
 {
 	for (auto &a : e->attributes())
 	{
@@ -567,7 +567,7 @@ void iterate_attributes(element *e, node_set &s, PREDICATE pred)
 }
 
 template <typename PREDICATE>
-void iterate_namespaces(element *e, node_set &s, PREDICATE pred)
+void iterate_namespaces(element *e, node_set &s, const PREDICATE &pred)
 {
 	for (auto &a : e->attributes())
 	{
@@ -599,7 +599,7 @@ struct context_imp : public context_imp_base
 		return m_variables.at(name);
 	}
 
-	void set(std::string name, const object &value)
+	void set(const std::string &name, const object &value)
 	{
 		m_variables[name] = value;
 	}
@@ -676,13 +676,13 @@ class step_expression : public expression
 	using expression::evaluate;
 
 	template <typename T>
-	object evaluate(expression_context &context, T pred, bool elementsOnly);
+	object evaluate(expression_context &context, const T &pred, bool elementsOnly);
 
 	AxisType m_axis;
 };
 
 template <typename T>
-object step_expression::evaluate(expression_context &context, T pred, bool elementsOnly)
+object step_expression::evaluate(expression_context &context, const T &pred, bool elementsOnly)
 {
 	node_set result;
 
@@ -2527,9 +2527,9 @@ context::context()
 {
 }
 
-void context::set(std::string name, double value)
+void context::set(const std::string &name, double value)
 {
-	m_impl->set(std::move(name), value);
+	m_impl->set(name, value);
 }
 
 template <>
@@ -2538,9 +2538,9 @@ double context::get<double>(std::string name)
 	return m_impl->get(std::move(name)).as<double>();
 }
 
-void context::set(std::string name, std::string value)
+void context::set(const std::string &name, std::string value)
 {
-	m_impl->set(std::move(name), std::move(value));
+	m_impl->set(name, std::move(value));
 }
 
 template <>

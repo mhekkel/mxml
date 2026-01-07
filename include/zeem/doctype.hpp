@@ -34,6 +34,7 @@
  */
 
 #include <cassert>
+#include <cstdint>
 #include <memory>
 #include <string>
 #include <string_view>
@@ -84,7 +85,7 @@ class validator
 {
   public:
 	validator(content_spec_base &allowed);
-	validator(element_ptr e);
+	validator(const element_ptr &e);
 
 	validator(const validator &other) = delete;
 	validator &operator=(const validator &other) = delete;
@@ -158,7 +159,7 @@ struct content_spec_element : public content_spec_base
 
 struct content_spec_repeated : public content_spec_base
 {
-	content_spec_repeated(content_spec_base_ptr allowed, char repetion)
+	content_spec_repeated(const content_spec_base_ptr& allowed, char repetion)
 		: content_spec_base(allowed->get_content_spec())
 		, m_allowed(allowed)
 		, m_repetition(repetion)
@@ -175,7 +176,7 @@ struct content_spec_repeated : public content_spec_base
 
 struct content_spec_seq : public content_spec_base
 {
-	content_spec_seq(content_spec_base_ptr a)
+	content_spec_seq(const content_spec_base_ptr& a)
 		: content_spec_base(a->get_content_spec())
 	{
 		add(a);
@@ -196,7 +197,7 @@ struct content_spec_choice : public content_spec_base
 		, m_mixed(mixed)
 	{
 	}
-	content_spec_choice(content_spec_base_ptr a, bool mixed)
+	content_spec_choice(const content_spec_base_ptr& a, bool mixed)
 		: content_spec_base(mixed ? content_spec_type::Mixed : a->get_content_spec())
 		, m_mixed(mixed)
 	{

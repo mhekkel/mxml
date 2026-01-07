@@ -37,6 +37,7 @@
 #include <compare>
 #include <cstddef>
 #include <cstdint>
+#include <format>
 #include <map>
 #include <memory>
 #include <ranges>
@@ -46,6 +47,7 @@
 #include <string>
 #include <tuple>
 #include <utility>
+#include <variant>
 #include <vector>
 
 namespace zeem
@@ -332,7 +334,7 @@ void istream_data_source::encoding(encoding_type enc)
 
 char32_t istream_data_source::next_utf8_char()
 {
-	char32_t result = next_byte();
+	int result = next_byte();
 
 	if (result & 0x080)
 	{
@@ -425,7 +427,7 @@ char32_t istream_data_source::next_iso88591_char()
 
 char32_t istream_data_source::next_ascii_char()
 {
-	char32_t c = next_byte();
+	int c = next_byte();
 
 	if (c > 127)
 		throw not_wf_exception("Invalid ascii value");
@@ -512,7 +514,7 @@ class entity_data_source : public string_data_source
 class parameter_entity_data_source : public string_data_source
 {
   public:
-	parameter_entity_data_source(std::string data, std::string base_dir)
+	parameter_entity_data_source(const std::string &data, std::string base_dir)
 		: string_data_source(" " + data + " ")
 	{
 		base(std::move(base_dir));
@@ -610,7 +612,7 @@ struct parser_imp
 	void collapse_spaces(std::string &s);
 
 	// The scanner is next. We recognize the following tokens:
-	enum class XMLToken // NOLINT(cert-int09-c)
+	enum class XMLToken
 	{
 		Undef = 0,
 
@@ -732,7 +734,7 @@ struct parser_imp
 	version_type parse_version();
 
 	// error handling routines
-	void not_well_formed(std::string msg) const;
+	void not_well_formed(const std::string &msg) const;
 	void not_valid(std::string msg) const;
 
 	// doctype support
@@ -857,7 +859,7 @@ struct parser_imp
 			return result;
 		}
 
-		void bind(std::string prefix, std::string uri)
+		void bind(const std::string &prefix, std::string uri)
 		{
 			m_known[prefix] = std::move(uri);
 		}
@@ -884,7 +886,7 @@ struct parser_imp
 
 		bool is_known_uri(const std::string &uri)
 		{
-			for (auto k : m_known)
+			for (const auto &k : m_known)
 			{
 				if (k.second == uri)
 					return true;
@@ -1022,7 +1024,7 @@ parser_imp::~parser_imp()
 
 const doctype::entity &parser_imp::get_general_entity(std::string_view name) const
 {
-	for (auto e : m_general_entities)
+	for (const auto &e : m_general_entities)
 	{
 		if (e->name() == name)
 		{
@@ -1046,7 +1048,7 @@ const doctype::entity &parser_imp::get_general_entity(std::string_view name) con
 
 const doctype::entity &parser_imp::get_parameter_entity(std::string_view name) const
 {
-	for (auto e : m_parameter_entities)
+	for (const auto &e : m_parameter_entities)
 	{
 		if (e->name() == name)
 			return *e;
@@ -1060,7 +1062,7 @@ const doctype::element_ptr parser_imp::get_element(std::string_view name) const
 {
 	doctype::element_ptr result;
 
-	for (auto e : m_doctype)
+	for (const auto &e : m_doctype)
 	{
 		if (e->name() == name)
 		{
@@ -1142,28 +1144,22 @@ void parser_imp::match(XMLToken token)
 	}
 }
 
-void parser_imp::not_well_formed(std::string msg) const
+void parser_imp::not_well_formed(const std::string &msg) const
 {
-	std::stringstream s;
-	if (m_source.empty())
-		s << "Document not well-formed: " << msg;
-	else
-		s << "Document (line: " << m_source.top()->line_nr() << ") not well-formed: " << msg;
-	throw not_wf_exception(s.str());
+	throw not_wf_exception(
+		m_source.empty()
+			? std::format("Document not well-formed: {}", msg)
+			: std::format("Document (line: {}) not well-formed: {}", m_source.top()->line_nr(), msg));
 }
 
 void parser_imp::not_valid(std::string msg) const
 {
 	if (m_validating)
 	{
-		std::stringstream s;
-
-		if (m_source.empty())
-			s << "Document not valid: " << msg;
-		else
-			s << "Document (line: " << m_source.top()->line_nr() << ") not valid: " << msg;
-
-		throw invalid_exception(s.str());
+		throw invalid_exception(
+			m_source.empty()
+				? std::format("Document not valid: {}", msg)
+				: std::format("Document (line: {}) not valid: {}", m_source.top()->line_nr(), msg));
 	}
 	else
 		m_parser.report_invalidation(std::move(msg));
@@ -2058,16 +2054,16 @@ void parser_imp::doctypedecl()
 
 	// test if all ndata references can be resolved
 
-	for (auto e : m_general_entities)
+	for (const auto &e : m_general_entities)
 	{
 		if (e->is_parsed() == false and m_notations.count(e->get_ndata()) == 0)
 			not_valid("Undefined NOTATION '" + e->get_ndata() + "'");
 	}
 
 	// and the notations in the doctype attlists
-	for (auto element : m_doctype)
+	for (const auto &element : m_doctype)
 	{
-		for (auto attr : element->get_attributes())
+		for (const auto &attr : element->get_attributes())
 		{
 			if (attr->get_type() != doctype::attribute_type::Notation)
 				continue;
@@ -2356,7 +2352,7 @@ void parser_imp::element_decl()
 		not_well_formed("Element names should not start with xmlns:");
 
 	auto e = std::ranges::find_if(m_doctype,
-		[name](auto e)
+		[name](const auto &e)
 		{ return e->name() == name; });
 
 	if (e == m_doctype.end())
@@ -2620,7 +2616,7 @@ void parser_imp::parameter_entity_decl()
 	match(XMLToken::GreaterThan);
 
 	if (std::ranges::find_if(m_parameter_entities,
-			[name](auto e)
+			[name](const auto &e)
 			{ return e->name() == name; }) == m_parameter_entities.end())
 	{
 		m_parameter_entities.push_back(std::make_shared<doctype::parameter_entity>(name, value, path));
@@ -2676,7 +2672,7 @@ void parser_imp::general_entity_decl()
 	match(XMLToken::GreaterThan);
 
 	if (std::ranges::find_if(m_general_entities,
-			[name](auto e)
+			[name](const auto &e)
 			{ return e->name() == name; }) == m_general_entities.end())
 	{
 		m_general_entities.push_back(std::make_shared<doctype::general_entity>(name, value, external, parsed));
@@ -2697,7 +2693,7 @@ void parser_imp::attlist_decl()
 	match(XMLToken::Name);
 
 	auto dte = std::ranges::find_if(m_doctype,
-		[element](auto e)
+		[element](const auto &e)
 		{ return e->name() == element; });
 
 	if (dte == m_doctype.end())
@@ -2845,7 +2841,7 @@ void parser_imp::attlist_decl()
 				normalize_attribute_value(token_value, attribute->get_type() == doctype::attribute_type::CDATA);
 				if (not token_value.empty() and not attribute->validate_value(token_value, m_general_entities))
 				{
-					not_valid("default value '" + token_value + "' for attribute '" + name + "' is not valid");
+					not_valid(std::format("default value '{}' for attribute '{}' is not valid", token_value, name));
 				}
 
 				attribute->set_default(doctype::attribute_default::Fixed, token_value);
@@ -2866,7 +2862,7 @@ void parser_imp::attlist_decl()
 				collapse_spaces(token_value);
 				if (not token_value.empty() and not attribute->validate_value(token_value, m_general_entities))
 				{
-					not_valid("default value '" + token_value + "' for attribute '" + name + "' is not valid");
+					not_valid(std::format("default value '{}' for attribute '{}' is not valid", token_value, name));
 				}
 				attribute->set_default(doctype::attribute_default::None, token_value);
 				match(XMLToken::String);
@@ -2878,7 +2874,7 @@ void parser_imp::attlist_decl()
 		{
 			const doctype::attribute_list &atts = (*dte)->get_attributes();
 			if (std::ranges::find_if(atts,
-					[](auto a)
+					[](const auto &a)
 					{ return a->get_type() == doctype::attribute_type::ID; }) != atts.end())
 				not_valid("only one attribute per element can have the ID type");
 		}
@@ -2963,10 +2959,10 @@ data_source *parser_imp::get_data_source(std::string_view pubid, std::string uri
 {
 	data_source *result = nullptr;
 
-	std::istream *is = m_parser.external_entity_ref(m_source.top()->base(), pubid, uri);
+	auto is = m_parser.external_entity_ref(m_source.top()->base(), pubid, uri);
 	if (is != nullptr)
 	{
-		result = new istream_data_source(is);
+		result = new istream_data_source(is.release());
 
 		std::string::size_type s = uri.rfind('/');
 		if (s == std::string::npos)
@@ -3654,9 +3650,9 @@ void parser_imp::element(doctype::validator &valid)
 				if (not dta->validate_value(attr_value, m_general_entities))
 				{
 					if (dta == m_xmlSpaceAttr)
-						not_well_formed("invalid value ('" + attr_value + "') for attribute " + attr_name + "");
+						not_well_formed(std::format("invalid value ('{}') for attribute {}", attr_value, attr_name));
 					else
-						not_valid("invalid value ('" + attr_value + "') for attribute " + attr_name + "");
+						not_valid(std::format("invalid value ('{}') for attribute {}", attr_value, attr_name));
 				}
 
 				if (m_validating and m_standalone and dta->is_external() and v != attr_value)
@@ -3671,7 +3667,7 @@ void parser_imp::element(doctype::validator &valid)
 
 					if (m_ids.count(attr_value) > 0)
 					{
-						not_valid("attribute value ('" + attr_value + "') for attribute '" + attr_name + "' is not unique");
+						not_valid(std::format("attribute value ('{}') for attribute '{}' is not unique", attr_value, attr_name));
 					}
 
 					m_ids.insert(attr_value);
@@ -3760,7 +3756,7 @@ void parser_imp::element(doctype::validator &valid)
 	}
 	else // add missing attributes
 	{
-		for (auto dta : dte->get_attributes())
+		for (const auto &dta : dte->get_attributes())
 		{
 			std::string attr_name = dta->name();
 
@@ -3776,7 +3772,7 @@ void parser_imp::element(doctype::validator &valid)
 			if (defType == doctype::attribute_default::Required)
 			{
 				if (ai == attrs.end())
-					not_valid("missing #REQUIRED attribute '" + attr_name + "' for element '" + name + "'");
+					not_valid(std::format("missing #REQUIRED attribute '{}' for element '{}'", attr_name, name));
 			}
 			else if (not defValue.empty() and ai == attrs.end())
 			{
@@ -4210,9 +4206,9 @@ void parser::notation_decl(std::string name, std::string systemId, std::string p
 		notation_decl_handler(std::move(name), std::move(systemId), std::move(publicId));
 }
 
-std::istream *parser::external_entity_ref(std::string_view base, std::string_view pubid, std::string_view uri)
+std::unique_ptr<std::istream> parser::external_entity_ref(std::string_view base, std::string_view pubid, std::string_view uri)
 {
-	std::istream *result = nullptr;
+	std::unique_ptr<std::istream> result;
 	if (external_entity_ref_handler)
 		result = external_entity_ref_handler(base, pubid, uri);
 	return result;

@@ -58,7 +58,7 @@ int main()
 			std::string firstname, lastname;
 
 			/* Iterate over the __element__ nodes inside the person __element__ */
-			for (auto name : *person)
+			for (const auto& name : *person)
 			{
 				if (name.name() == "firstname")
 					firstname = name.str();

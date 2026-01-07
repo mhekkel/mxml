@@ -31,6 +31,7 @@
 
 #include <cassert>
 #include <cctype>
+#include <cstdint>
 #include <functional>
 #include <memory>
 #include <ranges>
@@ -96,7 +97,7 @@ struct state_element : public state_base
 
 struct state_repeated : public state_base
 {
-	state_repeated(content_spec_base_ptr sub)
+	state_repeated(const content_spec_base_ptr& sub)
 		: m_sub(sub->create_state())
 	{
 	}
@@ -117,7 +118,7 @@ struct state_repeated : public state_base
 
 struct state_repeated_zero_or_once : public state_repeated
 {
-	state_repeated_zero_or_once(content_spec_base_ptr sub)
+	state_repeated_zero_or_once(const content_spec_base_ptr& sub)
 		: state_repeated(sub)
 	{
 	}
@@ -163,7 +164,7 @@ std::tuple<bool, bool> state_repeated_zero_or_once::allow(std::string_view name)
 
 struct state_repeated_any : public state_repeated
 {
-	state_repeated_any(content_spec_base_ptr sub)
+	state_repeated_any(const content_spec_base_ptr& sub)
 		: state_repeated(sub)
 	{
 	}
@@ -214,7 +215,7 @@ std::tuple<bool, bool> state_repeated_any::allow(std::string_view name)
 
 struct state_repeated_at_least_once : public state_repeated
 {
-	state_repeated_at_least_once(content_spec_base_ptr sub)
+	state_repeated_at_least_once(const content_spec_base_ptr& sub)
 		: state_repeated(sub)
 	{
 	}
@@ -279,7 +280,7 @@ struct state_seq : public state_base
 {
 	state_seq(const content_spec_list &allowed)
 	{
-		for (auto a : allowed)
+		for (const auto& a : allowed)
 			m_states.emplace_back(a->create_state());
 	}
 
@@ -288,15 +289,14 @@ struct state_seq : public state_base
 	void reset() override
 	{
 		m_state = 0;
-		for (auto state : m_states)
+		for (const auto& state : m_states)
 			state->reset();
-		;
 	}
 
 	bool allow_char_data() override
 	{
 		bool result = false;
-		for (auto s : m_states)
+		for (const auto& s : m_states)
 		{
 			if (s->allow_char_data())
 			{
@@ -364,7 +364,7 @@ bool state_seq::allow_empty()
 {
 	bool result = true;
 
-	for (auto s : m_states)
+	for (const auto& s : m_states)
 	{
 		if (not s->allow_empty())
 		{
@@ -383,7 +383,7 @@ struct state_choice : public state_base
 	state_choice(const content_spec_list &allowed, bool mixed)
 		: m_mixed(mixed)
 	{
-		for (auto a : allowed)
+		for (const auto& a : allowed)
 			m_states.push_back(a->create_state());
 	}
 
@@ -392,7 +392,7 @@ struct state_choice : public state_base
 	void reset() override
 	{
 		m_state = 0;
-		for (auto state : m_states)
+		for (const auto& state : m_states)
 			state->reset();
 	}
 
@@ -419,7 +419,7 @@ std::tuple<bool, bool> state_choice::allow(std::string_view name)
 	switch (m_state)
 	{
 		case State::Start:
-			for (auto choice : m_states)
+			for (const auto& choice : m_states)
 			{
 				std::tie(result, done) = choice->allow(name);
 				if (result == true)
@@ -459,7 +459,7 @@ validator::validator(content_spec_base &allowed)
 {
 }
 
-validator::validator(element_ptr e)
+validator::validator(const element_ptr &e)
 {
 	if (auto allowed = e ? e->get_allowed() : nullptr; allowed != nullptr)
 	{
@@ -540,7 +540,7 @@ bool content_spec_repeated::element_content() const
 
 void content_spec_seq::add(content_spec_base_ptr a)
 {
-	m_allowed.push_back(a);
+	m_allowed.emplace_back(std::move(a));
 }
 
 state_base_ptr content_spec_seq::create_state() const
@@ -551,7 +551,7 @@ state_base_ptr content_spec_seq::create_state() const
 bool content_spec_seq::element_content() const
 {
 	bool result = true;
-	for (auto a : m_allowed)
+	for (const auto& a : m_allowed)
 	{
 		if (not a->element_content())
 		{
@@ -566,7 +566,7 @@ bool content_spec_seq::element_content() const
 
 void content_spec_choice::add(content_spec_base_ptr a)
 {
-	m_allowed.push_back(a);
+	m_allowed.emplace_back(std::move(a));
 }
 
 state_base_ptr content_spec_choice::create_state() const
@@ -581,7 +581,7 @@ bool content_spec_choice::element_content() const
 		result = false;
 	else
 	{
-		for (auto a : m_allowed)
+		for (const auto& a : m_allowed)
 		{
 			if (not a->element_content())
 			{
@@ -770,7 +770,7 @@ bool attribute::is_unparsed_entity(std::string_view s, const entity_list &l) con
 {
 	bool result = false;
 
-	auto i = std::ranges::find_if(l, [s](auto e)
+	auto i = std::ranges::find_if(l, [s](const auto& e)
 		{ return e->name() == s; });
 	if (i != l.end())
 		result = (*i)->is_parsed() == false;
@@ -782,21 +782,21 @@ bool attribute::is_unparsed_entity(std::string_view s, const entity_list &l) con
 
 void element::set_allowed(content_spec_base_ptr allowed)
 {
-	m_allowed = allowed;
+	m_allowed = std::move(allowed);
 }
 
 void element::add_attribute(attribute_ptr attrib)
 {
-	if (std::ranges::find_if(m_attlist, [attrib](auto a)
+	if (std::ranges::find_if(m_attlist, [attrib](const auto& a)
 			{ return a->name() == attrib->name(); }) == m_attlist.end())
-		m_attlist.push_back(attrib);
+		m_attlist.emplace_back(std::move(attrib));
 }
 
 const attribute_ptr element::get_attribute(std::string_view name) const
 {
 	attribute_ptr result;
 
-	for (auto dta : m_attlist)
+	for (const auto& dta : m_attlist)
 	{
 		if (dta->name() == name)
 		{

@@ -35,6 +35,7 @@
 
 #include <functional>
 #include <istream>
+#include <memory>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -125,7 +126,7 @@ class parser
 	std::function<void(std::string prefix)> end_namespace_decl_handler;
 	std::function<void(std::string root, std::string publicId, std::string uri)> doctype_decl_handler;
 	std::function<void(std::string name, std::string systemId, std::string publicId)> notation_decl_handler;
-	std::function<std::istream *(std::string_view base, std::string_view pubid, std::string_view uri)> external_entity_ref_handler;
+	std::function<std::unique_ptr<std::istream>(std::string_view base, std::string_view pubid, std::string_view uri)> external_entity_ref_handler;
 	std::function<void(std::string msg)> report_invalidation_handler;
 
 	/** @brief Start the actual parsing, optionally validating content and namespaces */
@@ -162,7 +163,7 @@ class parser
 
 	virtual void report_invalidation(std::string msg);
 
-	virtual std::istream *external_entity_ref(std::string_view base,
+	virtual std::unique_ptr<std::istream> external_entity_ref(std::string_view base,
 		std::string_view pubid, std::string_view uri);
 
 	struct parser_imp *m_impl;

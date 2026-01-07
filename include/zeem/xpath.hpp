@@ -63,7 +63,7 @@ class context final
 	context(const context &ctxt) = default;
 
 	/// @brief move constructor
-	context(context &&ctxt)
+	context(context &&ctxt) noexcept
 	{
 		std::swap(m_impl, ctxt.m_impl);
 	}
@@ -76,10 +76,10 @@ class context final
 	}
 
 	/// @brief Store a new variable in this context with name \a name and value \a value
-	void set(std::string name, std::string value);
+	void set(const std::string &name, std::string value);
 
 	/// @brief Store a new variable in this context with name \a name and value \a value
-	void set(std::string name, double value);
+	void set(const std::string &name, double value);
 
 	/// @brief Get a variable stored in this context or further up the scopes
 	template <typename T>

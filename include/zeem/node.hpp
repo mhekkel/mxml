@@ -36,6 +36,7 @@
 #include <cassert>
 #include <compare>
 #include <cstddef>
+#include <cstdint>
 #include <initializer_list>
 #include <iosfwd>
 #include <iterator>
@@ -66,7 +67,7 @@ concept NodeType = std::is_base_of_v<zeem::node, std::remove_cvref_t<T>>;
  * to find out the actual type of a node
  */
 
-enum class node_type
+enum class node_type : uint8_t
 {
 	element,
 	text,
@@ -162,7 +163,7 @@ class node
 	 *
 	 * @param qn
 	 */
-	virtual void set_qname(std::string qn) {}
+	virtual void set_qname(std::string qn) {} // NOLINT(performance-unnecessary-value-param)
 
 	/**
 	 * \brief set the qname with two parameters, if \a prefix is empty the qname will be simply \a name
@@ -172,7 +173,7 @@ class node
 	 * \param name		The actual name to use
 	 */
 
-	void set_qname(std::string prefix, std::string name)
+	void set_qname(const std::string &prefix, std::string name)
 	{
 		set_qname(prefix.empty() ? std::move(name) : prefix + ':' + name);
 	}
@@ -188,7 +189,7 @@ class node
 	[[nodiscard]] virtual std::pair<std::string, bool> prefix_for_namespace(std::string_view uri) const;
 
 	/// Prefix the \a tag with the namespace prefix for \a uri
-	[[nodiscard]] virtual std::string prefix_tag(std::string tag, std::string_view uri) const;
+	[[nodiscard]] virtual std::string prefix_tag(const std::string &tag, std::string_view uri) const;
 
 	/// return all content concatenated, including that of children.
 	[[nodiscard]] virtual std::string str() const = 0;
@@ -291,7 +292,7 @@ class basic_node_list
 		void write(std::ostream & /* os */, format_info /* fmt */) const override {}
 		[[nodiscard]] std::string str() const override { return {}; }
 
-		friend void swap(node_list_header &a, node_list_header &b)
+		friend void swap(node_list_header &a, node_list_header &b) noexcept
 		{
 			swap(static_cast<node &>(a), static_cast<node &>(b));
 
@@ -538,7 +539,6 @@ class node_list : public basic_node_list
 	friend class attribute_set;
 
   public:
-
 	/// @brief The iterator class
 	using iterator = iterator_impl<value_type>;
 
@@ -785,7 +785,7 @@ class element_container : public node, public node_list<element>
 	 *
 	 * @return node_list<> The node_list for nodes of all types
 	 */
-	node_list<> nodes() { return {this}; }
+	node_list<> nodes() { return { this }; }
 
 	/**
 	 * @brief This method allows read access to the nodes not visible using
@@ -1062,10 +1062,7 @@ class cdata final : public node_with_text
 	cdata(const cdata &cd) = default;
 
 	/// @brief move constructor
-	cdata(cdata &&cd) noexcept
-		: node_with_text(std::move(cd))
-	{
-	}
+	cdata(cdata &&cd) noexcept = default;
 
 	/// @brief assignment operator
 	cdata &operator=(cdata cd) noexcept
@@ -1178,6 +1175,9 @@ class attribute final : public node
 	/// @brief Set the value of this attribute to \a v
 	void set_value(std::string v) { m_value = std::move(v); }
 
+	/// @brief Set the value of this attribute to \a v
+	void set_value(std::string_view v) { m_value = v; }
+
 	/// \brief same as value, but checks to see if this really is a namespace attribute
 	[[nodiscard]] std::string uri() const;
 
@@ -1271,7 +1271,7 @@ class attribute_set : public node_list<attribute>
 
 	/// \brief emplace a newly constructed attribute with argumenst \a args
 	template <typename... Args>
-	std::pair<iterator, bool> emplace(Args... args)
+	std::pair<iterator, bool> emplace(Args &&...args)
 	{
 		value_type a(std::forward<Args>(args)...);
 		return emplace(std::move(a));
@@ -1434,7 +1434,7 @@ class element final : public element_container
 	/// \param uri					The new namespace uri
 	/// \param recursive			Apply this to the child nodes as well
 	/// \param including_attributes	Move the attributes to this new namespace as well
-	void move_to_name_space(std::string prefix, std::string uri,
+	void move_to_name_space(const std::string &prefix, std::string_view uri,
 		bool recursive, bool including_attributes);
 
 	// --------------------------------------------------------------------
@@ -1456,7 +1456,7 @@ class element final : public element_container
 	void set_attribute(std::string_view qname, std::string_view value);
 
 	/// \brief The set_text method replaces any text node with the new text (call set_content)
-	virtual void set_text(std::string s);
+	void set_text(std::string s);
 
 	/// The add_text method checks if the last added child is a text node,
 	/// and if so, it appends the string to this node's value. Otherwise,

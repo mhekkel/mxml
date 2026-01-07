@@ -39,6 +39,7 @@
 #include <cstddef>
 #include <functional>
 #include <iosfwd>
+#include <memory>
 #include <string>
 #include <string_view>
 #include <type_traits>
@@ -267,8 +268,8 @@ class document final : public element_container
 	node *insert_impl(const node *p, node *n) override;
 
 	void XmlDeclHandler(encoding_type encoding, bool standalone, version_type version);
-	void StartElementHandler(std::string name, std::string uri, const parser::attr_list_type &atts);
-	void EndElementHandler(std::string name, std::string uri);
+	void StartElementHandler(const std::string &name, const std::string &uri, const parser::attr_list_type &atts);
+	void EndElementHandler(const std::string &name, const std::string &uri);
 	void CharacterDataHandler(std::string data);
 	void ProcessingInstructionHandler(std::string target, std::string data);
 	void CommentHandler(std::string comment);
@@ -279,10 +280,10 @@ class document final : public element_container
 	void DoctypeDeclHandler(std::string root, std::string publicId, std::string uri);
 	void NotationDeclHandler(std::string name, std::string sysid, std::string pubid);
 
-	std::istream *external_entity_ref(std::string_view base, std::string_view pubid, std::string_view sysid);
+	std::unique_ptr<std::istream> external_entity_ref(std::string_view base, std::string_view pubid, std::string_view sysid);
 	void parse(std::istream &data);
 
-	std::function<std::istream *(std::string_view base, std::string_view pubid, std::string_view sysid)>
+	std::function<std::unique_ptr<std::istream>(std::string_view base, std::string_view pubid, std::string_view sysid)>
 		m_external_entity_ref_loader;
 
 	void write(std::ostream &os, format_info fmt) const override;
