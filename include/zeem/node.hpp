@@ -277,7 +277,6 @@ class node
 		m_next = m_prev = this;
 	}
 
-  private:
 	element_container *m_parent = nullptr;
 	node *m_next{};
 	node *m_prev{};
