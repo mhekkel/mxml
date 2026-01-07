@@ -27,13 +27,17 @@
 #include "zeem/document.hpp"
 
 #include "zeem/error.hpp"
+#include "zeem/node.hpp"
+#include "zeem/parser.hpp"
 
+#include <algorithm>
 #include <cassert>
-#include <compare>
 #include <fstream>
 #include <functional>
 #include <memory>
 #include <ranges>
+#include <streambuf>
+#include <string_view>
 #include <tuple>
 
 namespace zeem

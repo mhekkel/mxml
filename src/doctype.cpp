@@ -34,6 +34,8 @@
 #include <functional>
 #include <memory>
 #include <ranges>
+#include <string_view>
+#include <tuple>
 #include <vector>
 
 namespace zeem::doctype
@@ -89,13 +91,14 @@ struct state_element : public state_base
 
 	void reset() override { m_done = false; }
 
+  private:
 	std::string m_name;
 	bool m_done{};
 };
 
 struct state_repeated : public state_base
 {
-	explicit state_repeated(const content_spec_base_ptr& sub)
+	explicit state_repeated(const content_spec_base_ptr &sub)
 		: m_sub(sub->create_state())
 	{
 	}
@@ -108,6 +111,7 @@ struct state_repeated : public state_base
 
 	bool allow_char_data() override { return m_sub->allow_char_data(); }
 
+  protected:
 	state_base_ptr m_sub;
 	int m_state{};
 };
@@ -116,7 +120,7 @@ struct state_repeated : public state_base
 
 struct state_repeated_zero_or_once : public state_repeated
 {
-	explicit state_repeated_zero_or_once(const content_spec_base_ptr& sub)
+	explicit state_repeated_zero_or_once(const content_spec_base_ptr &sub)
 		: state_repeated(sub)
 	{
 	}
@@ -162,7 +166,7 @@ std::tuple<bool, bool> state_repeated_zero_or_once::allow(std::string_view name)
 
 struct state_repeated_any : public state_repeated
 {
-	explicit state_repeated_any(const content_spec_base_ptr& sub)
+	explicit state_repeated_any(const content_spec_base_ptr &sub)
 		: state_repeated(sub)
 	{
 	}
@@ -213,7 +217,7 @@ std::tuple<bool, bool> state_repeated_any::allow(std::string_view name)
 
 struct state_repeated_at_least_once : public state_repeated
 {
-	explicit state_repeated_at_least_once(const content_spec_base_ptr& sub)
+	explicit state_repeated_at_least_once(const content_spec_base_ptr &sub)
 		: state_repeated(sub)
 	{
 	}
@@ -278,7 +282,7 @@ struct state_seq : public state_base
 {
 	explicit state_seq(const content_spec_list &allowed)
 	{
-		for (const auto& a : allowed)
+		for (const auto &a : allowed)
 			m_states.emplace_back(a->create_state());
 	}
 
@@ -287,14 +291,14 @@ struct state_seq : public state_base
 	void reset() override
 	{
 		m_state = 0;
-		for (const auto& state : m_states)
+		for (const auto &state : m_states)
 			state->reset();
 	}
 
 	bool allow_char_data() override
 	{
 		bool result = false;
-		for (const auto& s : m_states)
+		for (const auto &s : m_states)
 		{
 			if (s->allow_char_data())
 			{
@@ -362,7 +366,7 @@ bool state_seq::allow_empty()
 {
 	bool result = true;
 
-	for (const auto& s : m_states)
+	for (const auto &s : m_states)
 	{
 		if (not s->allow_empty())
 		{
@@ -381,7 +385,7 @@ struct state_choice : public state_base
 	state_choice(const content_spec_list &allowed, bool mixed)
 		: m_mixed(mixed)
 	{
-		for (const auto& a : allowed)
+		for (const auto &a : allowed)
 			m_states.push_back(a->create_state());
 	}
 
@@ -390,7 +394,7 @@ struct state_choice : public state_base
 	void reset() override
 	{
 		m_state = 0;
-		for (const auto& state : m_states)
+		for (const auto &state : m_states)
 			state->reset();
 	}
 
@@ -417,7 +421,7 @@ std::tuple<bool, bool> state_choice::allow(std::string_view name)
 	switch (m_state)
 	{
 		case State::Start:
-			for (const auto& choice : m_states)
+			for (const auto &choice : m_states)
 			{
 				std::tie(result, done) = choice->allow(name);
 				if (result == true)
@@ -549,7 +553,7 @@ state_base_ptr content_spec_seq::create_state() const
 bool content_spec_seq::element_content() const
 {
 	bool result = true;
-	for (const auto& a : m_allowed)
+	for (const auto &a : m_allowed)
 	{
 		if (not a->element_content())
 		{
@@ -579,7 +583,7 @@ bool content_spec_choice::element_content() const
 		result = false;
 	else
 	{
-		for (const auto& a : m_allowed)
+		for (const auto &a : m_allowed)
 		{
 			if (not a->element_content())
 			{
@@ -766,7 +770,7 @@ bool attribute::is_unparsed_entity(std::string_view s, const entity_list &l) con
 {
 	bool result = false;
 
-	auto i = std::ranges::find_if(l, [s](const auto& e)
+	auto i = std::ranges::find_if(l, [s](const auto &e)
 		{ return e->name() == s; });
 	if (i != l.end())
 		result = (*i)->is_parsed() == false;
@@ -783,7 +787,7 @@ void element::set_allowed(content_spec_base_ptr allowed)
 
 void element::add_attribute(attribute_ptr attrib)
 {
-	if (std::ranges::find_if(m_attlist, [attrib](const auto& a)
+	if (std::ranges::find_if(m_attlist, [attrib](const auto &a)
 			{ return a->name() == attrib->name(); }) == m_attlist.end())
 		m_attlist.emplace_back(std::move(attrib));
 }
@@ -792,7 +796,7 @@ const attribute_ptr element::get_attribute(std::string_view name) const
 {
 	attribute_ptr result;
 
-	for (const auto& dta : m_attlist)
+	for (const auto &dta : m_attlist)
 	{
 		if (dta->name() == name)
 		{

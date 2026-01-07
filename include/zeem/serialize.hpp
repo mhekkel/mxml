@@ -200,13 +200,14 @@ template <typename T>
 	requires std::is_enum_v<T>
 struct value_serializer<T>
 {
-	std::string m_type_name;
-
 	using value_map_type = std::map<T, std::string>;
 	using value_map_value_type = typename value_map_type::value_type;
 
+  private:
+	std::string m_type_name;
 	value_map_type m_value_map;
 
+  public:
 	/// \brief Initialize a new instance of value_serializer for this enum, with name and a set of name/value pairs
 	static void init(std::string_view name, std::initializer_list<value_map_value_type> values)
 	{
@@ -376,7 +377,7 @@ template <typename T>
 using serialize_value_t = decltype(std::declval<value_serializer<T> &>().from_string(std::declval<std::string_view>()));
 
 template <typename T, typename Archive>
-using serialize_function = decltype(std::declval<T &>().serialize(std::declval<Archive &>(), std::declval<unsigned long>()));
+using serialize_function = decltype(std::declval<T &>().serialize(std::declval<Archive &>(), std::declval<uint64_t>()));
 
 template <typename T, typename Archive, typename = void>
 struct has_serialize : std::false_type
@@ -551,6 +552,7 @@ struct serializer
 	template <typename T>
 	serializer &serialize_attribute(std::string_view name, const T &data);
 
+  private:
 	element_container &m_node;
 
 	/** @endcond */
@@ -592,6 +594,7 @@ struct deserializer
 	template <typename T>
 	deserializer &deserialize_attribute(std::string_view name, T &data);
 
+  private:
 	const element_container &m_node;
 
 	/** @endcond */

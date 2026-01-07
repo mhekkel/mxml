@@ -164,6 +164,7 @@ class parser
 	virtual std::unique_ptr<std::istream> external_entity_ref(std::string_view base,
 		std::string_view pubid, std::string_view uri);
 
+  private:
 	struct parser_imp *m_impl;
 	std::istream *m_istream = nullptr;
 

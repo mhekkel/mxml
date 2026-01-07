@@ -119,6 +119,7 @@ struct content_spec_base
 	{
 	}
 
+  private:
 	content_spec_type m_content_spec;
 };
 
@@ -153,12 +154,13 @@ struct content_spec_element : public content_spec_base
 	[[nodiscard]] state_base_ptr create_state() const override;
 	[[nodiscard]] bool element_content() const override { return true; }
 
+  private:
 	std::string m_name;
 };
 
 struct content_spec_repeated : public content_spec_base
 {
-	content_spec_repeated(const content_spec_base_ptr& allowed, char repetion)
+	content_spec_repeated(const content_spec_base_ptr &allowed, char repetion)
 		: content_spec_base(allowed->get_content_spec())
 		, m_allowed(allowed)
 		, m_repetition(repetion)
@@ -169,13 +171,14 @@ struct content_spec_repeated : public content_spec_base
 	[[nodiscard]] state_base_ptr create_state() const override;
 	[[nodiscard]] bool element_content() const override;
 
+  private:
 	content_spec_base_ptr m_allowed;
 	char m_repetition;
 };
 
 struct content_spec_seq : public content_spec_base
 {
-	explicit content_spec_seq(const content_spec_base_ptr& a)
+	explicit content_spec_seq(const content_spec_base_ptr &a)
 		: content_spec_base(a->get_content_spec())
 	{
 		add(a);
@@ -186,6 +189,7 @@ struct content_spec_seq : public content_spec_base
 	[[nodiscard]] state_base_ptr create_state() const override;
 	[[nodiscard]] bool element_content() const override;
 
+  private:
 	content_spec_list m_allowed;
 };
 
@@ -196,7 +200,7 @@ struct content_spec_choice : public content_spec_base
 		, m_mixed(mixed)
 	{
 	}
-	content_spec_choice(const content_spec_base_ptr& a, bool mixed)
+	content_spec_choice(const content_spec_base_ptr &a, bool mixed)
 		: content_spec_base(mixed ? content_spec_type::Mixed : a->get_content_spec())
 		, m_mixed(mixed)
 	{
@@ -208,6 +212,7 @@ struct content_spec_choice : public content_spec_base
 	[[nodiscard]] state_base_ptr create_state() const override;
 	[[nodiscard]] bool element_content() const override;
 
+  private:
 	content_spec_list m_allowed;
 	bool m_mixed;
 };
@@ -302,7 +307,7 @@ class element
 	element(const element &) = delete;
 	element &operator=(const element &) = delete;
 
-	element(std::string name, bool declared, bool external)
+	element(std::string name, bool declared, [[maybe_unused]] bool external)
 		: m_name(std::move(name))
 		, m_allowed(nullptr)
 		, m_declared(declared)
@@ -360,7 +365,7 @@ class entity
 		bool external, bool parsed)
 		: m_name(std::move(name))
 		, m_replacement(std::move(replacement))
-		, m_parameter(false)
+		// , m_parameter(false)
 		, m_parsed(parsed)
 		, m_external(external)
 		, m_externally_defined(false)
@@ -371,18 +376,19 @@ class entity
 		: m_name(std::move(name))
 		, m_replacement(std::move(replacement))
 		, m_path(std::move(path))
-		, m_parameter(true)
+		// , m_parameter(true)
 		, m_parsed(true)
 		, m_external(true)
 		, m_externally_defined(false)
 	{
 	}
 
+  private:
 	std::string m_name;
 	std::string m_replacement;
 	std::string m_ndata;
 	std::string m_path;
-	bool m_parameter;
+	// bool m_parameter;
 	bool m_parsed;
 	bool m_external;
 	bool m_externally_defined;

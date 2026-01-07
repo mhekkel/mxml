@@ -266,10 +266,14 @@ class document final : public element_container
 	/// @brief Return the concatenation of all contained text nodes
 	[[nodiscard]] std::string str() const override;
 
-  protected:
 	/** @cond */
+
+	void write(std::ostream &os, format_info fmt) const override;
+
+  protected:
 	node *insert_impl(const node *p, node *n) override;
 
+  private:
 	void XmlDeclHandler(encoding_type encoding, bool standalone, version_type version);
 	void StartElementHandler(const std::string &name, const std::string &uri, const parser::attr_list_type &atts);
 	void EndElementHandler(const std::string &name, const std::string &uri);
@@ -288,8 +292,6 @@ class document final : public element_container
 
 	std::function<std::unique_ptr<std::istream>(std::string_view base, std::string_view pubid, std::string_view sysid)>
 		m_external_entity_ref_loader;
-
-	void write(std::ostream &os, format_info fmt) const override;
 
 	std::string m_dtd_dir;
 

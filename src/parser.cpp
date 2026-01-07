@@ -128,7 +128,6 @@ class source_exception : public exception
 		, m_wmsg(std::move(msg))
 	{
 	}
-	~source_exception() noexcept override = default;
 
 	std::string m_wmsg;
 };
@@ -761,6 +760,7 @@ struct parser_imp
 			m_state = m_saved;
 		}
 
+	  private:
 		bool &m_state;
 		bool m_saved;
 	};

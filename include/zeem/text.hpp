@@ -32,6 +32,7 @@
  */
 
 #include <string>
+#include <string_view>
 
 namespace zeem
 {
@@ -40,6 +41,7 @@ namespace zeem
 
 bool is_name_start_char(char32_t uc);             ///< is the character a 'name_start_char'?
 bool is_name_char(char32_t uc);                   ///< is the character a 'name_char'?
+bool is_space(char32_t uc);                       ///< is the character a 'space'?
 bool is_valid_xml_1_0_char(char32_t uc);          ///< is the character a 'valid_xml_1_0_char'?
 bool is_valid_xml_1_1_char(char32_t uc);          ///< is the character a 'valid_xml_1_1_char'?
 bool is_valid_system_literal_char(char32_t uc);   ///< is the character a 'valid_system_literal_char'?

@@ -37,12 +37,12 @@
 #include "zeem.hpp"
 
 #include <array>
+#include <cstdint>
 #include <exception>
 #include <fstream>
 #include <iostream>
 #include <optional>
 #include <string>
-#include <utility>
 
 enum class BindingType
 {
@@ -72,7 +72,7 @@ struct Note
 	float pitch;
 
 	template <typename Archive>
-	void serialize(Archive &ar, unsigned long version)
+	void serialize(Archive &ar, [[maybe_unused]] uint64_t version)
 	{
 		// clang-format off
         ar & zeem::make_attribute_nvp("id", name)
@@ -87,7 +87,7 @@ struct Tuning
 	std::array<Note, 12> notes{};
 
 	template <typename Archive>
-	void serialize(Archive &ar, unsigned long version)
+	void serialize(Archive &ar, [[maybe_unused]] uint64_t version)
 	{
 		// clang-format off
         ar & zeem::make_attribute_nvp("a", A_frequency)
@@ -102,7 +102,7 @@ struct Binding
 	std::string start;
 
 	template <typename Archive>
-	void serialize(Archive &ar, unsigned long version)
+	void serialize(Archive &ar, [[maybe_unused]] uint64_t version)
 	{
 		// clang-format off
         ar & zeem::make_attribute_nvp("schema", type)
@@ -118,7 +118,7 @@ struct Stringing
 	std::optional<Binding> binding;
 
 	template <typename Archive>
-	void serialize(Archive &ar, unsigned long version)
+	void serialize(Archive &ar, [[maybe_unused]] uint64_t version)
 	{
 		// clang-format off
         ar & zeem::make_attribute_nvp("hoek", angle)
@@ -136,7 +136,7 @@ struct ClavichordSettings
 	Stringing strings;
 
 	template <typename Archive>
-	void serialize(Archive &ar, unsigned long version)
+	void serialize(Archive &ar, [[maybe_unused]] uint64_t version)
 	{
 		// clang-format off
         ar & zeem::make_element_nvp("naam", name)

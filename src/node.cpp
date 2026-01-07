@@ -26,12 +26,13 @@
 
 #include "zeem/node.hpp"
 
+#include "zeem/error.hpp"
 #include "zeem/text.hpp"
+#include "zeem/version.hpp"
 #include "zeem/xpath.hpp"
 
 #include <cassert>
 #include <exception>
-#include <functional>
 #include <initializer_list>
 #include <iostream>
 #include <map>

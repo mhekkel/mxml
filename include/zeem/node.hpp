@@ -127,8 +127,6 @@ class node
   public:
 	/** @cond */
 
-	node(const node &n) = delete;
-	node(node &&n) = delete;
 	node &operator=(const node &n) = delete;
 	node &operator=(node &&n) = delete;
 
@@ -236,6 +234,16 @@ class node
 		init();
 	}
 
+	node([[maybe_unused]] const node &n)
+	{
+		init();
+	}
+
+	node([[maybe_unused]] node &&n) noexcept
+	{
+		init();
+	}
+
 	friend void swap(node &a, node &b) noexcept
 	{
 		if (a.m_next == &a) // a empty?
@@ -269,6 +277,7 @@ class node
 		m_next = m_prev = this;
 	}
 
+  private:
 	element_container *m_parent = nullptr;
 	node *m_next{};
 	node *m_prev{};
@@ -304,6 +313,7 @@ class basic_node_list
 		}
 	};
 
+  private:
 	node_list_header m_header_node;
 	node *m_header = nullptr;
 	bool m_owner = false;
@@ -589,7 +599,7 @@ class node_list : public basic_node_list
 
 	/// \brief construct a new node using arguments provided in \a a
 
-	// TODO: When users try to emplace/insert e.g. a cdata node in an element
+	// TODO: maarten - When users try to emplace/insert e.g. a cdata node in an element
 	// this will fail, since they need to use the nodes() variant. However,
 	// a better error is required in that case. Perhaps using concepts?
 
@@ -763,7 +773,8 @@ class element_container : public node, public node_list<element>
 
 	/// @brief Copy constructor
 	element_container(const element_container &e)
-		: node_list<element>(this)
+		: node(e)
+		, node_list<element>(this)
 	{
 		auto a = nodes();
 		auto b = e.nodes();
@@ -822,7 +833,6 @@ class element_container : public node, public node_list<element>
 	[[nodiscard]] iterator find_first(std::string_view path);
 	[[nodiscard]] const_iterator find_first(std::string_view path) const;
 
-  protected:
 	/** @cond */
 	void write(std::ostream &os, format_info fmt) const override;
 	/** @endcond */
@@ -848,10 +858,8 @@ class node_with_text : public node
 	{
 	}
 
-	node_with_text(const node_with_text &n)
-		: m_text(n.m_text)
-	{
-	}
+	node_with_text(const node_with_text &n) = default;
+	node_with_text(node_with_text &&n) = default;
 
   public:
 	friend void swap(node_with_text &a, node_with_text &b) noexcept
@@ -877,8 +885,14 @@ class node_with_text : public node
 		       static_cast<const node_with_text *>(n)->m_text == m_text;
 	}
 
-  protected:
 	/** @cond */
+
+  protected:
+	void append_text(std::string_view txt)
+	{
+		m_text += txt;
+	}
+
 	std::string m_text;
 	/** @endcond */
 };
@@ -957,11 +971,7 @@ class processing_instruction final : public node_with_text
 	processing_instruction(const processing_instruction &pi) = default;
 
 	/// @brief move constructor
-	processing_instruction(processing_instruction &&pi) noexcept
-		: node_with_text(std::move(pi.m_text))
-		, m_target(std::move(pi.m_target))
-	{
-	}
+	processing_instruction(processing_instruction &&pi) noexcept = default;
 
 	/// @brief assignment operator
 	processing_instruction &operator=(processing_instruction pi) noexcept
@@ -1023,10 +1033,7 @@ class text final : public node_with_text
 	text(const text &t) = default;
 
 	/// @brief move constructor
-	text(text &&t) noexcept
-		: node_with_text(std::move(t.m_text))
-	{
-	}
+	text(text &&t) noexcept = default;
 
 	/// @brief assignment operator
 	text &operator=(text txt) noexcept
@@ -1036,7 +1043,7 @@ class text final : public node_with_text
 	}
 
 	/// \brief append \a text to the stored text
-	void append(std::string_view text) { m_text.append(text.begin(), text.end()); }
+	void append(std::string_view text) { append_text(text); }
 
 	/// \brief compare nodes for equality
 	bool equals(const node *n) const override;
@@ -1081,7 +1088,7 @@ class cdata final : public node_with_text
 	}
 
 	/// \brief append \a text to the stored text
-	void append(std::string_view text) { m_text.append(text.begin(), text.end()); }
+	void append(std::string_view text) { append_text(text); }
 
 	/// \brief compare nodes for equality
 	bool equals(const node *n) const override
@@ -1117,19 +1124,13 @@ class attribute final : public node
 	}
 
 	/// @brief copy constructor
-	attribute(const attribute &attr)
-		: m_qname(attr.m_qname)
-		, m_value(attr.m_value)
-		, m_id(attr.m_id)
-	{
-	}
+	attribute(const attribute &attr) = default;
 
 	/// @brief move constructor
 	attribute(attribute &&attr) noexcept
-		: m_qname(std::move(attr.m_qname))
-		, m_value(std::move(attr.m_value))
-		, m_id(attr.m_id)
+		: node(std::forward<attribute>(attr))
 	{
+		swap(*this, attr);
 	}
 
 	/// @brief assignment operator
@@ -1223,7 +1224,7 @@ class attribute final : public node
 
   private:
 	std::string m_qname, m_value;
-	bool m_id;
+	bool m_id{};
 	/** @endcond */
 };
 
