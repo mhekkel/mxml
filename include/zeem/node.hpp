@@ -440,8 +440,8 @@ class iterator_impl
 		return *this;
 	}
 
-	reference operator*() { return *static_cast<value_type *>(m_current); }
-	pointer operator->() { return static_cast<value_type *>(m_current); }
+	reference operator*() const { return *static_cast<value_type *>(m_current); }
+	pointer operator->() const { return static_cast<value_type *>(m_current); }
 
 	iterator_impl &operator++()
 	{
@@ -559,9 +559,11 @@ class node_list : public basic_node_list
   public:
 	/// @brief The iterator class
 	using iterator = iterator_impl<value_type>;
+	static_assert(std::input_iterator<iterator>);
 
 	/// @brief The const iterator class
 	using const_iterator = iterator_impl<const value_type>;
+	static_assert(std::input_iterator<const_iterator>);
 
 	[[nodiscard]] iterator begin() { return iterator(m_header->m_next); }
 	[[nodiscard]] iterator end() { return iterator(m_header); }
