@@ -24,7 +24,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "zeem/doctype.hpp"
+module;
 
 #include <map>
 #include <mutex>
@@ -32,6 +32,10 @@
 #include <string_view>
 #include <tuple>
 #include <utility>
+
+module zeem;
+
+import :doctype;
 
 namespace zeem::doctype
 {

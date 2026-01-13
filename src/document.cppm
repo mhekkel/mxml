@@ -24,17 +24,12 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#pragma once
+module;
 
 /**
  * \file
  * definition of the zeem::document class
  */
-
-#include "zeem/node.hpp"
-#include "zeem/parser.hpp"
-#include "zeem/text.hpp"
-#include "zeem/version.hpp"
 
 #include <cstddef>
 #include <functional>
@@ -45,6 +40,13 @@
 #include <type_traits>
 #include <utility>
 #include <vector>
+
+export module zeem:document;
+
+import :node;
+import :parser;
+import :version;
+import :text;
 
 namespace zeem
 {
@@ -83,7 +85,7 @@ struct doc_type
  * so-called root-node.
  */
 
-class document final : public element_container
+export class document final : public element_container
 {
   public:
 	/// \brief node_type of a document
@@ -326,7 +328,7 @@ class document final : public element_container
 	/** @endcond */
 };
 
-namespace literals
+export namespace literals
 {
 	/**
 	 * @brief This operator allows you to construct static XML

@@ -24,20 +24,20 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#pragma once
+module;
 
 /** @file 
  * Main module definition for zeem.
 */
 
-// IWYU pragma: begin_exports
-#include "zeem/doctype.hpp"
-#include "zeem/document.hpp"
-#include "zeem/error.hpp"
-#include "zeem/node.hpp"
-#include "zeem/parser.hpp"
-#include "zeem/serialize.hpp"
-#include "zeem/text.hpp"
-#include "zeem/version.hpp"
-#include "zeem/xpath.hpp"
-// IWYU pragma: end_exports
+export module zeem;
+
+export import :doctype;
+export import :document;
+export import :error;
+export import :node;
+export import :parser;
+export import :serialize;
+export import :text;
+export import :version;
+export import :xpath;

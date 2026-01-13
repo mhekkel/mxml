@@ -25,11 +25,11 @@
  */
 
 //[ synopsis_xml_main
-#include "zeem.hpp"
-
 #include <exception>
 #include <iostream>
 #include <string>
+
+import zeem;
 
 int main()
 {

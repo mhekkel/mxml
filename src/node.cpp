@@ -24,12 +24,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "zeem/node.hpp"
-
-#include "zeem/error.hpp"
-#include "zeem/text.hpp"
-#include "zeem/version.hpp"
-#include "zeem/xpath.hpp"
+module;
 
 #include <cassert>
 #include <exception>
@@ -41,6 +36,14 @@
 #include <string>
 #include <string_view>
 #include <tuple>
+
+module zeem;
+
+import :error;
+import :text;
+import :version;
+import :xpath;
+
 
 namespace zeem
 {

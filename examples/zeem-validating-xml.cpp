@@ -3,8 +3,6 @@
 //     (See accompanying file LICENSE_1_0.txt or copy at
 //           http://www.boost.org/LICENSE_1_0.txt)
 
-#include "zeem.hpp"
-
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -12,6 +10,8 @@
 #include <stdexcept>
 #include <string>
 #include <string_view>
+
+import zeem;
 
 namespace fs = std::filesystem;
 

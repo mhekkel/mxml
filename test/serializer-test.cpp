@@ -28,8 +28,6 @@
 
 #define CATCH_CONFIG_RUNNER
 
-#include "zeem.hpp"
-
 #include <array>
 #include <catch2/catch_session.hpp>
 #include <catch2/catch_test_macros.hpp>
@@ -44,6 +42,8 @@
 #include <string>
 #include <system_error>
 #include <vector>
+
+import zeem;
 
 std::filesystem::path gTestDir;
 

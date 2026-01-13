@@ -24,16 +24,12 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#pragma once
+module;
 
 /**
  * @file
  * definition of the serializer classes used to (de-)serialize XML data.
  */
-
-#include "zeem/config.hpp"
-#include "zeem/detail/charconv.hpp"
-#include "zeem/node.hpp"
 
 #if ZEEM_USE_DATE_H
 # include <date/date.h>
@@ -49,6 +45,11 @@
 #include <string>
 #include <system_error>
 
+export module zeem:serialize;
+
+import :node;
+import :charconv;
+
 namespace zeem
 {
 
@@ -59,7 +60,7 @@ namespace zeem
 /// Each specialization should provide a static to_string and a from_string
 /// method
 
-template <typename T>
+export template <typename T>
 struct value_serializer;
 
 /// @ref value_serializer implementation for booleans
@@ -436,13 +437,13 @@ inline constexpr bool is_serializable_array_type_v = is_serializable_array_type<
 /** @endcond */
 // --------------------------------------------------------------------
 
-struct serializer;
-struct deserializer;
+export struct serializer;
+export struct deserializer;
 
 /**
  * @brief base struct to capture named values in a structure for serializing
  */
-template <typename T>
+export template <typename T>
 class name_value_pair
 {
   public:
@@ -471,7 +472,7 @@ class name_value_pair
 };
 
 /// @brief name value pair to create elements
-template <typename T>
+export template <typename T>
 class element_nvp : public name_value_pair<T>
 {
   public:
@@ -482,7 +483,7 @@ class element_nvp : public name_value_pair<T>
 };
 
 /// @brief name value pair to create attributes
-template <typename T>
+export template <typename T>
 class attribute_nvp : public name_value_pair<T>
 {
   public:
@@ -495,7 +496,7 @@ class attribute_nvp : public name_value_pair<T>
 /**
  * @brief Create a name/value pair for serializing to and from an XML element
  */
-template <typename T>
+export template <typename T>
 constexpr attribute_nvp<T> make_attribute_nvp(std::string name, T &value)
 {
 	return attribute_nvp(std::move(name), value);
@@ -504,7 +505,7 @@ constexpr attribute_nvp<T> make_attribute_nvp(std::string name, T &value)
 /**
  * @brief Create a name/value pair for serializing to and from an XML attribute
  */
-template <typename T>
+export template <typename T>
 constexpr element_nvp<T> make_element_nvp(std::string name, T &value)
 {
 	return element_nvp(std::move(name), value);
@@ -607,7 +608,7 @@ struct deserializer
  * each has its own template specialization.
  */
 
-template <typename T>
+export template <typename T>
 struct type_serializer;
 
 /** @cond */
@@ -996,7 +997,7 @@ deserializer &deserializer::deserialize_attribute(std::string_view name, T &valu
  * @brief Write out \a value into XML into document or element \a e
  */
 
-template <typename T>
+export template <typename T>
 void to_xml(zeem::element_container &e, const T &value)
 {
 	serializer sr(e);
@@ -1008,7 +1009,7 @@ void to_xml(zeem::element_container &e, const T &value)
  * using \a name as name for the element to create.
  */
 
-template <typename T>
+export template <typename T>
 void to_xml(zeem::element_container &e, std::string_view name, const T &value)
 {
 	serializer sr(e);
@@ -1019,7 +1020,7 @@ void to_xml(zeem::element_container &e, std::string_view name, const T &value)
  * @brief Read in \a value from the XML in document or element \a e
  */
 
-template <typename T>
+export template <typename T>
 void from_xml(const zeem::element_container &e, T &value)
 {
 	deserializer dsr(e);
@@ -1031,7 +1032,7 @@ void from_xml(const zeem::element_container &e, T &value)
  * using \a name as name for the element to use.
  */
 
-template <typename T>
+export template <typename T>
 void from_xml(const zeem::element_container &e, std::string_view name, T &value)
 {
 	deserializer dsr(e);

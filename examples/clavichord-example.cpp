@@ -33,9 +33,6 @@
  */
 
 //[ clavichord-example
-
-#include "zeem.hpp"
-
 #include <array>
 #include <cstdint>
 #include <exception>
@@ -43,6 +40,8 @@
 #include <iostream>
 #include <optional>
 #include <string>
+
+import zeem;
 
 enum class BindingType
 {

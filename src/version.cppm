@@ -24,33 +24,34 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#pragma once
+module;
 
 /**
  * \file
- * definition of the zeem::exception class
+ * File containing the version_type struct
  */
 
-#include <exception>
-#include <string>
+#include <compare>
+#include <cstdint>
+
+export module zeem:version;
 
 namespace zeem
 {
 
-/// \brief base class of the exceptions thrown by zeem
-class exception : public std::exception
+// --------------------------------------------------------------------
+
+/**
+ * @brief struct for the XML version
+ *
+ */
+
+export struct version_type
 {
-  public:
-	/// \brief Create an exception with the message in \a message
-	explicit exception(std::string message)
-		: m_message(std::move(message))
-	{
-	}
+	uint8_t major; ///< major, usually 1
+	uint8_t minor; ///< minor, usually 0 or 1
 
-	[[nodiscard]] const char *what() const noexcept override { return m_message.c_str(); }
-
-  private:
-	std::string m_message;
+	constexpr auto operator<=>(const version_type &) const = default;
 };
 
 } // namespace zeem

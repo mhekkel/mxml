@@ -24,11 +24,14 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "zeem/text.hpp"
-#include "zeem/error.hpp"
+module;
 
 #include <string>
 #include <string_view>
+
+module zeem;
+
+import :error;
 
 namespace zeem
 {
@@ -153,27 +156,21 @@ void append(std::string &s, char32_t uc)
 		s += (static_cast<char>(uc));
 	else if (uc < 0x0800)
 	{
-		s.insert(s.end(), {
-			static_cast<char>(0x0c0U | (uc >> 6U)),
-			static_cast<char>(0x080U | (uc & 0x3fU))
-		});
+		s.insert(s.end(), { static_cast<char>(0x0c0U | (uc >> 6U)),
+							  static_cast<char>(0x080U | (uc & 0x3fU)) });
 	}
 	else if (uc < 0x00010000U)
 	{
-		s.insert(s.end(), {
-			static_cast<char>(0x0e0U | (uc >> 12U)),
-			static_cast<char>(0x080U | ((uc >> 6U) & 0x3fU)),
-			static_cast<char>(0x080U | (uc & 0x3fU))
-		});
+		s.insert(s.end(), { static_cast<char>(0x0e0U | (uc >> 12U)),
+							  static_cast<char>(0x080U | ((uc >> 6U) & 0x3fU)),
+							  static_cast<char>(0x080U | (uc & 0x3fU)) });
 	}
 	else
 	{
-		s.insert(s.end(), {
-			static_cast<char>(0x0f0U | (uc >> 18U)),
-			static_cast<char>(0x080U | ((uc >> 12U) & 0x3fU)),
-			static_cast<char>(0x080U | ((uc >> 6U) & 0x3fU)),
-			static_cast<char>(0x080U | (uc & 0x3fU))
-		});
+		s.insert(s.end(), { static_cast<char>(0x0f0U | (uc >> 18U)),
+							  static_cast<char>(0x080U | ((uc >> 12U) & 0x3fU)),
+							  static_cast<char>(0x080U | ((uc >> 6U) & 0x3fU)),
+							  static_cast<char>(0x080U | (uc & 0x3fU)) });
 	}
 }
 

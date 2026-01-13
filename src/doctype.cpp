@@ -24,10 +24,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "zeem/doctype.hpp"
-
-#include "zeem/error.hpp"
-#include "zeem/text.hpp"
+module;
 
 #include <cassert>
 #include <cctype>
@@ -37,6 +34,11 @@
 #include <string_view>
 #include <tuple>
 #include <vector>
+
+module zeem;
+
+import :error;
+import :text;
 
 namespace zeem::doctype
 {

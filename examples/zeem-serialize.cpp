@@ -4,12 +4,12 @@
 //           http://www.boost.org/LICENSE_1_0.txt)
 
 //[ serialisation
-#include "zeem.hpp"
-
 #include <cstdint>
 #include <fstream>
 #include <string>
 #include <vector>
+
+import zeem;
 
 struct Person
 {

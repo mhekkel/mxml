@@ -24,31 +24,30 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "zeem/parser.hpp"
-
-#include "zeem/doctype.hpp"
-#include "zeem/text.hpp"
-#include "zeem/version.hpp"
+module;
 
 #include <algorithm>
 #include <array>
 #include <cassert>
 #include <cctype>
-#include <compare>
 #include <cstddef>
 #include <cstdint>
 #include <format>
 #include <map>
 #include <memory>
-#include <ranges>
 #include <set>
 #include <sstream>
 #include <stack>
 #include <string>
 #include <tuple>
 #include <utility>
-#include <variant>
 #include <vector>
+
+module zeem;
+
+import :doctype;
+import :text;
+import :version;
 
 namespace zeem
 {

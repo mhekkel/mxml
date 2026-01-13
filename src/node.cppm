@@ -24,13 +24,10 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#pragma once
+module;
 
 /// \file
 /// the core of the zeem XML library defining the main classes in the DOM API
-
-#include "zeem/error.hpp"
-#include "zeem/version.hpp"
 
 #include <algorithm>
 #include <cassert>
@@ -46,20 +43,26 @@
 #include <utility>
 #include <vector>
 
+export module zeem:node;
+
+import :error;
+import :version;
+
 namespace zeem
 {
 
 // forward declarations
-class attribute;
-class element;
-class element_container;
-class node;
-class text;
+export class attribute;
+export class attribute_set;
+export class element;
+export class element_container;
+export class node;
+export class text;
 
 using node_set = std::vector<node *>;
 using element_set = std::vector<element *>;
 
-template <typename T>
+export template <typename T>
 concept NodeType = std::is_base_of_v<zeem::node, std::remove_cvref_t<T>>;
 
 /**
@@ -67,7 +70,7 @@ concept NodeType = std::is_base_of_v<zeem::node, std::remove_cvref_t<T>>;
  * to find out the actual type of a node
  */
 
-enum class node_type : uint8_t
+export enum class node_type : uint8_t
 {
 	element,
 	text,
@@ -83,7 +86,7 @@ enum class node_type : uint8_t
 // --------------------------------------------------------------------
 
 /// \brief specification of how XML data should be written out
-struct format_info
+export struct format_info
 {
 	bool indent = false;
 	bool indent_attributes = false;
@@ -905,7 +908,7 @@ class node_with_text : public node
  *
  */
 
-class comment final : public node_with_text
+export class comment final : public node_with_text
 {
   public:
 	[[nodiscard]] constexpr node_type type() const override { return node_type::comment; }
@@ -1064,7 +1067,7 @@ class text final : public node_with_text
  *
  */
 
-class cdata final : public node_with_text
+export class cdata final : public node_with_text
 {
   public:
 	[[nodiscard]] constexpr node_type type() const override { return node_type::cdata; }
@@ -1235,7 +1238,7 @@ class attribute final : public node
  *
  */
 
-class attribute_set : public node_list<attribute>
+export class attribute_set : public node_list<attribute>
 {
   public:
 	/// @brief constructor to create an attribute_set for an element
@@ -1594,7 +1597,7 @@ void node_list<T>::sort(const Pred &pred)
  * \param dest		The (usually) document element that is the destination
  */
 
-void fix_namespaces(element &e, const element &source, const element &dest);
+export void fix_namespaces(element &e, const element &source, const element &dest);
 
 } // namespace zeem
 

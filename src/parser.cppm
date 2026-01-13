@@ -24,14 +24,12 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#pragma once
+module;
 
 /**
  * \file
  * definition of the zeem XML parser, a recursive descent parser
  */
-
-#include "zeem/error.hpp"
 
 #include <functional>
 #include <istream>
@@ -41,11 +39,17 @@
 #include <utility>
 #include <vector>
 
+export module zeem:parser;
+
+import :error;
+import :text;
+import :version;
+
 namespace zeem
 {
 
-enum class encoding_type;
-struct version_type;
+export enum class encoding_type;
+export struct version_type;
 
 /// If an invalid_exception is thrown, it means the XML document is not valid: it does
 /// not conform the DTD specified in the XML document.
@@ -53,7 +57,7 @@ struct version_type;
 ///
 /// The what() member of the exception object will contain an explanation.
 
-class invalid_exception : public exception
+export class invalid_exception : public exception
 {
   public:
 	explicit invalid_exception(std::string msg)
@@ -68,7 +72,7 @@ class invalid_exception : public exception
 ///
 /// The what() member of the exception object will contain an explanation.
 
-class not_wf_exception : public exception
+export class not_wf_exception : public exception
 {
   public:
 	explicit not_wf_exception(std::string msg)
@@ -84,7 +88,7 @@ class not_wf_exception : public exception
  * call back handlers for the SAX events and then call parse().
  */
 
-class parser
+export class parser
 {
   public:
 	/**

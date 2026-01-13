@@ -24,8 +24,6 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "zeem.hpp"
-
 #include <algorithm>
 #include <cstdlib>
 #include <exception>
@@ -43,6 +41,8 @@
 #include <string>
 #include <system_error>
 #include <vector>
+
+import zeem;
 
 #if defined(_WIN32)
 # include <conio.h>

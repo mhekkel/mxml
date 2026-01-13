@@ -24,7 +24,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#pragma once
+module;
 
 /**
  * \file
@@ -37,10 +37,12 @@
 #include <type_traits>
 #include <vector>
 
+export module zeem:xpath;
+
+import :node;
+
 namespace zeem
 {
-
-class node;
 
 // --------------------------------------------------------------------
 /// XPath's can contain variables. And variables can contain all kinds of data
@@ -53,7 +55,7 @@ class node;
  *
  */
 
-class context final
+export class context final
 {
   public:
 	/// @brief constructor
@@ -103,7 +105,7 @@ class context final
  *
  */
 
-class xpath final
+export class xpath final
 {
   public:
 	/// @brief constructor taking a UTF-8 encoded xpath in \a path

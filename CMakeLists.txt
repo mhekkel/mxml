@@ -3,7 +3,7 @@
 # (See accompanying file LICENSE_1_0.txt or copy at
 # http://www.boost.org/LICENSE_1_0.txt)
 
-cmake_minimum_required(VERSION 3.23)
+cmake_minimum_required(VERSION 3.28)
 
 project(zeem VERSION 2.1.0 LANGUAGES CXX)
 
@@ -30,7 +30,7 @@ if(CMAKE_VERSION VERSION_GREATER_EQUAL 3.30)
 endif()
 
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wno-unused-parameter -Wsuggest-override")
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wno-unused-parameter -Wsuggest-override -fmodules-ts")
 elseif(MSVC)
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W4")
 endif()
@@ -75,52 +75,27 @@ if(NOT USE_STD_CHRONO_FROM_STREAM)
 	set(ZEEM_USE_DATE_H ON)
 endif()
 
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/include/zeem/config.hpp.in
-	${CMAKE_CURRENT_SOURCE_DIR}/include/zeem/config.hpp @ONLY)
-
 # Version info
 write_version_header("${CMAKE_CURRENT_SOURCE_DIR}/src" LIB_NAME "libzeem")
 
-add_library(zeem)
-add_library(zeem::zeem ALIAS zeem)
+file(GLOB_RECURSE zeem_cpp CONFIGURE_DEPENDS src/*.cpp)
 
-list(APPEND sources
-	src/doctype.cpp
-	src/document.cpp
-	src/html-named-characters.cpp
-	src/node.cpp
-	src/parser.cpp
-	src/text.cpp
-	src/xpath.cpp
-	src/revision.hpp
-)
-
-if(NOT STD_CHARCONV_COMPILING)
-	list(APPEND sources src/charconv-fast_float.cpp)
+if(STD_CHARCONV_COMPILING)
+	list(FILTER zeem_cpp EXCLUDE REGEX src/charconv-fast_float\.cpp)
 endif()
 
-target_sources(zeem
-	PRIVATE ${sources}
-	PUBLIC
-	FILE_SET public_modules TYPE HEADERS
-	BASE_DIRS
-	${CMAKE_CURRENT_SOURCE_DIR}/include
-	FILES
-	include/zeem.hpp
-	include/zeem/config.hpp
-	include/zeem/detail/charconv.hpp
-	include/zeem/doctype.hpp
-	include/zeem/document.hpp
-	include/zeem/error.hpp
-	include/zeem/node.hpp
-	include/zeem/parser.hpp
-	include/zeem/serialize.hpp
-	include/zeem/text.hpp
-	include/zeem/version.hpp
-	include/zeem/xpath.hpp
-)
+file(GLOB_RECURSE zeem_cppm src/*.cppm)
 
-target_compile_features(zeem PUBLIC cxx_std_20)
+add_library(zeem STATIC ${zeem_cpp})
+add_library(zeem::zeem ALIAS zeem)
+
+target_sources(zeem
+	PUBLIC
+	FILE_SET public_modules TYPE CXX_MODULES
+	FILES
+	${zeem_cppm})
+
+target_compile_features(zeem PUBLIC cxx_std_23)
 
 if(NOT STD_CHARCONV_COMPILING)
 	target_include_directories(zeem PRIVATE $<TARGET_PROPERTY:FastFloat::fast_float,INTERFACE_INCLUDE_DIRECTORIES>)
@@ -128,14 +103,11 @@ endif()
 
 if(NOT USE_STD_CHRONO_FROM_STREAM)
 	target_link_libraries(zeem PUBLIC date::date)
-	target_compile_definitions(zeem PUBLIC USE_DATE_H=1)
+	target_compile_definitions(zeem PUBLIC ZEEM_USE_DATE_H=1)
 	set(FIND_DEPENDENCIES "find_dependency(date REQUIRED)")
 endif()
 
 target_compile_definitions(zeem PUBLIC $<$<BOOL:MSVC>:NOMINMAX=1>)
-
-set(CMAKE_DEBUG_POSTFIX d)
-set_target_properties(zeem PROPERTIES DEBUG_POSTFIX "d")
 
 set(zeem_MAJOR_VERSION ${PROJECT_VERSION_MAJOR})
 set_target_properties(zeem PROPERTIES
@@ -147,7 +119,8 @@ set_target_properties(zeem PROPERTIES
 
 install(TARGETS zeem
 	EXPORT zeem
-	FILE_SET public_modules DESTINATION include)
+	CXX_MODULES_BMI DESTINATION "lib/cxx/bmi"
+	FILE_SET public_modules DESTINATION "lib/cxx/miu")
 
 install(EXPORT zeem
 	NAMESPACE zeem::
@@ -161,13 +134,25 @@ configure_package_config_file(
 
 write_basic_package_version_file(
 	"${CMAKE_CURRENT_BINARY_DIR}/zeem-config-version.cmake"
-	COMPATIBILITY AnyNewerVersion
-)
+	COMPATIBILITY AnyNewerVersion)
 
 install(FILES
 	${CMAKE_CURRENT_BINARY_DIR}/zeem-config.cmake
 	${CMAKE_CURRENT_BINARY_DIR}/zeem-config-version.cmake
 	DESTINATION lib/cmake/zeem)
+
+set(generator
+	-G "${CMAKE_GENERATOR}")
+
+if(CMAKE_GENERATOR_TOOLSET)
+	list(APPEND generator
+		-T "${CMAKE_GENERATOR_TOOLSET}")
+endif()
+
+if(CMAKE_GENERATOR_PLATFORM)
+	list(APPEND generator
+		-A "${CMAKE_GENERATOR_PLATFORM}")
+endif()
 
 if(BUILD_TESTING AND PROJECT_IS_TOP_LEVEL)
 	add_subdirectory(test)

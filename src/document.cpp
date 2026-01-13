@@ -24,11 +24,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "zeem/document.hpp"
-
-#include "zeem/error.hpp"
-#include "zeem/node.hpp"
-#include "zeem/parser.hpp"
+module;
 
 #include <algorithm>
 #include <cassert>
@@ -39,6 +35,8 @@
 #include <streambuf>
 #include <string_view>
 #include <tuple>
+
+module zeem;
 
 namespace zeem
 {

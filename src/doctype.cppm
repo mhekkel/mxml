@@ -24,7 +24,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#pragma once
+module;
 
 /** @file
  * File containing code to support DOCTYPE handling. This is private code
@@ -40,6 +40,8 @@
 #include <tuple>
 #include <utility>
 #include <vector>
+
+export module zeem:doctype;
 
 namespace zeem::doctype
 {

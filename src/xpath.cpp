@@ -24,12 +24,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "zeem/xpath.hpp"
-
-#include "zeem/detail/charconv.hpp"
-#include "zeem/error.hpp"
-#include "zeem/node.hpp"
-#include "zeem/text.hpp"
+module;
 
 #include <algorithm>
 #include <cctype>
@@ -48,6 +43,13 @@
 #include <system_error>
 #include <utility>
 #include <vector>
+
+module zeem;
+
+import :charconv;
+import :error;
+import :node;
+import :text;
 
 namespace zeem
 {
