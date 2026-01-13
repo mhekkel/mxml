@@ -41,3 +41,4 @@ export import :serialize;
 export import :text;
 export import :version;
 export import :xpath;
+export import :charconv;
