@@ -33,6 +33,7 @@ module;
 
 #include <exception>
 #include <string>
+#include <utility>
 
 export module zeem:error;
 

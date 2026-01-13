@@ -277,7 +277,7 @@ struct value_serializer<T>
 /// \brief to_string/from_string for std::chrono::system_clock::time_point
 /// time is always assumed to be UTC
 /// For a specification, see https://www.iso20022.org/standardsrepository/type/ISODateTime
-#if 0
+
 template <>
 struct value_serializer<std::chrono::system_clock::time_point>
 {
@@ -371,7 +371,6 @@ struct value_serializer<std::chrono::sys_days>
 		return result;
 	}
 };
-#endif
 
 /** @cond */
 
