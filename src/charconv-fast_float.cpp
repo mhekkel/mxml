@@ -7,6 +7,8 @@ module;
 
 #include "fast_float/fast_float.h"
 
+#include <charconv>
+
 module zeem;
 
 namespace zeem
