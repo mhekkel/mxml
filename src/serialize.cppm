@@ -374,18 +374,18 @@ struct value_serializer<std::chrono::sys_days>
 
 /** @cond */
 
-template <typename T>
+export template <typename T>
 using serialize_value_t = decltype(std::declval<value_serializer<T> &>().from_string(std::declval<std::string_view>()));
 
-template <typename T, typename Archive>
+export template <typename T, typename Archive>
 using serialize_function = decltype(std::declval<T &>().serialize(std::declval<Archive &>(), std::declval<uint64_t>()));
 
-template <typename T, typename Archive, typename = void>
+export template <typename T, typename Archive, typename = void>
 struct has_serialize : std::false_type
 {
 };
 
-template <typename T, typename Archive>
+export template <typename T, typename Archive>
 struct has_serialize<T, Archive, typename std::enable_if_t<std::is_class_v<T>>>
 {
 	static constexpr bool value = detail::is_detected_v<serialize_function, T, Archive>;
@@ -394,22 +394,22 @@ struct has_serialize<T, Archive, typename std::enable_if_t<std::is_class_v<T>>>
 export template <typename T, typename S>
 inline constexpr bool has_serialize_v = has_serialize<T, S>::value;
 
-template <typename T, typename S, typename = void>
+export template <typename T, typename S, typename = void>
 struct is_serializable_array_type : std::false_type
 {
 };
 
-template <typename T>
+export template <typename T>
 using value_type_t = typename T::value_type;
 
-template <typename T>
+export template <typename T>
 using iterator_t = typename T::iterator;
 
-template <typename T>
+export template <typename T>
 using std_string_npos_t = decltype(T::npos);
 
 /// Struct used to detect whether type \a T is serializable
-template <typename T, typename S>
+export template <typename T, typename S>
 struct is_serializable_type
 {
 	using value_type = std::remove_cvref_t<T>;
@@ -421,7 +421,7 @@ struct is_serializable_type
 export template <typename T, typename S>
 inline constexpr bool is_serializable_type_v = is_serializable_type<T, S>::value;
 
-template <typename T, typename S>
+export template <typename T, typename S>
 struct is_serializable_array_type<T, S,
 	std::enable_if_t<
 		detail::is_detected_v<value_type_t, T> and

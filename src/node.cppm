@@ -850,7 +850,7 @@ class element_container : public node, public node_list<element>
  *
  */
 
-class node_with_text : public node
+export class node_with_text : public node
 {
   protected:
 	/** @cond */
