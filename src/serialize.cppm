@@ -322,12 +322,12 @@ struct value_serializer<std::chrono::system_clock::time_point>
 		if (m[1].matched)
 		{
 			if (m[1] == "Z")
-				std::from_stream(is, "%FT%TZ", result);
+				std::chrono::from_stream(is, "%FT%TZ", result);
 			else
-				std::from_stream(is, "%FT%T%0z", result);
+				std::chrono::from_stream(is, "%FT%T%0z", result);
 		}
 		else
-			std::from_stream(is, "%FT%T", result);
+			std::chrono::from_stream(is, "%FT%T", result);
 #endif
 
 		if (is.bad() or is.fail())
@@ -362,7 +362,7 @@ struct value_serializer<std::chrono::sys_days>
 #if ZEEM_USE_DATE_H
 		date::from_stream(is, "%F", result);
 #else
-		std::from_stream(is, "%F", result);
+		std::chrono::from_stream(is, "%F", result);
 #endif
 
 		if (is.bad() or is.fail())
@@ -385,7 +385,7 @@ struct has_serialize : std::false_type
 {
 };
 
-export template <typename T, typename Archive>
+template <typename T, typename Archive>
 struct has_serialize<T, Archive, typename std::enable_if_t<std::is_class_v<T>>>
 {
 	static constexpr bool value = detail::is_detected_v<serialize_function, T, Archive>;
@@ -421,7 +421,7 @@ struct is_serializable_type
 export template <typename T, typename S>
 inline constexpr bool is_serializable_type_v = is_serializable_type<T, S>::value;
 
-export template <typename T, typename S>
+template <typename T, typename S>
 struct is_serializable_array_type<T, S,
 	std::enable_if_t<
 		detail::is_detected_v<value_type_t, T> and
