@@ -31,10 +31,6 @@ module;
  * definition of the serializer classes used to (de-)serialize XML data.
  */
 
-#if ZEEM_USE_DATE_H
-# include <date/date.h>
-#endif
-
 #include <algorithm>
 #include <charconv>
 #include <chrono>
@@ -308,17 +304,6 @@ struct value_serializer<std::chrono::system_clock::time_point>
 		std::stringstream is;
 		is << s;
 
-#if ZEEM_USE_DATE_H
-		if (m[1].matched)
-		{
-			if (m[1] == "Z")
-				date::from_stream(is, "%FT%TZ", result);
-			else
-				date::from_stream(is, "%FT%T%0z", result);
-		}
-		else
-			date::from_stream(is, "%FT%T", result);
-#else
 		if (m[1].matched)
 		{
 			if (m[1] == "Z")
@@ -328,7 +313,6 @@ struct value_serializer<std::chrono::system_clock::time_point>
 		}
 		else
 			std::chrono::from_stream(is, "%FT%T", result);
-#endif
 
 		if (is.bad() or is.fail())
 			throw std::runtime_error("invalid formatted date");
@@ -359,11 +343,7 @@ struct value_serializer<std::chrono::sys_days>
 		std::stringstream is;
 		is << s;
 
-#if ZEEM_USE_DATE_H
-		date::from_stream(is, "%F", result);
-#else
 		std::chrono::from_stream(is, "%F", result);
-#endif
 
 		if (is.bad() or is.fail())
 			throw std::runtime_error("invalid formatted date");

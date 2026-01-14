@@ -49,30 +49,6 @@ if(NOT STD_CHARCONV_COMPILING)
 		EXCLUDE_FROM_ALL YES)
 endif()
 
-try_run(TEST_STD_CHRONO_FROM_STREAM_R TEST_STD_CHRONO_FROM_STREAM_C
-	SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/cmake/test-chrono_from_stream.cpp
-	CXX_STANDARD 20
-)
-
-if (TEST_STD_CHRONO_FROM_STREAM_R)
-	set(USE_STD_CHRONO_FROM_STREAM TRUE)
-else()
-	set(USE_STD_CHRONO_FROM_STREAM FALSE)
-endif()
-
-if(NOT USE_STD_CHRONO_FROM_STREAM)
-	message(NOTICE "zeem: Using Howard Hinnants date for from_stream")
-	CPMFindPackage(
-		NAME date
-		GIT_REPOSITORY "https://github.com/HowardHinnant/date"
-		VERSION 3.0.3
-		EXCLUDE_FROM_ALL YES
-		OPTIONS
-		"USE_SYSTEM_TZ_DB ON"
-		"BUILD_TZ_LIB ON")
-	set(ZEEM_USE_DATE_H ON)
-endif()
-
 # Version info
 write_version_header("${CMAKE_CURRENT_SOURCE_DIR}/src" LIB_NAME "libzeem")
 
@@ -97,12 +73,6 @@ target_compile_features(zeem PUBLIC cxx_std_23)
 
 if(NOT STD_CHARCONV_COMPILING)
 	target_include_directories(zeem PRIVATE $<TARGET_PROPERTY:FastFloat::fast_float,INTERFACE_INCLUDE_DIRECTORIES>)
-endif()
-
-if(NOT USE_STD_CHRONO_FROM_STREAM)
-	target_link_libraries(zeem PUBLIC date::date)
-	target_compile_definitions(zeem PUBLIC ZEEM_USE_DATE_H=1)
-	set(FIND_DEPENDENCIES "find_dependency(date REQUIRED)")
 endif()
 
 target_compile_definitions(zeem PUBLIC $<$<BOOL:MSVC>:NOMINMAX=1>)
