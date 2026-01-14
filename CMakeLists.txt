@@ -58,7 +58,7 @@ if(STD_CHARCONV_COMPILING)
 	list(FILTER zeem_cpp EXCLUDE REGEX src/charconv-fast_float\.cpp)
 endif()
 
-file(GLOB_RECURSE zeem_cppm src/*.cppm)
+file(GLOB_RECURSE zeem_cppm modules/*.cppm)
 
 add_library(zeem STATIC ${zeem_cpp})
 add_library(zeem::zeem ALIAS zeem)

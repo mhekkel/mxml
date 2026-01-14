@@ -99,7 +99,8 @@ template <typename T, typename = void>
 struct ff_charconv;
 
 template <typename T>
-struct ff_charconv<T, typename std::enable_if_t<std::is_floating_point_v<T>>>
+	requires(std::is_floating_point_v<T>)
+struct ff_charconv<T>
 {
 	static std::from_chars_result from_chars(const char *a, const char *b, T &v);
 };
