@@ -48,9 +48,6 @@ import :version;
 namespace zeem
 {
 
-export enum class encoding_type;
-export struct version_type;
-
 /// If an invalid_exception is thrown, it means the XML document is not valid: it does
 /// not conform the DTD specified in the XML document.
 /// This is only thrown when validation is enabled.
