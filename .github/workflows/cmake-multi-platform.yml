@@ -2,7 +2,7 @@ name: multi platform test
 
 on:
   push:
-    branches: [ "trunk", "develop" ]
+    branches: [ "trunk", "develop", "as-module-ng" ]
   pull_request:
     branches: [ "trunk" ]
 
