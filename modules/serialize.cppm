@@ -373,7 +373,7 @@ struct has_serialize<T, Archive>
 };
 
 export template <typename T, typename S>
-inline constexpr bool has_serialize_v = has_serialize<T, S>::value;
+constexpr bool has_serialize_v = has_serialize<T, S>::value;
 
 export template <typename T, typename S, typename = void>
 struct is_serializable_array_type : std::false_type
@@ -400,7 +400,7 @@ struct is_serializable_type
 };
 
 export template <typename T, typename S>
-inline constexpr bool is_serializable_type_v = is_serializable_type<T, S>::value;
+constexpr bool is_serializable_type_v = is_serializable_type<T, S>::value;
 
 template <typename T, typename S>
 	requires(
@@ -413,7 +413,7 @@ struct is_serializable_array_type<T, S>
 };
 
 export template <typename T, typename S>
-inline constexpr bool is_serializable_array_type_v = is_serializable_array_type<T, S>::value;
+constexpr bool is_serializable_array_type_v = is_serializable_array_type<T, S>::value;
 
 /** @endcond */
 // --------------------------------------------------------------------

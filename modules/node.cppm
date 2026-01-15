@@ -1484,7 +1484,7 @@ class element final : public element_container
 // --------------------------------------------------------------------
 /** @cond */
 template <typename T>
-inline node_list<T>::node_list(element_container *e)
+node_list<T>::node_list(element_container *e)
 	: basic_node_list(e)
 {
 	if constexpr (std::is_same_v<value_type, node>)
@@ -1492,34 +1492,34 @@ inline node_list<T>::node_list(element_container *e)
 }
 
 template <>
-inline node_list<element>::iterator node_list<element>::insert(const_iterator pos, const element &e)
+auto node_list<element>::insert(const_iterator pos, const element &e) -> iterator
 {
 	return iterator{ insert_impl(pos, new element(e)) };
 }
 
 /// \brief insert a copy of \a e at position \a pos, moving its data
 template <>
-inline node_list<element>::iterator node_list<element>::insert(const_iterator pos, element &&e)
+auto node_list<element>::insert(const_iterator pos, element &&e) -> iterator
 {
 	return iterator{ insert_impl(pos, new element(std::forward<value_type>(e))) };
 }
 
 template <>
-inline node_list<attribute>::iterator node_list<attribute>::insert(const_iterator pos, const attribute &e)
+auto node_list<attribute>::insert(const_iterator pos, const attribute &e) -> iterator
 {
 	return iterator{ insert_impl(pos, new attribute(e)) };
 }
 
 /// \brief insert a copy of \a e at position \a pos, moving its data
 template <>
-inline node_list<attribute>::iterator node_list<attribute>::insert(const_iterator pos, attribute &&e)
+auto node_list<attribute>::insert(const_iterator pos, attribute &&e) -> iterator
 {
 	return iterator{ insert_impl(pos, new attribute(std::forward<value_type>(e))) };
 }
 
 // NOLINTBEGIN(cppcoreguidelines-owning-memory,cppcoreguidelines-pro-type-static-cast-downcast)
 template <>
-inline auto node_list<node>::insert(const_iterator pos, const value_type &e) -> iterator
+auto node_list<node>::insert(const_iterator pos, const value_type &e) -> iterator
 {
 	switch (e.type())
 	{
@@ -1548,7 +1548,7 @@ inline auto node_list<node>::insert(const_iterator pos, const value_type &e) -> 
 
 /// \brief insert a copy of \a e at position \a pos, moving its data
 template <>
-inline auto node_list<node>::insert(const_iterator pos, value_type &&e) -> iterator
+auto node_list<node>::insert(const_iterator pos, value_type &&e) -> iterator
 {
 	switch (e.type())
 	{
