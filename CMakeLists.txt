@@ -69,7 +69,7 @@ target_sources(zeem
 	FILES
 	${zeem_cppm})
 
-target_compile_features(zeem PUBLIC cxx_std_23)
+target_compile_features(zeem PUBLIC cxx_std_20)
 
 if(NOT STD_CHARCONV_COMPILING)
 	target_include_directories(zeem PRIVATE $<TARGET_PROPERTY:FastFloat::fast_float,INTERFACE_INCLUDE_DIRECTORIES>)
