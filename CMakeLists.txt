@@ -5,7 +5,7 @@
 
 cmake_minimum_required(VERSION 3.23)
 
-project(zeem VERSION 2.0.5 LANGUAGES CXX)
+project(zeem VERSION 2.1.0 LANGUAGES CXX)
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
@@ -81,44 +81,23 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/include/zeem/config.hpp.in
 # Version info
 write_version_header("${CMAKE_CURRENT_SOURCE_DIR}/src" LIB_NAME "libzeem")
 
-add_library(zeem)
-add_library(zeem::zeem ALIAS zeem)
+file(GLOB zeem_src src/*.cpp)
+file(GLOB_RECURSE zeem_hdr include/*.hpp)
 
-list(APPEND sources
-	src/doctype.cpp
-	src/document.cpp
-	src/html-named-characters.cpp
-	src/node.cpp
-	src/parser.cpp
-	src/text.cpp
-	src/xpath.cpp
-	src/revision.hpp
-)
-
-if(NOT STD_CHARCONV_COMPILING)
-	list(APPEND sources src/charconv-fast_float.cpp)
+if(STD_CHARCONV_COMPILING)
+	list(FILTER zeem_src EXCLUDE REGEX src/charconv-fast_float.cpp)
 endif()
 
+add_library(zeem ${zeem_src})
+add_library(zeem::zeem ALIAS zeem)
+
 target_sources(zeem
-	PRIVATE ${sources}
 	PUBLIC
-	FILE_SET public_modules TYPE HEADERS
+	FILE_SET zeem_headers TYPE HEADERS
 	BASE_DIRS
 	${CMAKE_CURRENT_SOURCE_DIR}/include
 	FILES
-	include/zeem.hpp
-	include/zeem/config.hpp
-	include/zeem/detail/charconv.hpp
-	include/zeem/doctype.hpp
-	include/zeem/document.hpp
-	include/zeem/error.hpp
-	include/zeem/node.hpp
-	include/zeem/parser.hpp
-	include/zeem/serialize.hpp
-	include/zeem/text.hpp
-	include/zeem/version.hpp
-	include/zeem/xpath.hpp
-)
+	${zeem_hdr})
 
 target_compile_features(zeem PUBLIC cxx_std_20)
 
@@ -134,20 +113,16 @@ endif()
 
 target_compile_definitions(zeem PUBLIC $<$<BOOL:MSVC>:NOMINMAX=1>)
 
-set(CMAKE_DEBUG_POSTFIX d)
-set_target_properties(zeem PROPERTIES DEBUG_POSTFIX "d")
-
 set(zeem_MAJOR_VERSION ${PROJECT_VERSION_MAJOR})
 set_target_properties(zeem PROPERTIES
 	VERSION ${PROJECT_VERSION}
 	SOVERSION ${PROJECT_VERSION_MAJOR}
 	INTERFACE_zeem_MAJOR_VERSION ${PROJECT_VERSION_MAJOR}
-	COMPATIBLE_INTERFACE_STRING zeem_MAJOR_VERSION
-)
+	COMPATIBLE_INTERFACE_STRING zeem_MAJOR_VERSION)
 
 install(TARGETS zeem
 	EXPORT zeem
-	FILE_SET public_modules DESTINATION include)
+	FILE_SET zeem_headers DESTINATION include)
 
 install(EXPORT zeem
 	NAMESPACE zeem::
@@ -161,8 +136,7 @@ configure_package_config_file(
 
 write_basic_package_version_file(
 	"${CMAKE_CURRENT_BINARY_DIR}/zeem-config-version.cmake"
-	COMPATIBILITY AnyNewerVersion
-)
+	COMPATIBILITY AnyNewerVersion)
 
 install(FILES
 	${CMAKE_CURRENT_BINARY_DIR}/zeem-config.cmake

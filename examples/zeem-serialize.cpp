@@ -6,7 +6,9 @@
 //[ serialisation
 #include "zeem.hpp"
 
+#include <cstdint>
 #include <fstream>
+#include <string>
 #include <vector>
 
 struct Person
@@ -16,7 +18,7 @@ struct Person
 
     /* A struct we want to serialize needs a `serialize` method */
     template<class Archive>
-    void serialize(Archive& ar, const unsigned int)
+    void serialize(Archive& ar, [[maybe_unused]] uint64_t version)
     {
         ar & zeem::make_element_nvp("firstname", firstname)
            & zeem::make_element_nvp("lastname", lastname);

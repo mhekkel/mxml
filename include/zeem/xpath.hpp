@@ -31,14 +31,16 @@
  * definition of the zeem::xpath class, implementing a XPath 1.0 compatible search facility
  */
 
-#include "zeem/node.hpp"
-
 #include <memory>
 #include <string>
+#include <string_view>
+#include <type_traits>
 #include <vector>
 
 namespace zeem
 {
+
+class node;
 
 // --------------------------------------------------------------------
 /// XPath's can contain variables. And variables can contain all kinds of data
@@ -48,7 +50,7 @@ namespace zeem
 
 /**
  * @brief The context class, containing named variables to use in XPaths
- * 
+ *
  */
 
 class context final
@@ -58,13 +60,10 @@ class context final
 	context();
 
 	/// @brief Constructor to create a new scope
-	context(const context &ctxt)
-		: m_impl(ctxt.m_impl)
-	{
-	}
+	context(const context &ctxt) = default;
 
 	/// @brief move constructor
-	context(context &&ctxt)
+	context(context &&ctxt) noexcept
 	{
 		std::swap(m_impl, ctxt.m_impl);
 	}
@@ -77,10 +76,10 @@ class context final
 	}
 
 	/// @brief Store a new variable in this context with name \a name and value \a value
-	void set(std::string name, std::string value);
+	void set(const std::string &name, std::string value);
 
 	/// @brief Store a new variable in this context with name \a name and value \a value
-	void set(std::string name, double value);
+	void set(const std::string &name, double value);
 
 	/// @brief Get a variable stored in this context or further up the scopes
 	template <typename T>
@@ -101,20 +100,17 @@ class context final
 
 /**
  * @brief Class encapsulating an XPath
- * 
+ *
  */
 
 class xpath final
 {
   public:
 	/// @brief constructor taking a UTF-8 encoded xpath in \a path
-	xpath(std::string_view path);
+	explicit xpath(std::string_view path);
 
 	/// @brief copy constructor
-	xpath(const xpath &rhs)
-		: m_impl(rhs.m_impl)
-	{
-	}
+	xpath(const xpath &rhs) = default;
 
 	/// @brief move constructor
 	xpath(xpath &&rhs) noexcept
@@ -137,7 +133,7 @@ class xpath final
 	 */
 
 	template <typename T>
-	std::vector<T *> evaluate(const node &root, const context &ctxt = {}) const;
+	[[nodiscard]] std::vector<T *> evaluate(const node &root, const context &ctxt = {}) const;
 
 	/**
 	 * @brief Returns true if the \a n node matches the XPath

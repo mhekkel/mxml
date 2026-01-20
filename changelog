@@ -1,3 +1,8 @@
+version 2.1.0
+- Based on output of clang-tidy several improvements
+  were made. Mostly performance wise.
+- Fix iterators to be std::input_iterator
+
 version 2.0.5
 - Renamed to zeem since mxml was already taken
 

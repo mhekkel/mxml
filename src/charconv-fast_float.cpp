@@ -3,20 +3,20 @@
 //    (See accompanying file LICENSE_1_0.txt or copy at
 //          http://www.boost.org/LICENSE_1_0.txt)
 
-#include "zeem/detail/charconv.hpp"
 #include "fast_float/fast_float.h"
+#include "zeem/detail/charconv.hpp"
 
 namespace zeem
 {
-	
-template<>
+
+template <>
 std::from_chars_result ff_charconv<float>::from_chars(const char *a, const char *b, float &v)
 {
 	auto r = fast_float::from_chars(a, b, v);
 	return { r.ptr, r.ec };
 }
 
-template<>
+template <>
 std::from_chars_result ff_charconv<double>::from_chars(const char *a, const char *b, double &v)
 {
 	auto r = fast_float::from_chars(a, b, v);

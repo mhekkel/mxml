@@ -25,20 +25,41 @@
  */
 
 #include "zeem/node.hpp"
+
+#include "zeem/error.hpp"
 #include "zeem/text.hpp"
+#include "zeem/version.hpp"
 #include "zeem/xpath.hpp"
 
 #include <cassert>
+#include <exception>
+#include <initializer_list>
+#include <iostream>
 #include <map>
 #include <set>
 #include <stack>
 #include <string>
-#include <ostream>
+#include <string_view>
+#include <tuple>
 
 namespace zeem
 {
 
-const std::set<std::string> kEmptyHTMLElements{
+struct my_set : std::set<std::string>
+{
+	my_set(std::initializer_list<const char *> strings,
+		const std::string::allocator_type &alloc = std::string::allocator_type{}) noexcept
+	try
+		: std
+		::set<std::string>(strings.begin(), strings.end(), alloc) {}
+	catch (...)
+	{
+		std::clog << "Error initializing set of html elements\n";
+		std::terminate();
+	}
+};
+
+const my_set kEmptyHTMLElements{
 	"area", "base", "br", "col", "embed", "hr", "img", "input", "keygen", "link", "meta", "param", "source", "track", "wbr"
 };
 
@@ -50,7 +71,7 @@ void write_string(std::ostream &os, std::string_view s, bool escape_whitespace, 
 
 	auto sp = s.cbegin();
 	auto se = s.cend();
-
+	
 	while (sp < se)
 	{
 		auto sb = sp;
@@ -114,16 +135,10 @@ void write_string(std::ostream &os, std::string_view s, bool escape_whitespace, 
 				last_is_space = false;
 				break;
 		}
-
-		sb = sp;
 	}
 }
 
 // --------------------------------------------------------------------
-
-node::~node()
-{
-}
 
 element_container *node::root()
 {
@@ -204,7 +219,7 @@ std::pair<std::string, bool> node::prefix_for_namespace(std::string_view uri) co
 	return result;
 }
 
-std::string node::prefix_tag(std::string tag, std::string_view uri) const
+std::string node::prefix_tag(const std::string &tag, std::string_view uri) const
 {
 	auto prefix = prefix_for_namespace(uri);
 	return prefix.second ? prefix.first + ':' + tag : tag;
@@ -444,7 +459,7 @@ std::string element_container::str() const
 	return result;
 }
 
-void element_container::write(std::ostream &/* os */, format_info /* fmt */) const
+void element_container::write(std::ostream & /* os */, format_info /* fmt */) const
 {
 }
 
@@ -519,7 +534,7 @@ bool element::equals(const node *n) const
 
 	if (type() == n->type())
 	{
-		const element *e = static_cast<const element *>(n);
+		const auto *e = static_cast<const element *>(n);
 
 		result = name() == e->name() and get_ns() == e->get_ns();
 
@@ -728,7 +743,7 @@ std::pair<std::string, bool> element::prefix_for_namespace(std::string_view uri)
 	return make_pair(result, found);
 }
 
-void element::move_to_name_space(std::string prefix, std::string uri,
+void element::move_to_name_space(const std::string &prefix, std::string_view uri,
 	bool recursive, bool including_attributes)
 {
 	// first some sanity checks
@@ -852,7 +867,7 @@ void element::write(std::ostream &os, format_info fmt) const
 
 std::ostream &operator<<(std::ostream &os, const element &e)
 {
-	auto flags = os.flags({});
+	auto flags = os.flags();
 	auto width = os.width(0);
 
 	format_info fmt;

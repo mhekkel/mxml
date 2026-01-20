@@ -37,6 +37,8 @@
 #include "zeem.hpp"
 
 #include <array>
+#include <cstdint>
+#include <exception>
 #include <fstream>
 #include <iostream>
 #include <optional>
@@ -44,118 +46,118 @@
 
 enum class BindingType
 {
-    Swedish,
-    German
+	Swedish,
+	German
 };
 
 enum class NoteName
 {
-    C,
-    C_sharp,
-    D,
-    E_flat,
-    E,
-    F,
-    F_sharp,
-    G,
-    G_sharp,
-    A,
-    B_flat,
-    B
+	C,
+	C_sharp,
+	D,
+	E_flat,
+	E,
+	F,
+	F_sharp,
+	G,
+	G_sharp,
+	A,
+	B_flat,
+	B
 };
 
 struct Note
 {
-    NoteName name;
-    float pitch;
+	NoteName name;
+	float pitch;
 
-    template <typename Archive>
-    void serialize(Archive &ar, unsigned long)
-    {
-        // clang-format off
+	template <typename Archive>
+	void serialize(Archive &ar, [[maybe_unused]] uint64_t version)
+	{
+		// clang-format off
         ar & zeem::make_attribute_nvp("id", name)
            & zeem::make_attribute_nvp("f", pitch);
-        // clang-format on
-    }
+		// clang-format on
+	}
 };
 
 struct Tuning
 {
-    float A_frequency;
-    std::array<Note, 12> notes;
+	float A_frequency{};
+	std::array<Note, 12> notes{};
 
-    template <typename Archive>
-    void serialize(Archive &ar, unsigned long)
-    {
-        // clang-format off
+	template <typename Archive>
+	void serialize(Archive &ar, [[maybe_unused]] uint64_t version)
+	{
+		// clang-format off
         ar & zeem::make_attribute_nvp("a", A_frequency)
            & zeem::make_element_nvp("noot", notes);
-        // clang-format on
-    }
+		// clang-format on
+	}
 };
 
 struct Binding
 {
-    BindingType type;
-    std::string start;
+	BindingType type{};
+	std::string start;
 
-    template <typename Archive>
-    void serialize(Archive &ar, unsigned long)
-    {
-        // clang-format off
+	template <typename Archive>
+	void serialize(Archive &ar, [[maybe_unused]] uint64_t version)
+	{
+		// clang-format off
         ar & zeem::make_attribute_nvp("schema", type)
            & zeem::make_attribute_nvp("vanaf", start);
-        // clang-format on
-    }
+		// clang-format on
+	}
 };
 
 struct Stringing
 {
-    float angle;
-    float stress;
-    std::optional<Binding> binding;
+	float angle{};
+	float stress{};
+	std::optional<Binding> binding;
 
-    template <typename Archive>
-    void serialize(Archive &ar, unsigned long)
-    {
-        // clang-format off
+	template <typename Archive>
+	void serialize(Archive &ar, [[maybe_unused]] uint64_t version)
+	{
+		// clang-format off
         ar & zeem::make_attribute_nvp("hoek", angle)
            & zeem::make_attribute_nvp("ideale-stress", stress)
            & zeem::make_element_nvp("gebonden", binding);
-        // clang-format on
-    }
+		// clang-format on
+	}
 };
 
 struct ClavichordSettings
 {
-    std::string name;
-    std::string description;
-    Tuning tuning;
-    Stringing strings;
+	std::string name;
+	std::string description;
+	Tuning tuning{};
+	Stringing strings;
 
-    template<typename Archive>
-    void serialize(Archive &ar, unsigned long)
-    {
-        // clang-format off
+	template <typename Archive>
+	void serialize(Archive &ar, [[maybe_unused]] uint64_t version)
+	{
+		// clang-format off
         ar & zeem::make_element_nvp("naam", name)
            & zeem::make_element_nvp("omschrijving", description)
            & zeem::make_element_nvp("stemming", tuning)
            & zeem::make_element_nvp("snaren", strings);
-        // clang-format on
-    }
+		// clang-format on
+	}
 };
 
 int main()
 {
-    zeem::value_serializer<BindingType>::init({
-        // clang-format off
+	zeem::value_serializer<BindingType>::init({
+		// clang-format off
         { BindingType::German, "german" },
         { BindingType::Swedish, "swedish" }
-        // clang-format on
-    });
+		// clang-format on
+	});
 
-    zeem::value_serializer<NoteName>::init({
-        // clang-format off
+	zeem::value_serializer<NoteName>::init({
+		// clang-format off
         { NoteName::C, "c" },
         { NoteName::C_sharp, "c#" },
         { NoteName::D, "d" },
@@ -168,30 +170,29 @@ int main()
         { NoteName::A, "a" },
         { NoteName::B_flat, "bb" },
         { NoteName::B, "b" }
-        // clang-format on
-    });
+		// clang-format on
+	});
 
-    ClavichordSettings cs;
+	ClavichordSettings cs;
 
-    try
-    {
-        zeem::document doc;
-        doc.set_validating(true);
+	try
+	{
+		zeem::document doc;
+		doc.set_validating(true);
 
-        std::ifstream f("clavichord-v2.xml");
-        f >> doc;
+		std::ifstream f("clavichord-v2.xml");
+		f >> doc;
 
-        from_xml(doc, "data", cs);
+		from_xml(doc, "data", cs);
 
-        // And now do something useful with the data in cs
+		// And now do something useful with the data in cs
+	}
+	catch (const std::exception &ex)
+	{
+		std::cerr << ex.what() << '\n';
+	}
 
-    }
-    catch (const std::exception& ex)
-    {
-        std::cerr << ex.what() << '\n';
-    }
-
-    return 0;
+	return 0;
 }
 
 //]

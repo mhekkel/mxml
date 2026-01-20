@@ -24,10 +24,11 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "zeem/text.hpp"
 #include "zeem/error.hpp"
 
 #include <string>
-#include <vector>
+#include <string_view>
 
 namespace zeem
 {
@@ -152,30 +153,27 @@ void append(std::string &s, char32_t uc)
 		s += (static_cast<char>(uc));
 	else if (uc < 0x0800)
 	{
-		char ch[2] = {
-			static_cast<char>(0x0c0 | (uc >> 6)),
-			static_cast<char>(0x080 | (uc & 0x3f))
-		};
-		s.append(ch, 2);
+		s.insert(s.end(), {
+			static_cast<char>(0x0c0U | (uc >> 6U)),
+			static_cast<char>(0x080U | (uc & 0x3fU))
+		});
 	}
-	else if (uc < 0x00010000)
+	else if (uc < 0x00010000U)
 	{
-		char ch[3] = {
-			static_cast<char>(0x0e0 | (uc >> 12)),
-			static_cast<char>(0x080 | ((uc >> 6) & 0x3f)),
-			static_cast<char>(0x080 | (uc & 0x3f))
-		};
-		s.append(ch, 3);
+		s.insert(s.end(), {
+			static_cast<char>(0x0e0U | (uc >> 12U)),
+			static_cast<char>(0x080U | ((uc >> 6U) & 0x3fU)),
+			static_cast<char>(0x080U | (uc & 0x3fU))
+		});
 	}
 	else
 	{
-		char ch[4] = {
-			static_cast<char>(0x0f0 | (uc >> 18)),
-			static_cast<char>(0x080 | ((uc >> 12) & 0x3f)),
-			static_cast<char>(0x080 | ((uc >> 6) & 0x3f)),
-			static_cast<char>(0x080 | (uc & 0x3f))
-		};
-		s.append(ch, 4);
+		s.insert(s.end(), {
+			static_cast<char>(0x0f0U | (uc >> 18U)),
+			static_cast<char>(0x080U | ((uc >> 12U) & 0x3fU)),
+			static_cast<char>(0x080U | ((uc >> 6U) & 0x3fU)),
+			static_cast<char>(0x080U | (uc & 0x3fU))
+		});
 	}
 }
 
@@ -188,7 +186,7 @@ char32_t pop_back_char(std::string &s)
 	{
 		std::string::iterator ch = s.end() - 1;
 
-		if ((*ch & 0x0080) == 0)
+		if ((*ch & 0x0080U) == 0)
 		{
 			result = *ch;
 			s.erase(ch);
@@ -199,16 +197,17 @@ char32_t pop_back_char(std::string &s)
 
 			do
 			{
-				result |= (*ch & 0x03F) << o;
+				result |= (*ch & 0x03FU) << o;
 				o += 6;
 				--ch;
-			} while (ch != s.begin() and (*ch & 0x0C0) == 0x080);
+			} while (ch != s.begin() and (*ch & 0x0C0U) == 0x080U);
 
 			switch (o)
 			{
-				case 6: result |= (*ch & 0x01F) << 6; break;
-				case 12: result |= (*ch & 0x00F) << 12; break;
-				case 18: result |= (*ch & 0x007) << 18; break;
+				case 6: result |= (*ch & 0x01FU) << 6; break;
+				case 12: result |= (*ch & 0x00FU) << 12; break;
+				case 18: result |= (*ch & 0x007U) << 18; break;
+				default: break;
 			}
 
 			s.erase(ch, s.end());
@@ -228,7 +227,7 @@ char32_t pop_front_char(std::string_view::const_iterator &ptr, std::string_view:
 	{
 		unsigned char ch[3];
 
-		if ((result & 0x0E0) == 0x0C0)
+		if ((result & 0x0E0U) == 0x0C0U)
 		{
 			if (ptr >= end)
 				throw zeem::exception("Invalid utf-8");
@@ -236,12 +235,12 @@ char32_t pop_front_char(std::string_view::const_iterator &ptr, std::string_view:
 			ch[0] = static_cast<unsigned char>(*ptr);
 			++ptr;
 
-			if ((ch[0] & 0x0c0) != 0x080)
+			if ((ch[0] & 0x0c0U) != 0x080U)
 				throw zeem::exception("Invalid utf-8");
 
-			result = ((result & 0x01F) << 6) | (ch[0] & 0x03F);
+			result = ((result & 0x01FU) << 6) | (ch[0] & 0x03FU);
 		}
-		else if ((result & 0x0F0) == 0x0E0)
+		else if ((result & 0x0F0U) == 0x0E0U)
 		{
 			if (ptr + 1 >= end)
 				throw zeem::exception("Invalid utf-8");
@@ -251,12 +250,12 @@ char32_t pop_front_char(std::string_view::const_iterator &ptr, std::string_view:
 			ch[1] = static_cast<unsigned char>(*ptr);
 			++ptr;
 
-			if ((ch[0] & 0x0c0) != 0x080 or (ch[1] & 0x0c0) != 0x080)
+			if ((ch[0] & 0x0c0U) != 0x080U or (ch[1] & 0x0c0U) != 0x080U)
 				throw zeem::exception("Invalid utf-8");
 
-			result = ((result & 0x00F) << 12) | ((ch[0] & 0x03F) << 6) | (ch[1] & 0x03F);
+			result = ((result & 0x00FU) << 12) | ((ch[0] & 0x03FU) << 6) | (ch[1] & 0x03FU);
 		}
-		else if ((result & 0x0F8) == 0x0F0)
+		else if ((result & 0x0F8U) == 0x0F0U)
 		{
 			if (ptr + 2 >= end)
 				throw zeem::exception("Invalid utf-8");
@@ -268,10 +267,10 @@ char32_t pop_front_char(std::string_view::const_iterator &ptr, std::string_view:
 			ch[2] = static_cast<unsigned char>(*ptr);
 			++ptr;
 
-			if ((ch[0] & 0x0c0) != 0x080 or (ch[1] & 0x0c0) != 0x080 or (ch[2] & 0x0c0) != 0x080)
+			if ((ch[0] & 0x0c0U) != 0x080U or (ch[1] & 0x0c0U) != 0x080U or (ch[2] & 0x0c0U) != 0x080U)
 				throw zeem::exception("Invalid utf-8");
 
-			result = ((result & 0x007) << 18) | ((ch[0] & 0x03F) << 12) | ((ch[1] & 0x03F) << 6) | (ch[2] & 0x03F);
+			result = ((result & 0x007U) << 18) | ((ch[0] & 0x03FU) << 12) | ((ch[1] & 0x03FU) << 6) | (ch[2] & 0x03FU);
 		}
 	}
 

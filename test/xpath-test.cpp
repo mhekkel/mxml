@@ -1,119 +1,144 @@
-#include <iostream>
-#include <string>
-#include <fstream>
-#include <filesystem>
+/*-
+ * SPDX-License-Identifier: BSD-2-Clause
+ *
+ * Copyright (c) 2026 Maarten L. Hekkelman
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice, this
+ *    list of conditions and the following disclaimer
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
+ * ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+ * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+ * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+ * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
 
 #include "zeem.hpp"
-// #include "zeem.ixx"
 
-using namespace std;
+#include <exception>
+#include <filesystem>
+#include <fstream>
+#include <iostream>
+#include <string>
+#include <vector>
 
 namespace fs = std::filesystem;
 
 int VERBOSE;
 
-ostream& operator<<(ostream& os, const zeem::node& n)
+std::ostream &operator<<(std::ostream &os, const zeem::node &n)
 {
-	n.write(os , {});
+	n.write(os, {});
 	return os;
 }
 
-
-bool run_test(const zeem::element& test)
+bool run_test(const zeem::element &test)
 {
 	if (VERBOSE)
 	{
-		cout << "----------------------------------------------------------" << endl
-			<< "ID: " << test.get_attribute("ID")
-			<< endl
-			<< "xpath: " << test.get_attribute("xpath") << endl
-	//		 << "data: " << test.content() << endl
-	//		 << "expected-size: " << test.attr("expected-size") << endl
-			<< endl;
+		std::cout << "----------------------------------------------------------\n"
+				  << "ID: " << test.get_attribute("ID")
+				  << '\n'
+				  << "xpath: " << test.get_attribute("xpath") << '\n'
+				  //		 << "data: " << test.content() << '\n'
+		          //		 << "expected-size: " << test.attr("expected-size") << '\n'
+				  << '\n';
 	}
 
 	fs::path data_file = fs::current_path() / test.get_attribute("data");
 	if (not fs::exists(data_file))
 		throw zeem::exception("file does not exist");
-	
-	std::ifstream file(data_file, ios::binary);
+
+	std::ifstream file(data_file, std::ios::binary);
 
 	zeem::document doc;
 	file >> doc;
-	
+
 	if (VERBOSE)
-		cout << "test doc:" << endl << doc << endl;
-	
+		std::cout << "test doc:\n"
+				  << doc << '\n';
+
 	zeem::xpath xp(test.get_attribute("xpath"));
 
 	zeem::context context;
-	for (const zeem::element* e: test.find("var"))
+	for (const zeem::element *e : test.find("var"))
 		context.set(e->get_attribute("name"), e->get_attribute("value"));
-	
+
 	auto ns = xp.evaluate<zeem::node>(*doc.root(), context);
 
 	if (VERBOSE)
 	{
 		int nr = 1;
-		for (const zeem::node* n: ns)
-			cout << nr++ << ">> " << *n << endl;
+		for (const zeem::node *n : ns)
+			std::cout << nr++ << ">> " << *n << '\n';
 	}
-	
+
 	bool result = true;
-	
+
 	if (ns.size() != std::stoul(test.get_attribute("expected-size")))
 	{
-		cout << "incorrect number of nodes in returned node-set" << endl
-			 << "expected: " << test.get_attribute("expected-size") << endl;
+		std::cout << "incorrect number of nodes in returned node-set\n"
+				  << "expected: " << test.get_attribute("expected-size") << '\n';
 
 		result = false;
 	}
 
-	string test_attr_name = test.get_attribute("test-name");
-	string attr_test = test.get_attribute("test-attr");
+	std::string test_attr_name = test.get_attribute("test-name");
+	std::string attr_test = test.get_attribute("test-attr");
 
 	if (not attr_test.empty())
 	{
 		if (VERBOSE)
-			cout << "testing attribute " << test_attr_name << " for " << attr_test << endl;
-		
-		for (const zeem::node* n: ns)
+			std::cout << "testing attribute " << test_attr_name << " for " << attr_test << '\n';
+
+		for (const zeem::node *n : ns)
 		{
-			const zeem::element* e = dynamic_cast<const zeem::element*>(n);
-			if (e == NULL)
+			const auto *e = dynamic_cast<const zeem::element *>(n);
+			if (e == nullptr)
 				continue;
-			
+
 			if (e->get_attribute(test_attr_name) != attr_test)
 			{
-				cout << "expected attribute content is not found for node " << e->get_qname() << endl;
+				std::cout << "expected attribute content is not found for node " << e->get_qname() << '\n';
 				result = false;
 			}
 		}
 	}
-	
+
 	if (VERBOSE)
 	{
 		if (result)
-			cout << "Test passed" << endl;
+			std::cout << "Test passed\n";
 		else
 		{
-			cout << "Test failed" << endl;
-			
+			std::cout << "Test failed\n";
+
 			int nr = 1;
-			for (const zeem::node* n: ns)
-				cout << nr++ << ") " << *n << endl;
+			for (const zeem::node *n : ns)
+				std::cout << nr++ << ") " << *n << '\n';
 		}
 	}
-	
+
 	return result;
 }
 
-void run_tests(const fs::path& file)
+void run_tests(const fs::path &file)
 {
 	if (not fs::exists(file))
 		throw zeem::exception("test file does not exist");
-	
-	std::ifstream input(file, ios::binary);
+
+	std::ifstream input(file, std::ios::binary);
 
 	zeem::document doc;
 	input >> doc;
@@ -122,31 +147,31 @@ void run_tests(const fs::path& file)
 	if (not dir.empty())
 		fs::current_path(dir);
 
-	string base = doc.front().get_attribute("xml:base");
+	std::string base = doc.front().get_attribute("xml:base");
 	if (not base.empty())
 		fs::current_path(base);
-	
+
 	int nr_of_tests = 0, failed_nr_of_tests = 0;
-	
-	for (const zeem::element* test: doc.find("//xpath-test"))
+
+	for (const zeem::element *test : doc.find("//xpath-test"))
 	{
 		++nr_of_tests;
 		if (run_test(*test) == false)
 			++failed_nr_of_tests;
 	}
-	
-	cout << endl;
+
+	std::cout << '\n';
 	if (failed_nr_of_tests == 0)
-		cout << "*** No errors detected" << endl;
+		std::cout << "*** No errors detected\n";
 	else
 	{
-		cout << failed_nr_of_tests << " out of " << nr_of_tests << " failed" << endl;
+		std::cout << failed_nr_of_tests << " out of " << nr_of_tests << " failed\n";
 		if (not VERBOSE)
-			cout << "Run with --verbose to see the errors" << endl;
+			std::cout << "Run with --verbose to see the errors\n";
 	}
 }
 
-int main(int argc, char* argv[])
+int main(int argc, char *argv[])
 {
 	using namespace std::literals;
 	fs::path xmlconfFile("XPath-Test-Suite/xpath-tests.xml");
@@ -166,11 +191,11 @@ int main(int argc, char* argv[])
 	{
 		run_tests(xmlconfFile);
 	}
-	catch (std::exception& e)
+	catch (std::exception &e)
 	{
-		cout << "exception: " << e.what() << endl;
+		std::cout << "exception: " << e.what() << '\n';
 		return 1;
 	}
-	
+
 	return 0;
 }

@@ -32,15 +32,20 @@
  */
 
 #include "zeem/error.hpp"
-#include "zeem/text.hpp"
-#include "zeem/version.hpp"
 
 #include <functional>
 #include <istream>
+#include <memory>
 #include <string>
+#include <string_view>
+#include <utility>
+#include <vector>
 
 namespace zeem
 {
+
+enum class encoding_type;
+struct version_type;
 
 /// If an invalid_exception is thrown, it means the XML document is not valid: it does
 /// not conform the DTD specified in the XML document.
@@ -51,11 +56,10 @@ namespace zeem
 class invalid_exception : public exception
 {
   public:
-	invalid_exception(std::string msg)
+	explicit invalid_exception(std::string msg)
 		: exception(std::move(msg))
 	{
 	}
-	~invalid_exception() noexcept {}
 };
 
 /// If an not_wf_exception is thrown, it means the XML document is not well formed.
@@ -67,11 +71,10 @@ class invalid_exception : public exception
 class not_wf_exception : public exception
 {
   public:
-	not_wf_exception(std::string msg)
+	explicit not_wf_exception(std::string msg)
 		: exception(std::move(msg))
 	{
 	}
-	~not_wf_exception() noexcept {}
 };
 
 /**
@@ -93,13 +96,13 @@ class parser
 		std::string m_ns;    ///< The namespace for this attribute
 		std::string m_name;  ///< The name of the attribute
 		std::string m_value; ///< The value of the attribute
-		bool m_id;           ///< Flag indicating the attribute is defined as type ID in its ATTLIST decl
+		bool m_id{};         ///< Flag indicating the attribute is defined as type ID in its ATTLIST decl
 	};
 
 	using attr_list_type = std::vector<attr>;
 
 	/// @brief constructor taking a std::istream in \a is
-	parser(std::istream &is);
+	explicit parser(std::istream &is);
 
 	/// @brief destructor
 	virtual ~parser();
@@ -121,7 +124,7 @@ class parser
 	std::function<void(std::string prefix)> end_namespace_decl_handler;
 	std::function<void(std::string root, std::string publicId, std::string uri)> doctype_decl_handler;
 	std::function<void(std::string name, std::string systemId, std::string publicId)> notation_decl_handler;
-	std::function<std::istream *(std::string_view base, std::string_view pubid, std::string_view uri)> external_entity_ref_handler;
+	std::function<std::unique_ptr<std::istream>(std::string_view base, std::string_view pubid, std::string_view uri)> external_entity_ref_handler;
 	std::function<void(std::string msg)> report_invalidation_handler;
 
 	/** @brief Start the actual parsing, optionally validating content and namespaces */
@@ -158,11 +161,12 @@ class parser
 
 	virtual void report_invalidation(std::string msg);
 
-	virtual std::istream *external_entity_ref(std::string_view base,
+	virtual std::unique_ptr<std::istream> external_entity_ref(std::string_view base,
 		std::string_view pubid, std::string_view uri);
 
+  private:
 	struct parser_imp *m_impl;
-	std::istream *m_istream;
+	std::istream *m_istream = nullptr;
 
 	/** @endcond */
 };

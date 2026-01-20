@@ -1,22 +1,52 @@
+/*-
+ * SPDX-License-Identifier: BSD-2-Clause
+ *
+ * Copyright (c) 2026 Maarten L. Hekkelman
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice, this
+ *    list of conditions and the following disclaimer
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
+ * ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+ * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+ * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+ * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
+#include "zeem.hpp"
+
+#include <algorithm>
+#include <cstdlib>
+#include <exception>
+#include <filesystem>
+#include <fstream>
 #include <iostream>
+#include <iterator>
+#include <mcfp/mcfp.hpp>
+#include <ranges>
+#include <regex>
+#include <set>
+#include <sstream>
+#include <stdexcept>
+#include <string>
+#include <system_error>
+#include <vector>
 
 #if defined(_WIN32)
 # include <conio.h>
 # include <ctype.h>
 #endif
-
-#include <filesystem>
-#include <fstream>
-#include <iterator>
-#include <regex>
-#include <set>
-#include <string>
-#include <sstream>
-
-#include <mcfp/mcfp.hpp>
-
-#include "zeem.hpp"
-// #include "zeem.ixx"
 
 namespace fs = std::filesystem;
 
@@ -85,7 +115,7 @@ void dump(zeem::element &e, int level = 0)
 		dump(c, level + 1);
 }
 
-bool run_test(const zeem::element &test, fs::path base_dir)
+bool run_test(const zeem::element &test, const fs::path &base_dir)
 {
 	bool result = true;
 
@@ -204,12 +234,12 @@ bool run_test(const zeem::element &test, fs::path base_dir)
 	if ((result == false and VERBOSE == 1) or (VERBOSE > 1))
 	{
 		std::cout << "-----------------------------------------------\n"
-			 << "ID:             " << test.get_attribute("ID") << '\n'
-			 << "FILE:           " << /*fs::system_complete*/ (input) << '\n'
-			 << "TYPE:           " << test.get_attribute("TYPE") << '\n'
-			 << "SECTION:        " << test.get_attribute("SECTIONS") << '\n'
-			 << "EDITION:        " << test.get_attribute("EDITION") << '\n'
-			 << "RECOMMENDATION: " << test.get_attribute("RECOMMENDATION") << '\n';
+				  << "ID:             " << test.get_attribute("ID") << '\n'
+				  << "FILE:           " << /*fs::system_complete*/ (input) << '\n'
+				  << "TYPE:           " << test.get_attribute("TYPE") << '\n'
+				  << "SECTION:        " << test.get_attribute("SECTIONS") << '\n'
+				  << "EDITION:        " << test.get_attribute("EDITION") << '\n'
+				  << "RECOMMENDATION: " << test.get_attribute("RECOMMENDATION") << '\n';
 
 		std::istringstream s(test.get_content());
 		for (;;)
@@ -440,20 +470,20 @@ int main(int argc, char *argv[])
 			test_testcases(xmlconfFile, id, { skip.begin(), skip.end() }, type, edition, failed_ids);
 
 			std::cout << '\n'
-				 << "summary: \n"
-				 << "  ran " << total_tests - skipped_tests << " out of " << total_tests << " tests\n"
-				 << "  " << error_tests << " threw an exception\n"
-				 << "  " << wrong_exception << " wrong exception\n"
-				 << "  " << should_have_failed << " should have failed but didn't\n";
+					  << "summary: \n"
+					  << "  ran " << total_tests - skipped_tests << " out of " << total_tests << " tests\n"
+					  << "  " << error_tests << " threw an exception\n"
+					  << "  " << wrong_exception << " wrong exception\n"
+					  << "  " << should_have_failed << " should have failed but didn't\n";
 
 			std::vector<std::string> questionable;
 			if (config.count("questionable"))
 				questionable = config.get<std::vector<std::string>>("questionable");
 
 			std::set<std::string> erronous;
-			for (auto fid : failed_ids)
+			for (const auto& fid : failed_ids)
 			{
-				if (std::find(questionable.begin(), questionable.end(), fid) == questionable.end())
+				if (std::ranges::find(questionable, fid) == questionable.end())
 					erronous.insert(fid);
 			}
 
@@ -468,9 +498,9 @@ int main(int argc, char *argv[])
 				else
 				{
 					std::cout << '\n'
-						 << "ID's for the failed, non-questionable tests: \n";
+							  << "ID's for the failed, non-questionable tests: \n";
 
-					copy(erronous.begin(), erronous.end(), std::ostream_iterator<std::string>(std::cout, "\n"));
+					std::ranges::copy(erronous, std::ostream_iterator<std::string>(std::cout, "\n"));
 
 					std::cout << '\n';
 				}

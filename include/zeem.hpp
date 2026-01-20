@@ -30,6 +30,7 @@
  * Main module definition for zeem.
 */
 
+// IWYU pragma: begin_exports
 #include "zeem/doctype.hpp"
 #include "zeem/document.hpp"
 #include "zeem/error.hpp"
@@ -39,3 +40,4 @@
 #include "zeem/text.hpp"
 #include "zeem/version.hpp"
 #include "zeem/xpath.hpp"
+// IWYU pragma: end_exports
