@@ -448,6 +448,20 @@ TEST_CASE("test_time_2")
 	CHECK(std::regex_match(ti_c, rx));
 }
 
+TEST_CASE("test_time_3")
+{
+	using namespace zeem::literals;
+	using namespace std::chrono;
+	using namespace std::literals;
+
+	auto doc = "<t>2022-12-06T00:01:02.34+01:15</t>"_xml;
+
+	time_t1 t1;
+	from_xml(doc, t1);
+
+	CHECK((t1.st == sys_days{ 2022y / 12 / 6 } + 1h + 16min + 2.34s) == true);
+}
+
 TEST_CASE("test_s_5")
 {
 	st_1 s1 = { 1, "aap" };

@@ -298,36 +298,27 @@ struct value_serializer<std::chrono::system_clock::time_point>
 	{
 		time_type result;
 
-		std::regex kRX(R"(^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?(Z|[-+]\d{2}:\d{2})?)");
+		std::regex kRX(R"(^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?)(Z|([-+]\d{2})(?::(\d{2})))?)");
 		std::cmatch m;
 
 		if (not std::regex_match(s.data(), s.data() + s.length(), m, kRX))
 			throw std::runtime_error("Invalid date format");
 
-		std::stringstream is;
-		is << s;
+		std::istringstream is{ m[1] };
+
+		// Unfortunately, from_stream never seems to return the correct time zone and offset info
+		// so we add it ourselves
 
 #if ZEEM_USE_DATE_H
-		if (m[1].matched)
-		{
-			if (m[1] == "Z")
-				date::from_stream(is, "%FT%TZ", result);
-			else
-				date::from_stream(is, "%FT%T%Ez", result);
-		}
-		else
-			date::from_stream(is, "%FT%T", result);
+		date::from_stream(is, "%FT%T", result);
 #else
-		if (m[1].matched)
-		{
-			if (m[1] == "Z")
-				std::from_stream(is, "%FT%TZ", result);
-			else
-				std::from_stream(is, "%FT%T%Ez", result);
-		}
-		else
-			std::from_stream(is, "%FT%T", result);
+		std::chrono::from_stream(is, "%FT%T", result);
 #endif
+
+		if (m[3].matched)
+			result += std::chrono::hours{ stoi(m[3]) };
+		if (m[4].matched)
+			result += std::chrono::minutes{ stoi(m[4]) };
 
 		if (is.bad() or is.fail())
 			throw std::runtime_error("invalid formatted date");
@@ -361,7 +352,7 @@ struct value_serializer<std::chrono::sys_days>
 #if ZEEM_USE_DATE_H
 		date::from_stream(is, "%F", result);
 #else
-		std::from_stream(is, "%F", result);
+		std::chrono::from_stream(is, "%F", result);
 #endif
 
 		if (is.bad() or is.fail())
