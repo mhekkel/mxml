@@ -107,11 +107,9 @@ endif()
 
 if(NOT USE_STD_CHRONO_FROM_STREAM)
 	target_link_libraries(zeem PUBLIC date::date)
-	target_compile_definitions(zeem PUBLIC USE_DATE_H=1)
+	target_compile_definitions(zeem PRIVATE USE_DATE_H=1)
 	set(FIND_DEPENDENCIES "find_dependency(date REQUIRED)")
 endif()
-
-target_compile_definitions(zeem PUBLIC $<$<BOOL:MSVC>:NOMINMAX=1>)
 
 set(zeem_MAJOR_VERSION ${PROJECT_VERSION_MAJOR})
 set_target_properties(zeem PROPERTIES
