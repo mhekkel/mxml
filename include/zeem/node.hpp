@@ -587,16 +587,10 @@ class node_list : public basic_node_list
 	explicit operator bool() const { return not empty(); }
 
 	/// \brief insert a copy of \a e
-	iterator insert(const_iterator pos, const value_type &e)
-	{
-		return iterator{ insert_impl(pos, new value_type(e)) };
-	}
+	iterator insert(const_iterator pos, const value_type &e);
 
 	/// \brief insert a copy of \a e at position \a pos, moving its data
-	iterator insert(const_iterator pos, value_type &&e)
-	{
-		return iterator{ insert_impl(pos, new value_type(std::move(e))) };
-	}
+	iterator insert(const_iterator pos, value_type &&e);
 
 	/// \brief construct a new node using arguments provided in \a a
 
@@ -705,7 +699,7 @@ class node_list : public basic_node_list
 	/// \brief move the value_type \a e to the front of this value_type.
 	void push_front(value_type &&e)
 	{
-		emplace(begin(), std::move(e));
+		emplace(begin(), std::forward<value_type>(e));
 	}
 
 	/// \brief copy the value_type \a e to the front of this value_type.
@@ -717,7 +711,7 @@ class node_list : public basic_node_list
 	/// \brief move the value_type \a e to the back of this value_type.
 	void push_back(value_type &&e)
 	{
-		emplace(end(), std::move(e));
+		emplace(end(), std::forward<value_type>(e));
 	}
 
 	/// \brief copy the value_type \a e to the back of this value_type.
@@ -1284,8 +1278,7 @@ class attribute_set : public node_list<attribute>
 	template <typename... Args>
 	std::pair<iterator, bool> emplace(Args &&...args)
 	{
-		value_type a(std::forward<Args>(args)...);
-		return emplace(std::move(a));
+		return emplace(value_type{ std::forward<decltype(args)>(args)... });
 	}
 
 	/// \brief emplace an attribute move constructed from \a a
@@ -1298,10 +1291,10 @@ class attribute_set : public node_list<attribute>
 		auto i = find(a.get_qname());
 
 		if (i != node_list::end())
-			*i = std::move(a); // move assign value of a
+			*i = std::forward<value_type>(a); // move assign value of a
 		else
 		{
-			i = iterator{ node_list::insert_impl(node_list::end(), new attribute(std::move(a))) };
+			i = iterator{ node_list::insert_impl(node_list::end(), new attribute(std::forward<value_type>(a))) };
 			inserted = true;
 		}
 
@@ -1494,6 +1487,32 @@ inline node_list<T>::node_list(element_container *e)
 {
 	if constexpr (std::is_same_v<value_type, node>)
 		m_header = e->m_header;
+}
+
+template <>
+inline auto node_list<element>::insert(const_iterator pos, const element &e) -> iterator
+{
+	return iterator{ insert_impl(pos, new element(e)) };
+}
+
+/// \brief insert a copy of \a e at position \a pos, moving its data
+template <>
+inline auto node_list<element>::insert(const_iterator pos, element &&e) -> iterator
+{
+	return iterator{ insert_impl(pos, new element(std::forward<value_type>(e))) };
+}
+
+template <>
+inline auto node_list<attribute>::insert(const_iterator pos, const attribute &e) -> iterator
+{
+	return iterator{ insert_impl(pos, new attribute(e)) };
+}
+
+/// \brief insert a copy of \a e at position \a pos, moving its data
+template <>
+inline auto node_list<attribute>::insert(const_iterator pos, attribute &&e) -> iterator
+{
+	return iterator{ insert_impl(pos, new attribute(std::forward<value_type>(e))) };
 }
 
 // NOLINTBEGIN(cppcoreguidelines-owning-memory,cppcoreguidelines-pro-type-static-cast-downcast)
