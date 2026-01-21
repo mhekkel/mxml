@@ -18,24 +18,11 @@ include(VersionString)
 option(ZEEM_BUILD_DOCUMENTATION "Build documentation" OFF)
 option(ZEEM_BUILD_EXAMPLES "Build example executables" ON)
 
-# When building with ninja-multiconfig, build both debug and release by default
-if(CMAKE_GENERATOR STREQUAL "Ninja Multi-Config")
-	set(CMAKE_CROSS_CONFIGS "Debug;Release")
-	set(CMAKE_DEFAULT_CONFIGS "Debug;Release")
-endif()
-
-# New policy for Boost, set it here
-if(CMAKE_VERSION VERSION_GREATER_EQUAL 3.30)
-	cmake_policy(SET CMP0167 NEW)
-endif()
-
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wno-unused-parameter -Wsuggest-override")
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra")
 elseif(MSVC)
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W4")
 endif()
-
-set(CPM_USE_LOCAL_PACKAGES ON)
 
 try_compile(STD_CHARCONV_COMPILING
 	SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/cmake/test-charconv.cpp)
@@ -51,16 +38,13 @@ endif()
 
 try_run(TEST_STD_CHRONO_FROM_STREAM_R TEST_STD_CHRONO_FROM_STREAM_C
 	SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/cmake/test-chrono_from_stream.cpp
-	CXX_STANDARD 20
-)
+	CXX_STANDARD 20)
 
-if ("${TEST_STD_CHRONO_FROM_STREAM_R}" EQUAL "0")
+if (${TEST_STD_CHRONO_FROM_STREAM_R} EQUAL 0)
 	set(USE_STD_CHRONO_FROM_STREAM TRUE)
 else()
 	set(USE_STD_CHRONO_FROM_STREAM FALSE)
 endif()
-
-message(NOTICE "Output from test: ${USE_STD_CHRONO_FROM_STREAM}")
 
 if(NOT USE_STD_CHRONO_FROM_STREAM)
 	message(NOTICE "zeem: Using Howard Hinnants date for from_stream")
@@ -107,7 +91,6 @@ endif()
 
 if(NOT USE_STD_CHRONO_FROM_STREAM)
 	target_link_libraries(zeem PUBLIC date::date)
-	target_compile_definitions(zeem PRIVATE USE_DATE_H=1)
 	set(FIND_DEPENDENCIES "find_dependency(date REQUIRED)")
 endif()
 
@@ -119,13 +102,12 @@ set_target_properties(zeem PROPERTIES
 	COMPATIBLE_INTERFACE_STRING zeem_MAJOR_VERSION)
 
 install(TARGETS zeem
-	EXPORT zeem
+	EXPORT zeem-targets
 	FILE_SET zeem_headers DESTINATION include)
 
-install(EXPORT zeem
+install(EXPORT zeem-targets
 	NAMESPACE zeem::
-	DESTINATION lib/cmake/zeem
-	FILE zeem-targets.cmake)
+	DESTINATION lib/cmake/zeem)
 
 configure_package_config_file(
 	${PROJECT_SOURCE_DIR}/cmake/zeem-config.cmake.in
