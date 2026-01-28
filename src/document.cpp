@@ -30,15 +30,14 @@
 #include "zeem/node.hpp"
 #include "zeem/parser.hpp"
 
-#include <algorithm>
 #include <cassert>
 #include <fstream>
 #include <functional>
 #include <memory>
 #include <ranges>
-#include <streambuf>
 #include <string_view>
 #include <tuple>
+#include <utility>
 
 namespace zeem
 {
@@ -415,7 +414,7 @@ std::unique_ptr<std::istream> document::external_entity_ref(std::string_view bas
 			file->open(m_dtd_dir + '/' + path, std::ios::binary);
 
 		if (file->is_open())
-			result.reset(file.release());
+			result = std::move(file);
 	}
 
 	return result;
