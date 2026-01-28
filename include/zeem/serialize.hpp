@@ -37,6 +37,7 @@
 
 #if ZEEM_USE_DATE_H
 # include <date/date.h>
+# include <date/tz.h>
 #endif
 
 #include <algorithm>
@@ -292,13 +293,13 @@ struct value_serializer<std::chrono::system_clock::time_point>
 
 	/// from_string according to ISO8601 rules.
 	/// If Zulu time is specified, then the parsed xsd:dateTime is returned.
-	/// If an UTC offset is present, then the offset is subtracted from the xsd:dateTime, this yields UTC.
+	/// If an UTC offset is present, then the offset is added to the xsd:dateTime, this yields UTC.
 	/// If no UTC offset is present, then the xsd:dateTime is assumed to be local time and converted to UTC.
 	static time_type from_string(std::string_view s)
 	{
 		time_type result;
 
-		std::regex kRX(R"(^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?)(Z|([-+]\d{2})(?::(\d{2})))?)");
+		std::regex kRX(R"(^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?)(Z|([-+]\d{2})(?::(\d{2}))?)?)");
 		std::cmatch m;
 
 		if (not std::regex_match(s.data(), s.data() + s.length(), m, kRX))
@@ -315,10 +316,19 @@ struct value_serializer<std::chrono::system_clock::time_point>
 		std::chrono::from_stream(is, "%FT%T", result);
 #endif
 
-		if (m[3].matched)
-			result += std::chrono::hours{ stoi(m[3]) };
-		if (m[4].matched)
-			result += std::chrono::minutes{ stoi(m[4]) };
+		if (m[2].matched)
+		{
+			if (m[3].matched)
+				result += std::chrono::hours{ stoi(m[3]) };
+			if (m[4].matched)
+				result += std::chrono::minutes{ stoi(m[4]) };
+		}
+		else
+#if ZEEM_USE_DATE_H
+			result = date::make_zoned(date::current_zone(), result);
+#else
+			result = std::chrono::zoned_time{ std::chrono::current_zone(), result };
+#endif
 
 		if (is.bad() or is.fail())
 			throw std::runtime_error("invalid formatted date");

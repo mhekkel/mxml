@@ -36,7 +36,7 @@
 #include <chrono>
 #include <deque>
 #include <filesystem>
-#include <format>
+#include <iostream>
 #include <optional>
 #include <regex>
 #include <sstream>
@@ -424,7 +424,11 @@ TEST_CASE("test_time_1")
 	time_t1 t1;
 	from_xml(doc, t1);
 
-	CHECK((t1.st == sys_days{ 2022y / 12 / 6 } + 0h + 1min + 2.34s) == true);
+	auto t2 = sys_days{ 2022y / 12 / 6 } + 0h + 1min + 2.34s;
+
+std::cout << (t2 - t1.st) << '\n';
+
+	CHECK((t1.st == t2) == true);
 }
 
 TEST_CASE("test_time_2")
@@ -446,6 +450,11 @@ TEST_CASE("test_time_2")
 	std::regex rx(R"(^2022-12-06T01:02:03(\.0+)?Z$)");
 
 	CHECK(std::regex_match(ti_c, rx));
+
+	time_t1 t2;
+	from_xml(doc, t2);
+
+	CHECK(t2.st == t1.st);
 }
 
 TEST_CASE("test_time_3")
@@ -454,12 +463,15 @@ TEST_CASE("test_time_3")
 	using namespace std::chrono;
 	using namespace std::literals;
 
+	// No time zone specification, so this local time is converted to UTC
 	auto doc = "<t>2022-12-06T00:01:02.34+01:15</t>"_xml;
 
 	time_t1 t1;
 	from_xml(doc, t1);
 
-	CHECK((t1.st == sys_days{ 2022y / 12 / 6 } + 1h + 16min + 2.34s) == true);
+	auto t2 = zoned_time(current_zone(), sys_days{ 2022y / 12 / 6 } + 1h + 16min + 2.34s).get_sys_time();
+
+	CHECK((t1.st == t2) == true);
 }
 
 TEST_CASE("test_s_5")
