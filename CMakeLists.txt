@@ -90,7 +90,7 @@ if(NOT STD_CHARCONV_COMPILING)
 endif()
 
 if(NOT USE_STD_CHRONO_FROM_STREAM)
-	target_link_libraries(zeem PUBLIC date::date)
+	target_link_libraries(zeem PUBLIC date::date-tz)
 	set(FIND_DEPENDENCIES "find_dependency(date REQUIRED)")
 endif()
 

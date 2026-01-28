@@ -325,7 +325,7 @@ struct value_serializer<std::chrono::system_clock::time_point>
 		}
 		else
 #if ZEEM_USE_DATE_H
-			result = date::make_zoned(date::current_zone(), result);
+			result = date::zoned_time(date::current_zone(), result).get_sys_time();
 #else
 			result = std::chrono::zoned_time{ std::chrono::current_zone(), result };
 #endif
