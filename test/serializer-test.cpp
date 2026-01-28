@@ -30,17 +30,21 @@
 
 #include "zeem.hpp"
 
+#if ZEEM_USE_DATE_H
+# include <date/tz.h>
+#endif
+
 #include <array>
 #include <catch2/catch_session.hpp>
 #include <catch2/catch_test_macros.hpp>
 #include <chrono>
+#include <cstdint>
 #include <deque>
 #include <filesystem>
 #include <iostream>
 #include <optional>
 #include <regex>
 #include <sstream>
-#include <cstdint>
 #include <string>
 #include <system_error>
 #include <vector>
@@ -426,7 +430,7 @@ TEST_CASE("test_time_1")
 
 	auto t2 = sys_days{ 2022y / 12 / 6 } + 0h + 1min + 2.34s;
 
-std::cout << (t2 - t1.st) << '\n';
+	std::cout << (t2 - t1.st) << '\n';
 
 	CHECK((t1.st == t2) == true);
 }
@@ -462,6 +466,10 @@ TEST_CASE("test_time_3")
 	using namespace zeem::literals;
 	using namespace std::chrono;
 	using namespace std::literals;
+
+#if ZEEM_USE_DATE_H
+	using namespace date;
+#endif
 
 	// No time zone specification, so this local time is converted to UTC
 	auto doc = "<t>2022-12-06T00:01:02.34+01:15</t>"_xml;
