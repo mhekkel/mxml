@@ -31,7 +31,6 @@
  * File containing the version_type struct
  */
 
-#include <compare>
 #include <cstdint>
 
 namespace zeem

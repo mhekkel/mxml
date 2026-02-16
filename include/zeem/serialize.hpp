@@ -37,6 +37,7 @@
 
 #if ZEEM_USE_DATE_H
 # include <date/date.h>
+# include <date/tz.h>
 #endif
 
 #include <algorithm>
@@ -200,13 +201,14 @@ template <typename T>
 	requires std::is_enum_v<T>
 struct value_serializer<T>
 {
-	std::string m_type_name;
-
 	using value_map_type = std::map<T, std::string>;
 	using value_map_value_type = typename value_map_type::value_type;
 
+  private:
+	std::string m_type_name;
 	value_map_type m_value_map;
 
+  public:
 	/// \brief Initialize a new instance of value_serializer for this enum, with name and a set of name/value pairs
 	static void init(std::string_view name, std::initializer_list<value_map_value_type> values)
 	{
@@ -291,41 +293,41 @@ struct value_serializer<std::chrono::system_clock::time_point>
 
 	/// from_string according to ISO8601 rules.
 	/// If Zulu time is specified, then the parsed xsd:dateTime is returned.
-	/// If an UTC offset is present, then the offset is subtracted from the xsd:dateTime, this yields UTC.
+	/// If an UTC offset is present, then the offset is added to the xsd:dateTime, this yields UTC.
 	/// If no UTC offset is present, then the xsd:dateTime is assumed to be local time and converted to UTC.
 	static time_type from_string(std::string_view s)
 	{
 		time_type result;
 
-		std::regex kRX(R"(^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?(Z|[-+]\d{2}:\d{2})?)");
+		std::regex kRX(R"(^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?)(Z|([-+]\d{2})(?::(\d{2}))?)?)");
 		std::cmatch m;
 
 		if (not std::regex_match(s.data(), s.data() + s.length(), m, kRX))
 			throw std::runtime_error("Invalid date format");
 
-		std::stringstream is;
-		is << s;
+		std::istringstream is{ m[1] };
+
+		// Unfortunately, from_stream never seems to return the correct time zone and offset info
+		// so we add it ourselves
 
 #if ZEEM_USE_DATE_H
-		if (m[1].matched)
-		{
-			if (m[1] == "Z")
-				date::from_stream(is, "%FT%TZ", result);
-			else
-				date::from_stream(is, "%FT%T%0z", result);
-		}
-		else
-			date::from_stream(is, "%FT%T", result);
+		date::from_stream(is, "%FT%T", result);
 #else
-		if (m[1].matched)
+		std::chrono::from_stream(is, "%FT%T", result);
+#endif
+
+		if (m[2].matched)
 		{
-			if (m[1] == "Z")
-				std::from_stream(is, "%FT%TZ", result);
-			else
-				std::from_stream(is, "%FT%T%0z", result);
+			if (m[3].matched)
+				result += std::chrono::hours{ stoi(m[3]) };
+			if (m[4].matched)
+				result += std::chrono::minutes{ stoi(m[4]) };
 		}
 		else
-			std::from_stream(is, "%FT%T", result);
+#if ZEEM_USE_DATE_H
+			result = date::zoned_time(date::current_zone(), result).get_sys_time();
+#else
+			result = std::chrono::zoned_time{ std::chrono::current_zone(), result };
 #endif
 
 		if (is.bad() or is.fail())
@@ -360,7 +362,7 @@ struct value_serializer<std::chrono::sys_days>
 #if ZEEM_USE_DATE_H
 		date::from_stream(is, "%F", result);
 #else
-		std::from_stream(is, "%F", result);
+		std::chrono::from_stream(is, "%F", result);
 #endif
 
 		if (is.bad() or is.fail())
@@ -376,7 +378,7 @@ template <typename T>
 using serialize_value_t = decltype(std::declval<value_serializer<T> &>().from_string(std::declval<std::string_view>()));
 
 template <typename T, typename Archive>
-using serialize_function = decltype(std::declval<T &>().serialize(std::declval<Archive &>(), std::declval<unsigned long>()));
+using serialize_function = decltype(std::declval<T &>().serialize(std::declval<Archive &>(), std::declval<uint64_t>()));
 
 template <typename T, typename Archive, typename = void>
 struct has_serialize : std::false_type
@@ -384,7 +386,8 @@ struct has_serialize : std::false_type
 };
 
 template <typename T, typename Archive>
-struct has_serialize<T, Archive, typename std::enable_if_t<std::is_class_v<T>>>
+	requires(std::is_class_v<T>)
+struct has_serialize<T, Archive>
 {
 	static constexpr bool value = detail::is_detected_v<serialize_function, T, Archive>;
 };
@@ -420,11 +423,11 @@ template <typename T, typename S>
 inline constexpr bool is_serializable_type_v = is_serializable_type<T, S>::value;
 
 template <typename T, typename S>
-struct is_serializable_array_type<T, S,
-	std::enable_if_t<
+	requires(
 		detail::is_detected_v<value_type_t, T> and
 		detail::is_detected_v<iterator_t, T> and
-		not detail::is_detected_v<std_string_npos_t, T>>>
+		not detail::is_detected_v<std_string_npos_t, T>)
+struct is_serializable_array_type<T, S>
 {
 	static constexpr bool value = is_serializable_type_v<typename T::value_type, S>;
 };
@@ -459,10 +462,8 @@ class name_value_pair
 	name_value_pair &operator=(name_value_pair &&) = default;
 	/** @endcond */
 
-	const std::string &name() const { return m_name; }
-
-	// T &value() { return m_value; }
-	T &value() const { return m_value; }
+	[[nodiscard]] const std::string &name() const { return m_name; }
+	[[nodiscard]] T &value() const { return m_value; }
 
 	/** @cond */
   private:
@@ -525,7 +526,7 @@ constexpr element_nvp<T> make_element_nvp(std::string name, T &value)
 struct serializer
 {
 	/// @brief constructor, write to \a node
-	serializer(element_container &node)
+	explicit serializer(element_container &node)
 		: m_node(node)
 	{
 	}
@@ -553,6 +554,7 @@ struct serializer
 	template <typename T>
 	serializer &serialize_attribute(std::string_view name, const T &data);
 
+  private:
 	element_container &m_node;
 
 	/** @endcond */
@@ -566,7 +568,7 @@ struct serializer
 struct deserializer
 {
 	/// @brief constructor, read from \a node
-	deserializer(const element_container &node)
+	explicit deserializer(const element_container &node)
 		: m_node(node)
 	{
 	}
@@ -594,6 +596,7 @@ struct deserializer
 	template <typename T>
 	deserializer &deserialize_attribute(std::string_view name, T &data);
 
+  private:
 	const element_container &m_node;
 
 	/** @endcond */
@@ -717,13 +720,13 @@ struct type_serializer<T>
 		if (name.empty() or name == ".")
 		{
 			serializer sr(n);
-			const_cast<value_type &>(value).serialize(sr, 0Ul);
+			const_cast<value_type &>(value).serialize(sr, 0UL);
 		}
 		else
 		{
-			element *e = (element *)n.emplace_back(name);
+			element *e = static_cast<element *>(n.emplace_back(name));
 			serializer sr(*e);
-			const_cast<value_type &>(value).serialize(sr, 0Ul);
+			const_cast<value_type &>(value).serialize(sr, 0UL);
 		}
 	}
 
@@ -807,7 +810,7 @@ struct type_serializer<T>
 
 	template <size_t N>
 	static auto deserialize_array(const element_container &n, std::string_view name,
-		std::array<value_type, N> &value, priority_tag<2>)
+		std::array<value_type, N> &value, [[maybe_unused]] priority_tag<2> pt)
 	{
 		size_t ix = 0;
 		for (auto &e : n)
@@ -827,7 +830,7 @@ struct type_serializer<T>
 	}
 
 	template <typename A>
-	static auto deserialize_array(const element_container &n, std::string_view name, A &arr, priority_tag<1>)
+	static auto deserialize_array(const element_container &n, std::string_view name, A &arr, [[maybe_unused]] priority_tag<1> pt)
 		-> decltype(arr.reserve(std::declval<typename container_type::size_type>()),
 			void())
 	{
@@ -845,7 +848,7 @@ struct type_serializer<T>
 		}
 	}
 
-	static void deserialize_array(const element_container &n, std::string_view name, container_type &arr, priority_tag<0>)
+	static void deserialize_array(const element_container &n, std::string_view name, container_type &arr, [[maybe_unused]] priority_tag<0> pt)
 	{
 		for (auto &e : n)
 		{

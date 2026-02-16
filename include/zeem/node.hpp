@@ -35,8 +35,13 @@
 #include <algorithm>
 #include <cassert>
 #include <compare>
-#include <concepts>
+#include <cstddef>
+#include <cstdint>
+#include <initializer_list>
+#include <iosfwd>
+#include <iterator>
 #include <string>
+#include <string_view>
 #include <type_traits>
 #include <utility>
 #include <vector>
@@ -45,17 +50,11 @@ namespace zeem
 {
 
 // forward declarations
-
-class node;
-class element;
-class text;
 class attribute;
-class name_space;
-class comment;
-class cdata;
-class processing_instruction;
-class document;
+class element;
 class element_container;
+class node;
+class text;
 
 using node_set = std::vector<node *>;
 using element_set = std::vector<element *>;
@@ -68,7 +67,8 @@ concept NodeType = std::is_base_of_v<zeem::node, std::remove_cvref_t<T>>;
  * to find out the actual type of a node
  */
 
-enum class node_type {
+enum class node_type : uint8_t
+{
 	element,
 	text,
 	attribute,
@@ -126,14 +126,19 @@ class node
 {
   public:
 	/** @cond */
-	virtual ~node();
+
+	node &operator=(const node &n) = delete;
+	node &operator=(node &&n) = delete;
+
+	virtual ~node() = default;
+
 	/** @endcond */
 
 	/// \brief node_type to be returned by each implementation of this node class
-	virtual constexpr node_type type() const = 0;
+	[[nodiscard]] virtual constexpr node_type type() const = 0;
 
 	/// content of a xml:lang attribute of this element, or its nearest ancestor
-	virtual std::string lang() const;
+	[[nodiscard]] virtual std::string lang() const;
 
 	/**
 	 * @brief Get the qualified name
@@ -147,7 +152,7 @@ class node
 	 *
 	 * @return std::string
 	 */
-	virtual std::string get_qname() const;
+	[[nodiscard]] virtual std::string get_qname() const;
 
 	/**
 	 * @brief Set the qualified name to @a qn
@@ -156,7 +161,7 @@ class node
 	 *
 	 * @param qn
 	 */
-	virtual void set_qname(std::string qn) {}
+	virtual void set_qname([[maybe_unused]] std::string qn) {} // NOLINT(performance-unnecessary-value-param)
 
 	/**
 	 * \brief set the qname with two parameters, if \a prefix is empty the qname will be simply \a name
@@ -166,26 +171,26 @@ class node
 	 * \param name		The actual name to use
 	 */
 
-	void set_qname(std::string prefix, std::string name)
+	void set_qname(const std::string &prefix, std::string name)
 	{
 		set_qname(prefix.empty() ? std::move(name) : prefix + ':' + name);
 	}
 
-	virtual std::string name() const;       ///< The name for the node as parsed from the qname.
-	virtual std::string get_prefix() const; ///< The prefix for the node as parsed from the qname.
-	virtual std::string get_ns() const;     ///< Returns the namespace URI for the node, if it can be resolved.
+	[[nodiscard]] virtual std::string name() const;       ///< The name for the node as parsed from the qname.
+	[[nodiscard]] virtual std::string get_prefix() const; ///< The prefix for the node as parsed from the qname.
+	[[nodiscard]] virtual std::string get_ns() const;     ///< Returns the namespace URI for the node, if it can be resolved.
 
 	/// Return the namespace URI for a prefix
-	virtual std::string namespace_for_prefix(std::string_view prefix) const;
+	[[nodiscard]] virtual std::string namespace_for_prefix(std::string_view prefix) const;
 
 	/// Return the prefix for a namespace URI
-	virtual std::pair<std::string, bool> prefix_for_namespace(std::string_view uri) const;
+	[[nodiscard]] virtual std::pair<std::string, bool> prefix_for_namespace(std::string_view uri) const;
 
 	/// Prefix the \a tag with the namespace prefix for \a uri
-	virtual std::string prefix_tag(std::string tag, std::string_view uri) const;
+	[[nodiscard]] virtual std::string prefix_tag(const std::string &tag, std::string_view uri) const;
 
 	/// return all content concatenated, including that of children.
-	virtual std::string str() const = 0;
+	[[nodiscard]] virtual std::string str() const = 0;
 
 	// --------------------------------------------------------------------
 	// low level routines
@@ -193,20 +198,20 @@ class node
 	// basic access
 
 	// All nodes should have a single root node
-	virtual element_container *root();             ///< The root node for this node
-	virtual const element_container *root() const; ///< The root node for this node
+	virtual element_container *root();                           ///< The root node for this node
+	[[nodiscard]] virtual const element_container *root() const; ///< The root node for this node
 
-	void parent(element_container *p) noexcept { m_parent = p; } ///< Set parent to \a p
-	element_container *parent() { return m_parent; }             ///< The parent node for this node
-	const element_container *parent() const { return m_parent; } ///< The parent node for this node
+	void parent(element_container *p) noexcept { m_parent = p; }               ///< Set parent to \a p
+	element_container *parent() { return m_parent; }                           ///< The parent node for this node
+	[[nodiscard]] const element_container *parent() const { return m_parent; } ///< The parent node for this node
 
 	void next(const node *n) noexcept { m_next = const_cast<node *>(n); } ///< Set next to \a n
 	node *next() { return m_next; }                                       ///< The next sibling
-	const node *next() const { return m_next; }                           ///< The next sibling
+	[[nodiscard]] const node *next() const { return m_next; }             ///< The next sibling
 
 	void prev(const node *n) noexcept { m_prev = const_cast<node *>(n); } ///< Set prev to \a n
 	node *prev() { return m_prev; }                                       ///< The previous sibling
-	const node *prev() const { return m_prev; }                           ///< The previous sibling
+	[[nodiscard]] const node *prev() const { return m_prev; }             ///< The previous sibling
 
 	/// Compare the node with \a n
 	virtual bool equals(const node *n) const;
@@ -229,10 +234,15 @@ class node
 		init();
 	}
 
-	node(const node &n) = delete;
-	node(node &&n) = delete;
-	node &operator=(const node &n) = delete;
-	node &operator=(node &&n) = delete;
+	node([[maybe_unused]] const node &n)
+	{
+		init();
+	}
+
+	node([[maybe_unused]] node &&n) noexcept
+	{
+		init();
+	}
 
 	friend void swap(node &a, node &b) noexcept
 	{
@@ -268,8 +278,8 @@ class node
 	}
 
 	element_container *m_parent = nullptr;
-	node *m_next;
-	node *m_prev;
+	node *m_next{};
+	node *m_prev{};
 
 	/** @endcond */
 };
@@ -285,12 +295,12 @@ class basic_node_list
   protected:
 	struct node_list_header : public node
 	{
-		constexpr node_type type() const override { return node_type::header; }
+		[[nodiscard]] constexpr node_type type() const override { return node_type::header; }
 
-		void write(std::ostream &/* os */, format_info /* fmt */) const override {}
-		std::string str() const override { return {}; }
+		void write(std::ostream & /* os */, format_info /* fmt */) const override {}
+		[[nodiscard]] std::string str() const override { return {}; }
 
-		friend void swap(node_list_header &a, node_list_header &b)
+		friend void swap(node_list_header &a, node_list_header &b) noexcept
 		{
 			swap(static_cast<node &>(a), static_cast<node &>(b));
 
@@ -302,24 +312,26 @@ class basic_node_list
 		}
 	};
 
+  private:
 	node_list_header m_header_node;
 	node *m_header = nullptr;
-	bool m_owner;
+	bool m_owner = false;
 
 	template <typename T>
 	friend class node_list;
 
   protected:
-	basic_node_list(element_container *e)
+	explicit basic_node_list(element_container *e)
 		: m_header(&m_header_node)
 	{
 		m_header_node.parent(e);
 	}
 
   public:
-	virtual ~basic_node_list()
-	{
-	}
+	basic_node_list(basic_node_list &&nl) = delete;
+	basic_node_list &operator=(const basic_node_list &nl) = delete;
+	basic_node_list &operator=(basic_node_list &&nl) = delete;
+	virtual ~basic_node_list() = default;
 
 	bool operator==(const basic_node_list &b) const;
 
@@ -327,10 +339,6 @@ class basic_node_list
 	virtual void clear();
 
   protected:
-	basic_node_list(basic_node_list &&nl) = delete;
-	basic_node_list &operator=(const basic_node_list &nl) = delete;
-	basic_node_list &operator=(basic_node_list &&nl) = delete;
-
 	friend void swap(basic_node_list &a, basic_node_list &b) noexcept
 	{
 		if (a.m_header != &a.m_header_node and b.m_header != &b.m_header_node)
@@ -361,7 +369,7 @@ class basic_node_list
  * Iterating over nodes is simply following next/prev. But iterating
  * elements is a bit more difficult, since you then have to skip nodes
  * in between that are not an element, like comments or text.
- * 
+ *
  * This iterator is used for iterators over elements, attributes and
  * simply all nodes
  */
@@ -385,17 +393,24 @@ class iterator_impl
 
 	iterator_impl() = default;
 
-	iterator_impl(const node *current)
-		: m_current(const_cast<node *>(current))
+	// NOLINTBEGIN(hicpp-explicit-conversions)
+	iterator_impl(node *current)
+		: m_current(current)
 	{
 		skip();
+	}
+
+	iterator_impl(const node *current)
+		requires(std::is_const_v<value_type>)
+		: iterator_impl(const_cast<node *>(current))
+	{
 	}
 
 	iterator_impl(const iterator_impl &i) = default;
 
 	/**
 	 * @brief Copy constructor
-	 * 
+	 *
 	 * This copy constructor allows to copy from the same value_type
 	 * and from derived types. That means that you can assign an
 	 * iterator pointing to an element to a new iterator pointing
@@ -408,6 +423,8 @@ class iterator_impl
 	{
 		skip();
 	}
+
+	// NOLINTEND(hicpp-explicit-conversions)
 
 	iterator_impl &operator=(iterator_impl i)
 	{
@@ -423,8 +440,8 @@ class iterator_impl
 		return *this;
 	}
 
-	reference operator*() { return *static_cast<value_type *>(m_current); }
-	pointer operator->() { return static_cast<value_type *>(m_current); }
+	reference operator*() const { return *static_cast<value_type *>(m_current); }
+	pointer operator->() const { return static_cast<value_type *>(m_current); }
 
 	iterator_impl &operator++()
 	{
@@ -495,16 +512,16 @@ class iterator_impl
 
 /**
  * @brief An abstract base class for lists of type \a T
- * 
- * This base class should offer all methods required for a 
+ *
+ * This base class should offer all methods required for a
  * SequenceContainer.
- * 
+ *
  * This class is not exported.
- * 
+ *
  * Note that this class can act as a real container, which
  * stores data, or it can act as a view on another node_list
  * optionally changing what is made visible.
- * 
+ *
  * An element derives from node_list<element>, so it exposes
  * access to all its children of type element. However, since
  * node_lists store pointers to nodes, the list can contain
@@ -512,7 +529,7 @@ class iterator_impl
  * you can use a node_list<node> constructed with an element
  * as parameter. This node_list<node> will expose all nodes
  * in the element.
- * 
+ *
  * @tparam T The type of node contained, either element, attribute or node
  */
 
@@ -531,64 +548,59 @@ class node_list : public basic_node_list
 
 	/**
 	 * @brief Construct a new node list for an element_container \a e
-	 * 
+	 *
 	 * @param e The element_container
 	 */
-	node_list(element_container *e);
+  private:
+	node_list(element_container *e); // NOLINT(hicpp-explicit-conversions)
+	friend class element_container;
+	friend class attribute_set;
 
-	/** @cond */
-	node_list(const node_list &nl) = delete;
-	node_list &operator=(const node_list &) = delete;
-	/** @endcond */
-
+  public:
 	/// @brief The iterator class
 	using iterator = iterator_impl<value_type>;
+	static_assert(std::input_iterator<iterator>);
 
 	/// @brief The const iterator class
 	using const_iterator = iterator_impl<const value_type>;
+	static_assert(std::input_iterator<const_iterator>);
 
-	iterator begin() { return iterator(m_header->m_next); }
-	iterator end() { return iterator(m_header); }
+	[[nodiscard]] iterator begin() { return iterator(m_header->m_next); }
+	[[nodiscard]] iterator end() { return iterator(m_header); }
 
-	const_iterator cbegin() { return const_iterator(m_header->m_next); }
-	const_iterator cend() { return const_iterator(m_header); }
+	[[nodiscard]] const_iterator cbegin() { return const_iterator(m_header->m_next); }
+	[[nodiscard]] const_iterator cend() { return const_iterator(m_header); }
 
-	const_iterator begin() const { return const_iterator(m_header->m_next); }
-	const_iterator end() const { return const_iterator(m_header); }
+	[[nodiscard]] const_iterator begin() const { return const_iterator(m_header->m_next); }
+	[[nodiscard]] const_iterator end() const { return const_iterator(m_header); }
 
-	value_type &front() { return *begin(); }
-	const value_type &front() const { return *begin(); }
+	[[nodiscard]] value_type &front() { return *begin(); }
+	[[nodiscard]] const value_type &front() const { return *begin(); }
 
-	value_type &back() { return *std::prev(end()); }
-	const value_type &back() const { return *std::prev(end()); }
+	[[nodiscard]] value_type &back() { return *std::prev(end()); }
+	[[nodiscard]] const value_type &back() const { return *std::prev(end()); }
 
 	/// @brief The size of the visible items
 	/// @return The count of items visible
-	size_t size() const { return std::distance(begin(), end()); }
-	bool empty() const { return size() == 0; }
+	[[nodiscard]] size_t size() const { return std::distance(begin(), end()); }
+	[[nodiscard]] bool empty() const { return size() == 0; }
 	explicit operator bool() const { return not empty(); }
 
 	/// \brief insert a copy of \a e
-	iterator insert(const_iterator pos, const value_type &e)
-	{
-		return insert_impl(pos, new value_type(e));
-	}
+	iterator insert(const_iterator pos, const value_type &e);
 
 	/// \brief insert a copy of \a e at position \a pos, moving its data
-	iterator insert(const_iterator pos, value_type &&e)
-	{
-		return insert_impl(pos, new value_type(std::move(e)));
-	}
+	iterator insert(const_iterator pos, value_type &&e);
 
 	/// \brief construct a new node using arguments provided in \a a
 
-	// TODO: When users try to emplace/insert e.g. a cdata node in an element
+	// TODO: maarten - When users try to emplace/insert e.g. a cdata node in an element
 	// this will fail, since they need to use the nodes() variant. However,
 	// a better error is required in that case. Perhaps using concepts?
 
 	template <typename... Args>
 	iterator insert(const_iterator p, Args &&...args)
-		requires (sizeof...(Args) > 1 or not std::is_base_of_v<node, std::remove_cvref_t<Args>...>)
+		requires(sizeof...(Args) > 1 or not std::is_base_of_v<node, std::remove_cvref_t<Args>...>)
 	{
 		return insert_impl(p, new value_type(std::forward<Args>(args)...));
 	}
@@ -687,7 +699,7 @@ class node_list : public basic_node_list
 	/// \brief move the value_type \a e to the front of this value_type.
 	void push_front(value_type &&e)
 	{
-		emplace(begin(), std::move(e));
+		emplace(begin(), std::forward<value_type>(e));
 	}
 
 	/// \brief copy the value_type \a e to the front of this value_type.
@@ -699,7 +711,7 @@ class node_list : public basic_node_list
 	/// \brief move the value_type \a e to the back of this value_type.
 	void push_back(value_type &&e)
 	{
-		emplace(end(), std::move(e));
+		emplace(end(), std::forward<value_type>(e));
 	}
 
 	/// \brief copy the value_type \a e to the back of this value_type.
@@ -710,7 +722,7 @@ class node_list : public basic_node_list
 
 	/// \brief Sort the nodes
 	template <typename Pred>
-	void sort(Pred &&pred);
+	void sort(const Pred &pred);
 
   protected:
 	using basic_node_list::insert_impl;
@@ -726,28 +738,28 @@ class node_list : public basic_node_list
 	{
 		return basic_node_list::erase_impl(&*pos);
 	}
+	friend T;
 };
 
 // --------------------------------------------------------------------
 
 /**
  * @brief internal class as base class for element and document
- * 
+ *
  * Both element and document can have a list of child nodes and
  * both are nodes implementing the namespace routines e.g.
- * 
+ *
  * However, element has attributes whereas document does not.
  * And document has the constraint that it can have at most
  * one child element. But since the rest is so similar they
  * have a common base class: element_container.
- * 
+ *
  * element_container is not exported.
  */
 
 class element_container : public node, public node_list<element>
 {
   public:
-
 	/// @brief Default constructor
 	element_container()
 		: node_list<element>(this)
@@ -756,7 +768,8 @@ class element_container : public node, public node_list<element>
 
 	/// @brief Copy constructor
 	element_container(const element_container &e)
-		: node_list<element>(this)
+		: node(e)
+		, node_list<element>(this)
 	{
 		auto a = nodes();
 		auto b = e.nodes();
@@ -764,7 +777,7 @@ class element_container : public node, public node_list<element>
 	}
 
 	/// @brief Destructor
-	~element_container()
+	~element_container() override
 	{
 		clear();
 	}
@@ -782,40 +795,39 @@ class element_container : public node, public node_list<element>
 	// children
 
 	/**
-	 * @brief This method allows access to the nodes not visible using 
+	 * @brief This method allows access to the nodes not visible using
 	 * the regular interface of this class itself.
-	 * 
+	 *
 	 * @return node_list<> The node_list for nodes of all types
 	 */
-	node_list<> nodes() { return node_list<node>(this); }
+	node_list<> nodes() { return { this }; }
 
 	/**
-	 * @brief This method allows read access to the nodes not visible using 
+	 * @brief This method allows read access to the nodes not visible using
 	 * the regular interface of this class itself.
-	 * 
+	 *
 	 * @return node_list<> The node_list for nodes of all types
 	 */
-	const node_list<> nodes() const { return node_list<node>(const_cast<element_container *>(this)); }
+	[[nodiscard]] const node_list<> nodes() const { return node_list<node>(const_cast<element_container *>(this)); }
 
 	/// \brief will return the concatenation of str() from all child nodes
-	std::string str() const override;
+	[[nodiscard]] std::string str() const override;
 
 	/// \brief return the elements that match XPath \a path.
 	///
 	/// If you need to find other classes than xml::element, of if your XPath
 	/// contains variables, you should create a zeem::xpath object and use
 	/// its evaluate method.
-	element_set find(std::string_view path) const;
+	[[nodiscard]] element_set find(std::string_view path) const;
 
 	/// \brief return the first element that matches XPath \a path.
 	///
 	/// If you need to find other classes than xml::element, of if your XPath
 	/// contains variables, you should create a zeem::xpath object and use
 	/// its evaluate method.
-	iterator find_first(std::string_view path);
-	const_iterator find_first(std::string_view path) const;
+	[[nodiscard]] iterator find_first(std::string_view path);
+	[[nodiscard]] const_iterator find_first(std::string_view path) const;
 
-  protected:
 	/** @cond */
 	void write(std::ostream &os, format_info fmt) const override;
 	/** @endcond */
@@ -826,7 +838,7 @@ class element_container : public node, public node_list<element>
 
 /**
  * @brief An abstract base class for nodes that contain text
- * 
+ *
  */
 
 class node_with_text : public node
@@ -836,15 +848,13 @@ class node_with_text : public node
 
 	node_with_text() = default;
 
-	node_with_text(std::string s)
+	explicit node_with_text(std::string s)
 		: m_text(std::move(s))
 	{
 	}
 
-	node_with_text(const node_with_text &n)
-		: m_text(n.m_text)
-	{
-	}
+	node_with_text(const node_with_text &n) = default;
+	node_with_text(node_with_text &&n) = default;
 
   public:
 	friend void swap(node_with_text &a, node_with_text &b) noexcept
@@ -855,10 +865,10 @@ class node_with_text : public node
 	/** @endcond */
 
 	/// \brief return the text content
-	std::string str() const override { return m_text; }
+	[[nodiscard]] std::string str() const override { return m_text; }
 
 	/// \brief return the text content, same as str()
-	virtual std::string get_text() const { return m_text; }
+	[[nodiscard]] virtual std::string get_text() const { return m_text; }
 
 	/// \brief set the text content
 	virtual void set_text(std::string text) { m_text = std::move(text); }
@@ -870,8 +880,14 @@ class node_with_text : public node
 		       static_cast<const node_with_text *>(n)->m_text == m_text;
 	}
 
-  protected:
 	/** @cond */
+
+  protected:
+	void append_text(std::string_view txt)
+	{
+		m_text += txt;
+	}
+
 	std::string m_text;
 	/** @endcond */
 };
@@ -880,25 +896,22 @@ class node_with_text : public node
 
 /**
  * @brief A node containing a XML comment
- * 
+ *
  */
 
 class comment final : public node_with_text
 {
   public:
-	constexpr node_type type() const override { return node_type::comment; }
+	[[nodiscard]] constexpr node_type type() const override { return node_type::comment; }
 
 	/// @brief default constructor
-	comment(std::string text = {})
+	explicit comment(std::string text = {})
 		: node_with_text(std::move(text))
 	{
 	}
 
 	/// @brief copy constructor
-	comment(const comment &c)
-		: node_with_text(c)
-	{
-	}
+	comment(const comment &c) = default;
 
 	/// @brief move constructor
 	comment(comment &&c) noexcept
@@ -927,13 +940,13 @@ class comment final : public node_with_text
 // --------------------------------------------------------------------
 /**
  * @brief A node containing a XML processing instruction (like e.g. \<?php ?\>)
- * 
+ *
  */
 
 class processing_instruction final : public node_with_text
 {
   public:
-	constexpr node_type type() const override { return node_type::processing_instruction; }
+	[[nodiscard]] constexpr node_type type() const override { return node_type::processing_instruction; }
 
 	/// @brief default constructor
 	processing_instruction() = default;
@@ -950,18 +963,10 @@ class processing_instruction final : public node_with_text
 	}
 
 	/// @brief copy constructor
-	processing_instruction(const processing_instruction &pi)
-		: node_with_text(pi)
-		, m_target(pi.m_target)
-	{
-	}
+	processing_instruction(const processing_instruction &pi) = default;
 
 	/// @brief move constructor
-	processing_instruction(processing_instruction &&pi) noexcept
-		: node_with_text(std::move(pi.m_text))
-		, m_target(std::move(pi.m_target))
-	{
-	}
+	processing_instruction(processing_instruction &&pi) noexcept = default;
 
 	/// @brief assignment operator
 	processing_instruction &operator=(processing_instruction pi) noexcept
@@ -979,10 +984,10 @@ class processing_instruction final : public node_with_text
 	/** @endcond */
 
 	/// \brief return the qname which is the same as the target in this case
-	std::string get_qname() const override { return m_target; }
+	[[nodiscard]] std::string get_qname() const override { return m_target; }
 
 	/// \brief return the target
-	std::string get_target() const { return m_target; }
+	[[nodiscard]] std::string get_target() const { return m_target; }
 
 	/// \brief set the target
 	void set_target(std::string target) { m_target = std::move(target); }
@@ -1005,31 +1010,25 @@ class processing_instruction final : public node_with_text
 // --------------------------------------------------------------------
 /**
  * @brief A node containing text.
- * 
+ *
  */
 
 class text final : public node_with_text
 {
   public:
-	constexpr node_type type() const override { return node_type::text; }
+	[[nodiscard]] constexpr node_type type() const override { return node_type::text; }
 
 	/// @brief default constructor
-	text(std::string text = {})
+	explicit text(std::string text = {})
 		: node_with_text(std::move(text))
 	{
 	}
 
 	/// @brief copy constructor
-	text(const text &t)
-		: node_with_text(t)
-	{
-	}
+	text(const text &t) = default;
 
 	/// @brief move constructor
-	text(text &&t) noexcept
-		: node_with_text(std::move(t.m_text))
-	{
-	}
+	text(text &&t) noexcept = default;
 
 	/// @brief assignment operator
 	text &operator=(text txt) noexcept
@@ -1039,13 +1038,13 @@ class text final : public node_with_text
 	}
 
 	/// \brief append \a text to the stored text
-	void append(std::string_view text) { m_text.append(text.begin(), text.end()); }
+	void append(std::string_view text) { append_text(text); }
 
 	/// \brief compare nodes for equality
 	bool equals(const node *n) const override;
 
 	/// \brief returns true if this text contains only whitespace characters
-	bool is_space() const;
+	[[nodiscard]] bool is_space() const;
 
 	/** @cond */
 	void write(std::ostream &os, format_info fmt) const override;
@@ -1056,31 +1055,25 @@ class text final : public node_with_text
 /**
  * @brief A node containing the contents of a CDATA section. Normally, these nodes are
  * converted to text nodes but you can specify to preserve them when parsing a document.
- * 
+ *
  */
 
 class cdata final : public node_with_text
 {
   public:
-	constexpr node_type type() const override { return node_type::cdata; }
+	[[nodiscard]] constexpr node_type type() const override { return node_type::cdata; }
 
 	/// @brief default constructor
-	cdata(std::string s = {})
+	explicit cdata(std::string s = {})
 		: node_with_text(std::move(s))
 	{
 	}
 
 	/// @brief copy constructor
-	cdata(const cdata &cd)
-		: node_with_text(cd)
-	{
-	}
+	cdata(const cdata &cd) = default;
 
 	/// @brief move constructor
-	cdata(cdata &&cd) noexcept
-		: node_with_text(std::move(cd))
-	{
-	}
+	cdata(cdata &&cd) noexcept = default;
 
 	/// @brief assignment operator
 	cdata &operator=(cdata cd) noexcept
@@ -1090,7 +1083,7 @@ class cdata final : public node_with_text
 	}
 
 	/// \brief append \a text to the stored text
-	void append(std::string_view text) { m_text.append(text.begin(), text.end()); }
+	void append(std::string_view text) { append_text(text); }
 
 	/// \brief compare nodes for equality
 	bool equals(const node *n) const override
@@ -1106,13 +1099,13 @@ class cdata final : public node_with_text
 // --------------------------------------------------------------------
 /**
  * @brief An attribute is a node, has an element as parent, but is not a child of this parent (!)
- * 
+ *
  */
 
 class attribute final : public node
 {
   public:
-	constexpr node_type type() const override { return node_type::attribute; }
+	[[nodiscard]] constexpr node_type type() const override { return node_type::attribute; }
 
 	/// @brief constructor
 	/// @param qname The qualified name
@@ -1126,19 +1119,13 @@ class attribute final : public node
 	}
 
 	/// @brief copy constructor
-	attribute(const attribute &attr)
-		: m_qname(attr.m_qname)
-		, m_value(attr.m_value)
-		, m_id(attr.m_id)
-	{
-	}
+	attribute(const attribute &attr) = default;
 
 	/// @brief move constructor
 	attribute(attribute &&attr) noexcept
-		: m_qname(std::move(attr.m_qname))
-		, m_value(std::move(attr.m_value))
-		, m_id(attr.m_id)
+		: node(std::forward<attribute>(attr))
 	{
+		swap(*this, attr);
 	}
 
 	/// @brief assignment operator
@@ -1174,7 +1161,7 @@ class attribute final : public node
 	}
 
 	/// @brief Get the qualified name for this attribute
-	std::string get_qname() const override { return m_qname; }
+	[[nodiscard]] std::string get_qname() const override { return m_qname; }
 
 	/// @brief Set the qualified name to \a qn
 	void set_qname(std::string qn) override { m_qname = std::move(qn); }
@@ -1182,22 +1169,25 @@ class attribute final : public node
 	using node::set_qname;
 
 	/// \brief Is this attribute an xmlns attribute?
-	bool is_namespace() const
+	[[nodiscard]] bool is_namespace() const
 	{
-		return m_qname.compare(0, 5, "xmlns") == 0 and (m_qname[5] == 0 or m_qname[5] == ':');
+		return m_qname.starts_with("xmlns") and (m_qname.length() == 5 or m_qname[5] == ':');
 	}
 
 	/// @brief Return the value of this attribute
-	std::string value() const { return m_value; }
+	[[nodiscard]] std::string value() const { return m_value; }
 
 	/// @brief Set the value of this attribute to \a v
 	void set_value(std::string v) { m_value = std::move(v); }
 
+	/// @brief Set the value of this attribute to \a v
+	void set_value(std::string_view v) { m_value = v; }
+
 	/// \brief same as value, but checks to see if this really is a namespace attribute
-	std::string uri() const;
+	[[nodiscard]] std::string uri() const;
 
 	/// @brief Returns the value of this attribute
-	std::string str() const override { return m_value; }
+	[[nodiscard]] std::string str() const override { return m_value; }
 
 	/// \brief compare nodes for equality
 	bool equals(const node *n) const override
@@ -1212,11 +1202,11 @@ class attribute final : public node
 	}
 
 	/// \brief returns whether this attribute is an ID attribute, as defined in an accompanying DTD
-	bool is_id() const { return m_id; }
+	[[nodiscard]] bool is_id() const { return m_id; }
 
 	/// \brief support for structured binding
 	template <size_t N>
-	decltype(auto) get() const
+	[[nodiscard]] decltype(auto) get() const
 	{
 		if constexpr (N == 0)
 			return name();
@@ -1229,27 +1219,27 @@ class attribute final : public node
 
   private:
 	std::string m_qname, m_value;
-	bool m_id;
+	bool m_id{};
 	/** @endcond */
 };
 
 // --------------------------------------------------------------------
 /**
  * @brief set of attributes and name_spaces. Is a node_list but with a set interface
- * 
+ *
  */
 
 class attribute_set : public node_list<attribute>
 {
   public:
 	/// @brief constructor to create an attribute_set for an element
-	attribute_set(element_container *el)
+	explicit attribute_set(element_container *el)
 		: node_list(el)
 	{
 	}
 
 	/// @brief destructor
-	~attribute_set()
+	~attribute_set() override
 	{
 		clear();
 	}
@@ -1262,13 +1252,13 @@ class attribute_set : public node_list<attribute>
 	/** @endcond */
 
 	/// \brief return true if the attribute with name \a key is defined
-	bool contains(std::string_view key) const
+	[[nodiscard]] bool contains(std::string_view key) const
 	{
 		return find(key) != end();
 	}
 
 	/// \brief return const_iterator to the attribute with name \a key
-	const_iterator find(std::string_view key) const
+	[[nodiscard]] const_iterator find(std::string_view key) const
 	{
 		for (auto i = begin(); i != end(); ++i)
 		{
@@ -1281,15 +1271,14 @@ class attribute_set : public node_list<attribute>
 	/// \brief return iterator to the attribute with name \a key
 	iterator find(std::string_view key)
 	{
-		return const_cast<const attribute_set &>(*this).find(key);
+		return iterator{ const_cast<const attribute_set &>(*this).find(key) };
 	}
 
 	/// \brief emplace a newly constructed attribute with argumenst \a args
 	template <typename... Args>
-	std::pair<iterator, bool> emplace(Args... args)
+	std::pair<iterator, bool> emplace(Args &&...args)
 	{
-		value_type a(std::forward<Args>(args)...);
-		return emplace(std::move(a));
+		return emplace(value_type{ std::forward<decltype(args)>(args)... });
 	}
 
 	/// \brief emplace an attribute move constructed from \a a
@@ -1302,10 +1291,10 @@ class attribute_set : public node_list<attribute>
 		auto i = find(a.get_qname());
 
 		if (i != node_list::end())
-			*i = std::move(a); // move assign value of a
+			*i = std::forward<value_type>(a); // move assign value of a
 		else
 		{
-			i = node_list::insert_impl(node_list::end(), new attribute(std::move(a)));
+			i = iterator{ node_list::insert_impl(node_list::end(), new attribute(std::forward<value_type>(a))) };
 			inserted = true;
 		}
 
@@ -1331,7 +1320,7 @@ class attribute_set : public node_list<attribute>
 // --------------------------------------------------------------------
 /**
  * @brief the element class modelling a XML element
- * 
+ *
  * element is the most important zeem::node object. It encapsulates a
  * XML element as found in the XML document. It has a qname, can have children,
  * attributes and a namespace.
@@ -1340,7 +1329,7 @@ class attribute_set : public node_list<attribute>
 class element final : public element_container
 {
   public:
-	constexpr node_type type() const override { return node_type::element; }
+	[[nodiscard]] constexpr node_type type() const override { return node_type::element; }
 
 	/// @brief default constructor
 	element()
@@ -1349,7 +1338,7 @@ class element final : public element_container
 	}
 
 	/// @brief constructor taking a \a qname and a list of \a attributes
-	element(std::string_view qname, std::initializer_list<attribute> attributes = {})
+	explicit element(std::string_view qname, std::initializer_list<attribute> attributes = {})
 		: m_qname(qname)
 		, m_attributes(this)
 	{
@@ -1401,17 +1390,17 @@ class element final : public element_container
 	using node::set_qname;
 
 	/// @brief Return the qualified name
-	std::string get_qname() const override { return m_qname; }
+	[[nodiscard]] std::string get_qname() const override { return m_qname; }
 
 	/// @brief Set the qualified name to \a qn
 	void set_qname(std::string qn) override { m_qname = std::move(qn); }
 
 	/// \brief content of a xml:lang attribute of this element, or its nearest ancestor
-	std::string lang() const override;
+	[[nodiscard]] std::string lang() const override;
 
 	/// \brief content of the xml:id attribute, or the attribute that was defined to be
 	/// of type ID by the DOCTYPE.
-	std::string id() const;
+	[[nodiscard]] std::string id() const;
 
 	/// @brief Compare two elements for equality
 	bool operator==(const element &e) const
@@ -1429,18 +1418,18 @@ class element final : public element_container
 	attribute_set &attributes() { return m_attributes; }
 
 	/// \brief return the set of attributes for this element
-	const attribute_set &attributes() const { return m_attributes; }
+	[[nodiscard]] const attribute_set &attributes() const { return m_attributes; }
 
 	// --------------------------------------------------------------------
 
 	/// \brief return the URI of the namespace for \a prefix
-	std::string namespace_for_prefix(std::string_view prefix) const override;
+	[[nodiscard]] std::string namespace_for_prefix(std::string_view prefix) const override;
 
 	/// \brief return the prefix for the XML namespace with uri \a uri.
 	/// \return The result is a pair of a std::string containing the actual prefix value
 	/// and a boolean indicating if the namespace was found at all, needed since empty prefixes
 	/// are allowed.
-	std::pair<std::string, bool> prefix_for_namespace(std::string_view uri) const override;
+	[[nodiscard]] std::pair<std::string, bool> prefix_for_namespace(std::string_view uri) const override;
 
 	/// \brief move this element and optionally everyting beneath it to the
 	///        specified namespace/prefix
@@ -1449,7 +1438,7 @@ class element final : public element_container
 	/// \param uri					The new namespace uri
 	/// \param recursive			Apply this to the child nodes as well
 	/// \param including_attributes	Move the attributes to this new namespace as well
-	void move_to_name_space(std::string prefix, std::string uri,
+	void move_to_name_space(const std::string &prefix, std::string_view uri,
 		bool recursive, bool including_attributes);
 
 	// --------------------------------------------------------------------
@@ -1459,19 +1448,19 @@ class element final : public element_container
 	// 	friend class document;
 
 	/// \brief return the concatenation of the content of all enclosed zeem::text nodes
-	std::string get_content() const;
+	[[nodiscard]] std::string get_content() const;
 
 	/// \brief replace all existing child text nodes with a new single text node containing \a content
 	void set_content(std::string content);
 
 	/// \brief return the value of attribute name \a qname or the empty string if not found
-	std::string get_attribute(std::string_view qname) const;
+	[[nodiscard]] std::string get_attribute(std::string_view qname) const;
 
 	/// \brief set the value of attribute named \a qname to the value \a value
 	void set_attribute(std::string_view qname, std::string_view value);
 
 	/// \brief The set_text method replaces any text node with the new text (call set_content)
-	virtual void set_text(std::string s);
+	void set_text(std::string s);
 
 	/// The add_text method checks if the last added child is a text node,
 	/// and if so, it appends the string to this node's value. Otherwise,
@@ -1500,6 +1489,33 @@ inline node_list<T>::node_list(element_container *e)
 		m_header = e->m_header;
 }
 
+template <>
+inline auto node_list<element>::insert(const_iterator pos, const element &e) -> iterator
+{
+	return iterator{ insert_impl(pos, new element(e)) };
+}
+
+/// \brief insert a copy of \a e at position \a pos, moving its data
+template <>
+inline auto node_list<element>::insert(const_iterator pos, element &&e) -> iterator
+{
+	return iterator{ insert_impl(pos, new element(std::forward<value_type>(e))) };
+}
+
+template <>
+inline auto node_list<attribute>::insert(const_iterator pos, const attribute &e) -> iterator
+{
+	return iterator{ insert_impl(pos, new attribute(e)) };
+}
+
+/// \brief insert a copy of \a e at position \a pos, moving its data
+template <>
+inline auto node_list<attribute>::insert(const_iterator pos, attribute &&e) -> iterator
+{
+	return iterator{ insert_impl(pos, new attribute(std::forward<value_type>(e))) };
+}
+
+// NOLINTBEGIN(cppcoreguidelines-owning-memory,cppcoreguidelines-pro-type-static-cast-downcast)
 template <>
 inline auto node_list<node>::insert(const_iterator pos, const value_type &e) -> iterator
 {
@@ -1535,37 +1551,40 @@ inline auto node_list<node>::insert(const_iterator pos, value_type &&e) -> itera
 	switch (e.type())
 	{
 		case node_type::element:
-			return insert_impl(pos, new element(static_cast<element &&>(e)));
+			return insert_impl(pos, new element(std::forward<element &&>(static_cast<element &&>(e))));
 			break;
 		case node_type::text:
-			return insert_impl(pos, new text(static_cast<text &&>(e)));
+			return insert_impl(pos, new text(std::forward<text &&>(static_cast<text &&>(e))));
 			break;
 		case node_type::attribute:
-			return insert_impl(pos, new attribute(static_cast<attribute &&>(e)));
+			return insert_impl(pos, new attribute(std::forward<attribute &&>(static_cast<attribute &&>(e))));
 			break;
 		case node_type::comment:
-			return insert_impl(pos, new comment(static_cast<comment &&>(e)));
+			return insert_impl(pos, new comment(std::forward<comment &&>(static_cast<comment &&>(e))));
 			break;
 		case node_type::cdata:
-			return insert_impl(pos, new cdata(static_cast<cdata &&>(e)));
+			return insert_impl(pos, new cdata(std::forward<cdata &&>(static_cast<cdata &&>(e))));
 			break;
 		case node_type::processing_instruction:
-			return insert_impl(pos, new processing_instruction(static_cast<processing_instruction &&>(e)));
+			return insert_impl(pos, new processing_instruction(std::forward<processing_instruction &&>(static_cast<processing_instruction &&>(e))));
 			break;
 		default:
 			throw exception("internal error");
 	}
 }
 
+// NOLINTEND(cppcoreguidelines-owning-memory,cppcoreguidelines-pro-type-static-cast-downcast)
+
 template <typename T>
 template <typename Pred>
-void node_list<T>::sort(Pred &&pred)
+void node_list<T>::sort(const Pred &pred)
 {
 	std::vector<node *> t;
 	for (auto n = m_header->m_next; n != m_header; n = n->m_next)
 		t.push_back(n);
 
-	std::sort(t.begin(), t.end(), [pred](node *a, node *b) { return pred(static_cast<T&>(*a), static_cast<T&>(*b)); });
+	std::sort(t.begin(), t.end(), [pred](node *a, node *b)
+		{ return pred(static_cast<T &>(*a), static_cast<T &>(*b)); });
 
 	auto p = m_header;
 	for (auto n : t)

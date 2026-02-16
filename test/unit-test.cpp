@@ -1,19 +1,55 @@
-#include <catch2/catch_test_macros.hpp>
+/*-
+ * SPDX-License-Identifier: BSD-2-Clause
+ *
+ * Copyright (c) 2026 Maarten L. Hekkelman
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice, this
+ *    list of conditions and the following disclaimer
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
+ * ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+ * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+ * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+ * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
 #define CATCH_CONFIG_RUNNER
 
 #include "zeem.hpp"
 
-#include <catch2/catch_all.hpp>
-
+#include <cassert>
+#include <catch2/catch_session.hpp>
+#include <catch2/catch_test_macros.hpp>
+#include <compare>
+#include <cstddef>
 #include <filesystem>
+#include <initializer_list>
+#include <iomanip>
 #include <iostream>
+#include <iterator>
+#include <sstream>
+#include <string>
+#include <utility>
 
 // #include "zeem.ixx"
 
-std::filesystem::path gTestDir = std::filesystem::current_path();
+std::filesystem::path gTestDir;
 
 int main(int argc, char *argv[])
 {
+	gTestDir = std::filesystem::current_path();
+
 	Catch::Session session; // There must be exactly one instance
 
 	// Build a new parser on top of Catch2's
@@ -127,7 +163,7 @@ TEST_CASE("test_1")
 
 		auto n3(std::move(n2));
 
-		CHECK(n2.name().empty());
+		CHECK(n2.name().empty()); // NOLINT(bugprone-use-after-move,hicpp-invalid-access-moved)
 		CHECK(n2.empty());
 		CHECK(n3.name() == "test");
 		CHECK(n3.size() == 4);
@@ -145,7 +181,7 @@ TEST_CASE("test_1")
 		zeem::element n4;
 		n4 = std::move(n3);
 
-		CHECK(n3.empty());
+		CHECK(n3.empty()); // NOLINT(bugprone-use-after-move,hicpp-invalid-access-moved)
 		CHECK(n4.size() == 4);
 		CHECK(n4.front().name() == "c0");
 		CHECK(n4.back().name() == "c3");
@@ -267,6 +303,8 @@ TEST_CASE("xml_1")
 				CHECK(name == "attr2");
 				CHECK(value == "value-2");
 				break;
+			
+			default:;
 		}
 	}
 
@@ -312,7 +350,7 @@ TEST_CASE("xml_3")
 	CHECK((std::ostringstream() << e).str() == R"(<test><aap/></test>)");
 
 	e.nodes().emplace(e.end(), std::move(a));
-	CHECK(a.name() == "");
+	CHECK(a.name() == ""); // NOLINT(bugprone-use-after-move,hicpp-invalid-access-moved)
 	CHECK((std::ostringstream() << e).str() == R"(<test><aap/><aap/></test>)");
 
 	zeem::element b("noot");
@@ -327,8 +365,8 @@ TEST_CASE("xml_3")
 	CHECK((std::ostringstream() << e).str() == R"(<test><aap/><aap/><noot/><noot/></test>)");
 
 	auto &&n3 = std::move(b);
-	CHECK(e.nodes().emplace(e.end(), std::move(n3))->name() == "noot");
-	CHECK(b.name() == "");
+	CHECK(e.nodes().emplace(e.end(), std::move(n3))->name() == "noot"); // NOLINT(bugprone-use-after-move,hicpp-invalid-access-moved)
+	CHECK(b.name() == ""); // NOLINT(bugprone-use-after-move,hicpp-invalid-access-moved)
 	CHECK((std::ostringstream() << e).str() == R"(<test><aap/><aap/><noot/><noot/><noot/></test>)");
 
 	e.attributes().emplace("attr1", "value1");
@@ -355,7 +393,7 @@ TEST_CASE("xml_attributes_1")
 		CHECK(a.get_ns() == "http://www.hekkelman.com");
 	}
 
-	for (auto a : t.attributes())
+	for (auto a : t.attributes()) // NOLINT
 	{
 		CHECK(a.name() == "a");
 		CHECK(a.get_qname() == "m:a");
@@ -442,7 +480,7 @@ TEST_CASE("xml_container_and_iterators")
 	CHECK(e.size() == 1);
 	CHECK(e.front().name() == "c");
 
-	e.push_front({ "aa" });
+	e.emplace_front("aa");
 	CHECK(e.size() == 2);
 	CHECK(e.front().name() == "aa");
 
@@ -935,7 +973,6 @@ TEST_CASE("sort-1")
 
 	CHECK((std::ostringstream() << e).str() == R"(<test aap="1" noot="2" mies="3" boom="4" roos="5" vis="6" vuur="7"/>)");
 }
-
 
 TEST_CASE("emplace-1")
 {

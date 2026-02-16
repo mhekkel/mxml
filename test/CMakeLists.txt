@@ -3,8 +3,8 @@
 #    (See accompanying file LICENSE_1_0.txt or copy at
 #          http://www.boost.org/LICENSE_1_0.txt)
 
-CPMAddPackage("gh:catchorg/Catch2@3.4.0")
-CPMAddPackage("https://forge.hekkelman.net/maarten/mcfp.git@1.4.2")
+CPMFindPackage(NAME Catch2 GIT_REPOSITORY "https://github.com/catchorg/Catch2" VERSION "3.4.0" EXCLUDE_FROM_ALL YES)
+CPMFindPackage(NAME mcfp GIT_REPOSITORY "https://forge.hekkelman.net/maarten/mcfp.git" GIT_TAG v1.4.2 EXCLUDE_FROM_ALL YES)
 
 # data files for the parser test
 set(XML_CONF_TAR ${CMAKE_CURRENT_SOURCE_DIR}/XML-Test-Suite.tbz)
@@ -44,8 +44,6 @@ foreach(TEST IN LISTS ZEEM_TESTS)
 	add_executable(${ZEEM_TEST} ${ZEEM_TEST_SOURCE})
 
 	target_link_libraries(${ZEEM_TEST} PRIVATE mcfp::mcfp zeem::zeem Catch2::Catch2)
-
-	target_compile_definitions(${ZEEM_TEST} PUBLIC CATCH22=1)
 
 	if(MSVC)
 		# Specify unwind semantics so that MSVC knowns how to handle exceptions

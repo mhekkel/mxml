@@ -25,13 +25,17 @@
  */
 
 #include "zeem/doctype.hpp"
+
 #include "zeem/error.hpp"
 #include "zeem/text.hpp"
 
-#include <algorithm>
 #include <cassert>
+#include <cctype>
 #include <functional>
 #include <memory>
+#include <ranges>
+#include <string_view>
+#include <tuple>
 #include <vector>
 
 namespace zeem::doctype
@@ -52,33 +56,31 @@ struct state_base : std::enable_shared_from_this<state_base>
 
 	virtual void reset() {}
 
-  protected:
 	virtual ~state_base() = default;
 };
 
 struct state_any : public state_base
 {
-	virtual std::tuple<bool, bool> allow(std::string_view /*name*/) override { return std::make_tuple(true, true); }
-	virtual bool allow_char_data() override { return true; }
-	virtual bool allow_empty() override { return true; }
+	std::tuple<bool, bool> allow(std::string_view /*name*/) override { return std::make_tuple(true, true); }
+	bool allow_char_data() override { return true; }
+	bool allow_empty() override { return true; }
 };
 
 struct state_empty : public state_base
 {
-	virtual std::tuple<bool, bool> allow(std::string_view /*name*/) override { return std::make_tuple(false, true); }
-	virtual bool allow_empty() override { return true; }
-	virtual bool must_be_empty() override { return true; }
+	std::tuple<bool, bool> allow(std::string_view /*name*/) override { return std::make_tuple(false, true); }
+	bool allow_empty() override { return true; }
+	bool must_be_empty() override { return true; }
 };
 
 struct state_element : public state_base
 {
-	state_element(std::string name)
+	explicit state_element(std::string name)
 		: m_name(std::move(name))
-		, m_done(false)
 	{
 	}
 
-	virtual std::tuple<bool, bool> allow(std::string_view name) override
+	std::tuple<bool, bool> allow(std::string_view name) override
 	{
 		bool result = false;
 		if (not m_done and m_name == name)
@@ -87,44 +89,45 @@ struct state_element : public state_base
 		return std::make_tuple(result, m_done);
 	}
 
-	virtual void reset() override { m_done = false; }
+	void reset() override { m_done = false; }
 
+  private:
 	std::string m_name;
-	bool m_done;
+	bool m_done{};
 };
 
 struct state_repeated : public state_base
 {
-	state_repeated(content_spec_base_ptr sub)
+	explicit state_repeated(const content_spec_base_ptr &sub)
 		: m_sub(sub->create_state())
-		, m_state(0)
 	{
 	}
 
-	virtual void reset() override
+	void reset() override
 	{
 		m_sub->reset();
 		m_state = 0;
 	}
 
-	virtual bool allow_char_data() override { return m_sub->allow_char_data(); }
+	bool allow_char_data() override { return m_sub->allow_char_data(); }
 
+  protected:
 	state_base_ptr m_sub;
-	int m_state;
+	int m_state{};
 };
 
 // repeat for ?
 
 struct state_repeated_zero_or_once : public state_repeated
 {
-	state_repeated_zero_or_once(content_spec_base_ptr sub)
+	explicit state_repeated_zero_or_once(const content_spec_base_ptr &sub)
 		: state_repeated(sub)
 	{
 	}
 
 	std::tuple<bool, bool> allow(std::string_view name) override;
 
-	virtual bool allow_empty() override { return true; }
+	bool allow_empty() override { return true; }
 };
 
 std::tuple<bool, bool> state_repeated_zero_or_once::allow(std::string_view name)
@@ -153,6 +156,9 @@ std::tuple<bool, bool> state_repeated_zero_or_once::allow(std::string_view name)
 			if (result == false and done)
 				done = true;
 			break;
+
+		default:
+			break;
 	}
 
 	return std::make_tuple(result, done);
@@ -160,14 +166,14 @@ std::tuple<bool, bool> state_repeated_zero_or_once::allow(std::string_view name)
 
 struct state_repeated_any : public state_repeated
 {
-	state_repeated_any(content_spec_base_ptr sub)
+	explicit state_repeated_any(const content_spec_base_ptr &sub)
 		: state_repeated(sub)
 	{
 	}
 
 	std::tuple<bool, bool> allow(std::string_view name) override;
 
-	virtual bool allow_empty() override { return true; }
+	bool allow_empty() override { return true; }
 };
 
 std::tuple<bool, bool> state_repeated_any::allow(std::string_view name)
@@ -201,6 +207,9 @@ std::tuple<bool, bool> state_repeated_any::allow(std::string_view name)
 					done = true;
 			}
 			break;
+
+		default:
+			break;
 	}
 
 	return std::make_tuple(result, done);
@@ -208,14 +217,14 @@ std::tuple<bool, bool> state_repeated_any::allow(std::string_view name)
 
 struct state_repeated_at_least_once : public state_repeated
 {
-	state_repeated_at_least_once(content_spec_base_ptr sub)
+	explicit state_repeated_at_least_once(const content_spec_base_ptr &sub)
 		: state_repeated(sub)
 	{
 	}
 
 	std::tuple<bool, bool> allow(std::string_view name) override;
 
-	virtual bool allow_empty() override { return m_sub->allow_empty(); }
+	bool allow_empty() override { return m_sub->allow_empty(); }
 };
 
 std::tuple<bool, bool> state_repeated_at_least_once::allow(std::string_view name)
@@ -259,6 +268,9 @@ std::tuple<bool, bool> state_repeated_at_least_once::allow(std::string_view name
 					done = true;
 			}
 			break;
+
+		default:
+			break;
 	}
 
 	return std::make_tuple(result, done);
@@ -268,27 +280,25 @@ std::tuple<bool, bool> state_repeated_at_least_once::allow(std::string_view name
 
 struct state_seq : public state_base
 {
-	state_seq(const content_spec_list &allowed)
-		: m_state(0)
+	explicit state_seq(const content_spec_list &allowed)
 	{
-		for (auto a : allowed)
+		for (const auto &a : allowed)
 			m_states.emplace_back(a->create_state());
 	}
 
-	virtual std::tuple<bool, bool> allow(std::string_view name) override;
+	std::tuple<bool, bool> allow(std::string_view name) override;
 
-	virtual void reset() override
+	void reset() override
 	{
 		m_state = 0;
-		for (auto state : m_states)
+		for (const auto &state : m_states)
 			state->reset();
-		;
 	}
 
-	virtual bool allow_char_data() override
+	bool allow_char_data() override
 	{
 		bool result = false;
-		for (auto s : m_states)
+		for (const auto &s : m_states)
 		{
 			if (s->allow_char_data())
 			{
@@ -300,11 +310,11 @@ struct state_seq : public state_base
 		return result;
 	}
 
-	virtual bool allow_empty() override;
+	bool allow_empty() override;
 
 	std::vector<state_base_ptr> m_states;
 	std::vector<state_base_ptr>::iterator m_next;
-	int m_state;
+	int m_state{};
 };
 
 std::tuple<bool, bool> state_seq::allow(std::string_view name)
@@ -344,6 +354,9 @@ std::tuple<bool, bool> state_seq::allow(std::string_view name)
 				std::tie(result, done) = (*m_next)->allow(name);
 			}
 			break;
+
+		default:
+			break;
 	}
 
 	return std::make_tuple(result, done);
@@ -353,7 +366,7 @@ bool state_seq::allow_empty()
 {
 	bool result = true;
 
-	for (auto s : m_states)
+	for (const auto &s : m_states)
 	{
 		if (not s->allow_empty())
 		{
@@ -371,28 +384,27 @@ struct state_choice : public state_base
 {
 	state_choice(const content_spec_list &allowed, bool mixed)
 		: m_mixed(mixed)
-		, m_state(0)
 	{
-		for (auto a : allowed)
+		for (const auto &a : allowed)
 			m_states.push_back(a->create_state());
 	}
 
-	virtual std::tuple<bool, bool> allow(std::string_view name) override;
+	std::tuple<bool, bool> allow(std::string_view name) override;
 
-	virtual void reset() override
+	void reset() override
 	{
 		m_state = 0;
-		for (auto state : m_states)
+		for (const auto &state : m_states)
 			state->reset();
 	}
 
-	virtual bool allow_char_data() override { return m_mixed; }
+	bool allow_char_data() override { return m_mixed; }
 
-	virtual bool allow_empty() override;
+	bool allow_empty() override;
 
 	std::vector<state_base_ptr> m_states;
 	bool m_mixed;
-	int m_state;
+	int m_state{};
 	state_base_ptr m_sub;
 };
 
@@ -409,7 +421,7 @@ std::tuple<bool, bool> state_choice::allow(std::string_view name)
 	switch (m_state)
 	{
 		case State::Start:
-			for (auto choice : m_states)
+			for (const auto &choice : m_states)
 			{
 				std::tie(result, done) = choice->allow(name);
 				if (result == true)
@@ -424,6 +436,9 @@ std::tuple<bool, bool> state_choice::allow(std::string_view name)
 		case State::Choice:
 			std::tie(result, done) = m_sub->allow(name);
 			break;
+
+		default:
+			break;
 	}
 
 	return std::make_tuple(result, done);
@@ -433,7 +448,8 @@ bool state_choice::allow_empty()
 {
 	using namespace std::placeholders;
 	return m_mixed or
-	       std::find_if(m_states.begin(), m_states.end(), std::bind(&state_base::allow_empty, _1)) != m_states.end();
+	       std::ranges::find_if(m_states, [](auto &&s)
+			   { return s->allow_empty(); }) != m_states.end();
 }
 
 // --------------------------------------------------------------------
@@ -445,7 +461,7 @@ validator::validator(content_spec_base &allowed)
 {
 }
 
-validator::validator(element_ptr e)
+validator::validator(const element_ptr &e)
 {
 	if (auto allowed = e ? e->get_allowed() : nullptr; allowed != nullptr)
 	{
@@ -526,7 +542,7 @@ bool content_spec_repeated::element_content() const
 
 void content_spec_seq::add(content_spec_base_ptr a)
 {
-	m_allowed.push_back(a);
+	m_allowed.emplace_back(std::move(a));
 }
 
 state_base_ptr content_spec_seq::create_state() const
@@ -537,7 +553,7 @@ state_base_ptr content_spec_seq::create_state() const
 bool content_spec_seq::element_content() const
 {
 	bool result = true;
-	for (auto a : m_allowed)
+	for (const auto &a : m_allowed)
 	{
 		if (not a->element_content())
 		{
@@ -552,7 +568,7 @@ bool content_spec_seq::element_content() const
 
 void content_spec_choice::add(content_spec_base_ptr a)
 {
-	m_allowed.push_back(a);
+	m_allowed.emplace_back(std::move(a));
 }
 
 state_base_ptr content_spec_choice::create_state() const
@@ -567,7 +583,7 @@ bool content_spec_choice::element_content() const
 		result = false;
 	else
 	{
-		for (auto a : m_allowed)
+		for (const auto &a : m_allowed)
 		{
 			if (not a->element_content())
 			{
@@ -668,26 +684,24 @@ bool attribute::is_nmtokens(std::string &s) const
 	{
 		result = false;
 
-		do
+		while (c != s.end())
 		{
 			if (not is_name_char(*c))
 				break;
 			result = true;
 			t += *c;
 			++c;
-		} while (c != s.end());
+		}
 
 		if (not result or c == s.end())
 			break;
 
 		result = false;
-		do
+		while (c != s.end() and *c == ' ')
 		{
-			if (*c != ' ')
-				break;
 			result = true;
 			++c;
-		} while (c != s.end() and *c == ' ');
+		}
 
 		t += ' ';
 	}
@@ -743,7 +757,7 @@ bool attribute::validate_value(std::string &value, const entity_list &entities) 
 	else if (m_type == attribute_type::Enumerated or m_type == attribute_type::Notation)
 	{
 		trim(value);
-		result = find(m_enum.begin(), m_enum.end(), value) != m_enum.end();
+		result = std::ranges::find(m_enum, value) != m_enum.end();
 	}
 
 	if (result and m_default == attribute_default::Fixed and value != m_default_value)
@@ -756,7 +770,7 @@ bool attribute::is_unparsed_entity(std::string_view s, const entity_list &l) con
 {
 	bool result = false;
 
-	entity_list::const_iterator i = std::find_if(l.begin(), l.end(), [s](auto e)
+	auto i = std::ranges::find_if(l, [s](const auto &e)
 		{ return e->name() == s; });
 	if (i != l.end())
 		result = (*i)->is_parsed() == false;
@@ -768,21 +782,21 @@ bool attribute::is_unparsed_entity(std::string_view s, const entity_list &l) con
 
 void element::set_allowed(content_spec_base_ptr allowed)
 {
-	m_allowed = allowed;
+	m_allowed = std::move(allowed);
 }
 
 void element::add_attribute(attribute_ptr attrib)
 {
-	if (find_if(m_attlist.begin(), m_attlist.end(), [attrib](auto a)
+	if (std::ranges::find_if(m_attlist, [attrib](const auto &a)
 			{ return a->name() == attrib->name(); }) == m_attlist.end())
-		m_attlist.push_back(attrib);
+		m_attlist.emplace_back(std::move(attrib));
 }
 
 const attribute_ptr element::get_attribute(std::string_view name) const
 {
 	attribute_ptr result;
 
-	for (auto dta : m_attlist)
+	for (const auto &dta : m_attlist)
 	{
 		if (dta->name() == name)
 		{

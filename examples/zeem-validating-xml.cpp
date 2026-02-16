@@ -3,11 +3,15 @@
 //     (See accompanying file LICENSE_1_0.txt or copy at
 //           http://www.boost.org/LICENSE_1_0.txt)
 
+#include "zeem.hpp"
+
 #include <filesystem>
 #include <fstream>
 #include <iostream>
-
-#include "zeem.hpp"
+#include <memory>
+#include <stdexcept>
+#include <string>
+#include <string_view>
 
 namespace fs = std::filesystem;
 
@@ -15,10 +19,10 @@ int main()
 {
 	//[ xml_validation_sample
 	/* Define an entity loader function */
-	auto loader = [](std::string_view base, std::string_view pubid, std::string_view sysid) -> std::istream *
+	auto loader = [](std::string_view base, std::string_view pubid, std::string_view sysid)
 	{
 		if (base == "." and pubid.empty() and fs::exists(sysid))
-			return new std::ifstream(std::string{ sysid });
+			return std::make_unique<std::ifstream>(std::string{ sysid });
 
 		throw std::invalid_argument("Invalid arguments passed in loader");
 	};

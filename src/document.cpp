@@ -25,15 +25,19 @@
  */
 
 #include "zeem/document.hpp"
-#include "zeem/error.hpp"
 
-#include "revision.hpp"
+#include "zeem/error.hpp"
+#include "zeem/node.hpp"
+#include "zeem/parser.hpp"
 
 #include <cassert>
 #include <fstream>
 #include <functional>
-#include <istream>
 #include <memory>
+#include <ranges>
+#include <string_view>
+#include <tuple>
+#include <utility>
 
 namespace zeem
 {
@@ -185,7 +189,7 @@ void document::write(std::ostream &os, format_info fmt) const
 	{
 		assert(m_encoding == encoding_type::UTF8);
 
-		os << "<?xml version=\"" << int(m_version.major) << '.' << int(m_version.minor) << "\"";
+		os << "<?xml version=\"" << static_cast<int>(m_version.major) << '.' << static_cast<int>(m_version.minor) << "\"";
 
 		// os << " encoding=\"UTF-8\"";
 
@@ -261,7 +265,7 @@ void document::XmlDeclHandler(encoding_type /*encoding*/, bool standalone, versi
 	m_fmt.version = version;
 }
 
-void document::StartElementHandler(std::string name, std::string uri, const parser::attr_list_type &atts)
+void document::StartElementHandler(const std::string &name, const std::string &uri, const parser::attr_list_type &atts)
 {
 	using namespace std::literals;
 
@@ -271,7 +275,7 @@ void document::StartElementHandler(std::string name, std::string uri, const pars
 		std::string prefix;
 		bool found;
 
-		auto i = std::find_if(m_namespaces.begin(), m_namespaces.end(),
+		auto i = std::ranges::find_if(m_namespaces,
 			[uri](auto &ns)
 			{ return ns.second == uri; });
 
@@ -290,7 +294,7 @@ void document::StartElementHandler(std::string name, std::string uri, const pars
 			qname = prefix + ':' + name;
 	}
 
-	m_cur = (element *)(static_cast<element *>(m_cur)->emplace_back(qname));
+	m_cur = static_cast<element *>(static_cast<element *>(m_cur)->emplace_back(qname));
 
 	for (const auto &[prefix, ns_uri] : m_namespaces)
 	{
@@ -319,7 +323,7 @@ void document::StartElementHandler(std::string name, std::string uri, const pars
 	m_namespaces.clear();
 }
 
-void document::EndElementHandler(std::string /*name*/, std::string /*name*/)
+void document::EndElementHandler(const std::string & /*name*/, const std::string & /*name*/)
 {
 	if (m_cdata != nullptr)
 		throw exception("CDATA section not closed");
@@ -353,7 +357,7 @@ void document::CommentHandler(std::string s)
 
 void document::StartCdataSectionHandler()
 {
-	m_cdata = static_cast<cdata *>((node *)static_cast<element_container *>(m_cur)->nodes().emplace_back(cdata()));
+	m_cdata = static_cast<cdata *>(&*static_cast<element_container *>(m_cur)->nodes().emplace_back(cdata()));
 }
 
 void document::EndCdataSectionHandler()
@@ -382,16 +386,16 @@ void document::NotationDeclHandler(std::string name, std::string sysid, std::str
 	if (m_notations.empty())
 		m_root_size_at_first_notation = nodes().size();
 
-	auto i = find_if(m_notations.begin(), m_notations.end(),
+	auto i = std::ranges::find_if(m_notations,
 		[name](auto &nt)
 		{ return nt.m_name >= name; });
 
 	m_notations.insert(i, { std::move(name), std::move(sysid), std::move(pubid) });
 }
 
-std::istream *document::external_entity_ref(std::string_view base, std::string_view pubid, std::string_view sysid)
+std::unique_ptr<std::istream> document::external_entity_ref(std::string_view base, std::string_view pubid, std::string_view sysid)
 {
-	std::istream *result = nullptr;
+	std::unique_ptr<std::istream> result;
 
 	if (m_external_entity_ref_loader)
 		result = m_external_entity_ref_loader(base, pubid, sysid);
@@ -405,12 +409,12 @@ std::istream *document::external_entity_ref(std::string_view base, std::string_v
 		else
 			path = std::string{ base } + '/' + std::string{ sysid };
 
-		std::unique_ptr<std::ifstream> file(new std::ifstream(path, std::ios::binary));
+		auto file = std::make_unique<std::ifstream>(path, std::ios::binary);
 		if (not file->is_open())
 			file->open(m_dtd_dir + '/' + path, std::ios::binary);
 
 		if (file->is_open())
-			result = file.release();
+			result = std::move(file);
 	}
 
 	return result;
@@ -422,21 +426,57 @@ void document::parse(std::istream &is)
 
 	using namespace std::placeholders;
 
-	p.xml_decl_handler = std::bind(&document::XmlDeclHandler, this, _1, _2, _3);
-	p.doctype_decl_handler = std::bind(&document::DoctypeDeclHandler, this, _1, _2, _3);
-	p.start_element_handler = std::bind(&document::StartElementHandler, this, _1, _2, _3);
-	p.end_element_handler = std::bind(&document::EndElementHandler, this, _1, _2);
-	p.character_data_handler = std::bind(&document::CharacterDataHandler, this, _1);
+	p.xml_decl_handler = [this](auto &&PH1, auto &&PH2, auto &&PH3)
+	{
+		XmlDeclHandler(std::forward<decltype(PH1)>(PH1), std::forward<decltype(PH2)>(PH2), std::forward<decltype(PH3)>(PH3));
+	};
+	p.doctype_decl_handler = [this](auto &&PH1, auto &&PH2, auto &&PH3)
+	{
+		DoctypeDeclHandler(std::forward<decltype(PH1)>(PH1), std::forward<decltype(PH2)>(PH2), std::forward<decltype(PH3)>(PH3));
+	};
+	p.start_element_handler = [this](auto &&PH1, auto &&PH2, auto &&PH3)
+	{
+		StartElementHandler(std::forward<decltype(PH1)>(PH1), std::forward<decltype(PH2)>(PH2), std::forward<decltype(PH3)>(PH3));
+	};
+	p.end_element_handler = [this](auto &&PH1, auto &&PH2)
+	{
+		EndElementHandler(std::forward<decltype(PH1)>(PH1), std::forward<decltype(PH2)>(PH2));
+	};
+	p.character_data_handler = [this](auto &&PH1)
+	{
+		CharacterDataHandler(std::forward<decltype(PH1)>(PH1));
+	};
 	if (m_preserve_cdata)
 	{
-		p.start_cdata_section_handler = std::bind(&document::StartCdataSectionHandler, this);
-		p.end_cdata_section_handler = std::bind(&document::EndCdataSectionHandler, this);
+		p.start_cdata_section_handler = [this]
+		{
+			StartCdataSectionHandler();
+		};
+		p.end_cdata_section_handler = [this]
+		{
+			EndCdataSectionHandler();
+		};
 	}
-	p.start_namespace_decl_handler = std::bind(&document::StartNamespaceDeclHandler, this, _1, _2);
-	p.processing_instruction_handler = std::bind(&document::ProcessingInstructionHandler, this, _1, _2);
-	p.comment_handler = std::bind(&document::CommentHandler, this, _1);
-	p.notation_decl_handler = std::bind(&document::NotationDeclHandler, this, _1, _2, _3);
-	p.external_entity_ref_handler = std::bind(&document::external_entity_ref, this, _1, _2, _3);
+	p.start_namespace_decl_handler = [this](auto &&PH1, auto &&PH2)
+	{
+		StartNamespaceDeclHandler(std::forward<decltype(PH1)>(PH1), std::forward<decltype(PH2)>(PH2));
+	};
+	p.processing_instruction_handler = [this](auto &&PH1, auto &&PH2)
+	{
+		ProcessingInstructionHandler(std::forward<decltype(PH1)>(PH1), std::forward<decltype(PH2)>(PH2));
+	};
+	p.comment_handler = [this](auto &&PH1)
+	{
+		CommentHandler(std::forward<decltype(PH1)>(PH1));
+	};
+	p.notation_decl_handler = [this](auto &&PH1, auto &&PH2, auto &&PH3)
+	{
+		NotationDeclHandler(std::forward<decltype(PH1)>(PH1), std::forward<decltype(PH2)>(PH2), std::forward<decltype(PH3)>(PH3));
+	};
+	p.external_entity_ref_handler = [this](auto &&PH1, auto &&PH2, auto &&PH3)
+	{
+		return external_entity_ref(std::forward<decltype(PH1)>(PH1), std::forward<decltype(PH2)>(PH2), std::forward<decltype(PH3)>(PH3));
+	};
 
 	m_cur = this;
 

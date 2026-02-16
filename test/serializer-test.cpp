@@ -1,21 +1,60 @@
+/*-
+ * SPDX-License-Identifier: BSD-2-Clause
+ *
+ * Copyright (c) 2026 Maarten L. Hekkelman
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice, this
+ *    list of conditions and the following disclaimer
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
+ * ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+ * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+ * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+ * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
+/* code */
+
 #define CATCH_CONFIG_RUNNER
 
-#include <catch2/catch_all.hpp>
+#include "zeem.hpp"
+
+#if ZEEM_USE_DATE_H
+# include <date/tz.h>
+#endif
 
 #include <array>
+#include <catch2/catch_session.hpp>
+#include <catch2/catch_test_macros.hpp>
+#include <chrono>
+#include <cstdint>
 #include <deque>
-#include <exception>
 #include <filesystem>
 #include <iostream>
+#include <optional>
+#include <regex>
+#include <sstream>
+#include <string>
 #include <system_error>
+#include <vector>
 
-#include "zeem.hpp"
-// #include "zeem.ixx"
-
-std::filesystem::path gTestDir = std::filesystem::current_path();
+std::filesystem::path gTestDir;
 
 int main(int argc, char *argv[])
 {
+	gTestDir = std::filesystem::current_path();
+
 	Catch::Session session; // There must be exactly one instance
 
 	// Build a new parser on top of Catch2's
@@ -41,11 +80,11 @@ int main(int argc, char *argv[])
 
 struct st_1
 {
-	int i;
+	int i{};
 	std::string s;
 
 	template <class Archive>
-	void serialize(Archive &ar, unsigned long /*v*/)
+	void serialize(Archive &ar, uint64_t /*v*/)
 	{
 		// clang-format off
 		ar & zeem::make_element_nvp("i", i)
@@ -56,7 +95,7 @@ struct st_1
 	bool operator==(const st_1 &rhs) const { return i == rhs.i and s == rhs.s; }
 };
 
-typedef std::vector<st_1> v_st_1;
+using v_st_1 = std::vector<st_1>;
 
 TEST_CASE("serializer_1")
 {
@@ -78,14 +117,14 @@ TEST_CASE("serializer_1")
 
 struct S
 {
-	int8_t a;
-	float b;
+	int8_t a{};
+	float b{};
 	std::string c;
 
 	bool operator==(const S &s) const { return a == s.a and b == s.b and c == s.c; }
 
 	template <typename Archive>
-	void serialize(Archive &ar, unsigned long /*version*/)
+	void serialize(Archive &ar, uint64_t /*version*/)
 	{
 		// clang-format off
 		ar & zeem::make_element_nvp("a", a)
@@ -141,7 +180,7 @@ struct S_arr
 	std::deque<S> ds;
 
 	template <typename Archive>
-	void serialize(Archive &ar, unsigned long)
+	void serialize(Archive &ar, [[maybe_unused]] uint64_t version)
 	{
 		// clang-format off
 		ar & zeem::make_element_nvp("vi", vi)
@@ -217,7 +256,7 @@ TEST_CASE("serialize_container_1")
 	serializer sr(e);
 	sr.serialize_element("i", i);
 
-	std::array<int, 3> j;
+	std::array<int, 3> j{};
 	deserializer dsr(e);
 	dsr.deserialize_element("i", j);
 
@@ -238,7 +277,7 @@ struct Se
 	E m_e;
 
 	template <typename Archive>
-	void serialize(Archive &ar, unsigned long)
+	void serialize(Archive &ar, [[maybe_unused]] uint64_t version)
 	{
 		ar &zeem::make_element_nvp("e", m_e);
 	}
@@ -325,7 +364,7 @@ TEST_CASE("test_optional")
 	from_xml(doc, "test", s);
 
 	CHECK((bool)s);
-	CHECK(*s == "aap");
+	CHECK(s.value_or("") == "aap");
 }
 
 struct date_t1
@@ -333,7 +372,7 @@ struct date_t1
 	std::chrono::sys_days sd;
 
 	template <typename Archive>
-	void serialize(Archive &ar, unsigned long)
+	void serialize(Archive &ar, [[maybe_unused]] uint64_t version)
 	{
 		ar &zeem::make_element_nvp("d", sd);
 	}
@@ -372,7 +411,7 @@ struct time_t1
 	std::chrono::system_clock::time_point st;
 
 	template <typename Archive>
-	void serialize(Archive &ar, unsigned long)
+	void serialize(Archive &ar, [[maybe_unused]] uint64_t version)
 	{
 		ar &zeem::make_element_nvp("t", st);
 	}
@@ -389,7 +428,11 @@ TEST_CASE("test_time_1")
 	time_t1 t1;
 	from_xml(doc, t1);
 
-	CHECK((t1.st == sys_days{ 2022y / 12 / 6 } + 0h + 1min + 2.34s) == true);
+	auto t2 = sys_days{ 2022y / 12 / 6 } + 0h + 1min + 2.34s;
+
+	std::cout << (t2 - t1.st) << '\n';
+
+	CHECK((t1.st == t2) == true);
 }
 
 TEST_CASE("test_time_2")
@@ -411,6 +454,32 @@ TEST_CASE("test_time_2")
 	std::regex rx(R"(^2022-12-06T01:02:03(\.0+)?Z$)");
 
 	CHECK(std::regex_match(ti_c, rx));
+
+	time_t1 t2;
+	from_xml(doc, t2);
+
+	CHECK(t2.st == t1.st);
+}
+
+TEST_CASE("test_time_3")
+{
+	using namespace zeem::literals;
+	using namespace std::chrono;
+	using namespace std::literals;
+
+	// No time zone specification, so this local time is converted to UTC
+	auto doc = "<t>2022-12-06T00:01:02.34+01:15</t>"_xml;
+
+	time_t1 t1;
+	from_xml(doc, t1);
+
+#if ZEEM_USE_DATE_H
+	auto t2 = date::zoned_time(date::current_zone(), sys_days{ 2022y / 12 / 6 } + 1h + 16min + 2.34s).get_sys_time();
+#else
+	auto t2 = zoned_time(current_zone(), sys_days{ 2022y / 12 / 6 } + 1h + 16min + 2.34s).get_sys_time();
+#endif
+
+CHECK((t1.st == t2) == true);
 }
 
 TEST_CASE("test_s_5")
@@ -451,7 +520,7 @@ struct st_2
 	std::vector<std::string> s;
 
 	template <class Archive>
-	void serialize(Archive &ar, unsigned long v)
+	void serialize(Archive &ar, [[maybe_unused]] uint64_t version)
 	{
 		// clang-format off
 		ar & zeem::make_element_nvp("i", s);

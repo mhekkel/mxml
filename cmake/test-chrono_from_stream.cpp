@@ -2,35 +2,16 @@
 
 int main()
 {
-	std::chrono::time_point<std::chrono::system_clock> t;
+	using namespace std::chrono_literals;
 
-	// std::chrono::from_stream(std::cin, "%F", t);
+	int result = 0;
 
-	for (size_t ix = 0; const char *s : {
-							"01-01-2025T00:00:00.00001Z",
-							"01-01-2025T00:00:00.00001+01:00",
-							"01-01-2025T00:00:00.00001" })
-	{
-		std::stringstream is{ s };
+	std::stringstream is{ "01-01-2025T00:00:01" };
+	std::chrono::time_point<std::chrono::system_clock> t{};
+	std::chrono::from_stream(is, "%d-%m-%YT%T", t);
 
-		switch (ix)
-		{
-			case 0:
-				std::chrono::from_stream(is, "%FT%TZ", t);
-				break;
+	if (is.bad() or is.fail() or t != std::chrono::sys_days{ 2025y / 1 / 1 } + 1s)
+		result = -1;
 
-			case 1:
-				std::chrono::from_stream(is, "%FT%T%0z", t);
-				break;
-
-			case 2:
-				std::chrono::from_stream(is, "%FT%T", t);
-				break;
-		}
-
-		if (is.bad() or is.fail())
-			exit(-1);
-	}
-
-	return 0;
+	return result;
 }
