@@ -1,3 +1,6 @@
+version 2.1.2
+- Fix license chaos, everything is BSD-2-Clause now
+
 version 2.1.1
 - Fix parsing of date/time strings without time zone
   information. The output should be UTC so a convertion
