@@ -313,7 +313,10 @@ struct value_serializer<std::chrono::system_clock::time_point>
 #if ZEEM_USE_DATE_H
 		date::from_stream(is, "%FT%T", result);
 #else
-		std::chrono::from_stream(is, "%FT%T", result);
+		if (m[1].length() == 16)
+			std::chrono::from_stream(is, "%FT%H:%M", result);
+		else
+			std::chrono::from_stream(is, "%FT%T", result);
 #endif
 
 		if (m[2].matched)
