@@ -1,3 +1,8 @@
+version 2.1.3
+- Work around limitation in std::chrono::from_stream
+  when parsing date-time strings without minutes.
+- Fix parsing ISO date-time strings
+
 version 2.1.2
 - Fix license chaos, everything is BSD-2-Clause now
 

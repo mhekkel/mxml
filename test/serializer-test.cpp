@@ -467,19 +467,15 @@ TEST_CASE("test_time_3")
 	using namespace std::chrono;
 	using namespace std::literals;
 
-	// No time zone specification, so this local time is converted to UTC
-	auto doc = "<t>2022-12-06T00:01:02.34+01:15</t>"_xml;
+	// No time zone specification, so this is converted to UTC using the local time_zone as offset
+	auto doc = "<t>2022-12-06T00:01:02</t>"_xml;
 
 	time_t1 t1;
 	from_xml(doc, t1);
 
-#if ZEEM_USE_DATE_H
-	auto t2 = date::zoned_time(date::current_zone(), sys_days{ 2022y / 12 / 6 } + 1h + 16min + 2.34s).get_sys_time();
-#else
-	auto t2 = zoned_time(current_zone(), sys_days{ 2022y / 12 / 6 } + 1h + 16min + 2.34s).get_sys_time();
-#endif
+	auto t2 = sys_days{ 2022y / 12 / 6 } + 1min + 2s;
 
-	CHECK((t1.st == t2) == true);
+	CHECK((t1.st == t2 - current_zone()->get_info(t2).offset) == true);
 }
 
 TEST_CASE("test_time_4")

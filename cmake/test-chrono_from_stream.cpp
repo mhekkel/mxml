@@ -1,17 +1,18 @@
+#include <cassert>
 #include <chrono>
 
 int main()
 {
+	std::istringstream is{ "2026-04-27T07:57" };
+
+	std::chrono::time_point<std::chrono::system_clock> t1;
+	std::chrono::from_stream(is, "%FT%H:%M", t1);
+
 	using namespace std::chrono_literals;
 
-	int result = 0;
-
-	std::stringstream is{ "01-01-2025T00:00:01" };
-	std::chrono::time_point<std::chrono::system_clock> t{};
-	std::chrono::from_stream(is, "%d-%m-%YT%T", t);
-
-	if (is.bad() or is.fail() or t != std::chrono::sys_days{ 2025y / 1 / 1 } + 1s)
-		result = -1;
-
-	return result;
+	std::chrono::time_point<std::chrono::system_clock> t2;
+	t2 = std::chrono::sys_days{2026y / 04 / 27} + 7h + 57min;
+	assert(t1 == t2);
+	
+	return 0;
 }

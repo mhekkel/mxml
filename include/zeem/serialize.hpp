@@ -307,9 +307,6 @@ struct value_serializer<std::chrono::system_clock::time_point>
 
 		std::istringstream is{ m[1] };
 
-		// Unfortunately, from_stream never seems to return the correct time zone and offset info
-		// so we add it ourselves
-
 #if ZEEM_USE_DATE_H
 		date::from_stream(is, "%FT%T", result);
 #else
@@ -319,20 +316,12 @@ struct value_serializer<std::chrono::system_clock::time_point>
 			std::chrono::from_stream(is, "%FT%T", result);
 #endif
 
-		if (m[2].matched)
+		if (not m[2].matched)
 		{
-			if (m[3].matched)
-				result += std::chrono::hours{ stoi(m[3]) };
-			if (m[4].matched)
-				result += std::chrono::minutes{ stoi(m[4]) };
+			auto info = std::chrono::current_zone()->get_info(result);
+			result -= info.offset;
 		}
-		else
-#if ZEEM_USE_DATE_H
-			result = date::zoned_time(date::current_zone(), result).get_sys_time();
-#else
-			result = std::chrono::zoned_time{ std::chrono::current_zone(), result };
-#endif
-
+	
 		if (is.bad() or is.fail())
 			throw std::runtime_error("invalid formatted date");
 

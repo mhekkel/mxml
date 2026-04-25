@@ -9,3 +9,4 @@ docs/api
 docs/conf.py
 .cache/
 include/zeem/config.hpp
+debian/
