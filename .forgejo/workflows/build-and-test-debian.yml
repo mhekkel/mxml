@@ -21,6 +21,10 @@ jobs:
     steps:
     - uses: https://data.forgejo.org/actions/checkout@v4
 
+    - name: Install Catch2 debian
+      run: >
+        apt-get update && apt-get install -y catch2 build-essential ninja-build cmake
+
     - name: Set reusable strings
       id: strings
       shell: bash
