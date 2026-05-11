@@ -13,6 +13,9 @@ int main()
 	std::chrono::time_point<std::chrono::system_clock> t2;
 	t2 = std::chrono::sys_days{2026y / 04 / 27} + 7h + 57min;
 	assert(t1 == t2);
+
+	auto info = std::chrono::current_zone()->get_info(t1);
+	t1 -= info.offset;
 	
 	return 0;
 }
