@@ -475,7 +475,11 @@ TEST_CASE("test_time_3")
 
 	auto t2 = sys_days{ 2022y / 12 / 6 } + 1min + 2s;
 
+#if ZEEM_USE_DATE_H
+	CHECK((t1.st == t2 - date::current_zone()->get_info(t2).offset) == true);
+#else
 	CHECK((t1.st == t2 - current_zone()->get_info(t2).offset) == true);
+#endif
 }
 
 TEST_CASE("test_time_4")
