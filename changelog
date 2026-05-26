@@ -1,3 +1,6 @@
+version 2.1.5
+- Yet another fix in date/time parsing
+
 version 2.1.4
 - Fix std::chrono issues when building in FreeBSD
 
