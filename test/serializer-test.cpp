@@ -423,16 +423,24 @@ TEST_CASE("test_time_1")
 	using namespace std::chrono;
 	using namespace std::literals;
 
-	auto doc = "<t>2022-12-06T00:01:02.34Z</t>"_xml;
+	auto t0 = sys_days{ 2022y / 12 / 6 } + 0h + 1min + 2.34s;
 
-	time_t1 t1;
-	from_xml(doc, t1);
+	for (auto &doc : {
+		"<t>2022-12-06T00:01:02.34Z</t>"_xml,
+		"<t>2022-12-06T00:01:02.34+00:00</t>"_xml,
+		"<t>2022-12-06T02:01:02.34+02:00</t>"_xml
+	})
+	{
+		time_t1 t1;
+		from_xml(doc, t1);
 
-	auto t2 = sys_days{ 2022y / 12 / 6 } + 0h + 1min + 2.34s;
+		if (t1.st == t0)
+			continue;
 
-	std::cout << (t2 - t1.st) << '\n';
+		std::clog << "Error: " << t1.st << '\n';
 
-	CHECK((t1.st == t2) == true);
+		CHECK((t1.st == t0) == true);
+	}
 }
 
 TEST_CASE("test_time_2")

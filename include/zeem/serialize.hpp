@@ -305,11 +305,22 @@ struct value_serializer<std::chrono::system_clock::time_point>
 		if (not std::regex_match(s.data(), s.data() + s.length(), m, kRX))
 			throw std::runtime_error("Invalid date format");
 
-		std::istringstream is{ m[1] };
+		// std::istringstream is{ m[1] };
+
+		struct membuf : public std::streambuf
+		{
+			membuf(char *text, size_t length)
+			{
+				this->setg(text, text, text + length);
+			}
+		} buffer(const_cast<char *>(s.data()), s.length());
+		std::istream is(&buffer);
 
 #if ZEEM_USE_DATE_H
 		if (m[1].length() == 16)
 			date::from_stream(is, "%FT%H:%M", result);
+		else if (m[2].matched and m[2] != "Z")
+			date::from_stream(is, "%FT%T%z", result);
 		else
 			date::from_stream(is, "%FT%T", result);
 
@@ -321,6 +332,8 @@ struct value_serializer<std::chrono::system_clock::time_point>
 #else
 		if (m[1].length() == 16)
 			std::chrono::from_stream(is, "%FT%H:%M", result);
+		else if (m[2].matched and m[2] != "Z")
+			std::chrono::from_stream(is, "%FT%T%z", result);
 		else
 			std::chrono::from_stream(is, "%FT%T", result);
 
