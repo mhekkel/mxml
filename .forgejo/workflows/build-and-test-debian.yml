@@ -18,6 +18,10 @@ jobs:
         build_type: [Release]
         cpp_compiler: [g++, clang++-22]
         module: ["ON", "OFF"]
+        # For now, the gcc is too old for building modules
+        exclude:
+         - cpp_compiler: "g++"
+           module: "ON"
 
     steps:
     - uses: https://data.forgejo.org/actions/checkout@v4
