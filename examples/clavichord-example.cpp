@@ -22,6 +22,8 @@
 
 #if BUILD_CXX_MODULE
 import zeem;
+#else
+#include <zeem.hpp>
 #endif
 
 enum class BindingType
