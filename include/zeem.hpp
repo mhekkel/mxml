@@ -9,7 +9,7 @@
 */
 
 #define ZEEM_EXPORT
-#define ZEEM_INLINE ZEEM_INLINE
+#define ZEEM_INLINE inline
 
 // IWYU pragma: begin_exports
 #include "zeem/doctype.hpp"
