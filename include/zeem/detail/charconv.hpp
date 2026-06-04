@@ -1,38 +1,22 @@
-/*-
- * SPDX-License-Identifier: BSD-2-Clause
- * 
- * Copyright (c) 2026 Maarten L. Hekkelman
- * 
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- * 
- * 1. Redistributions of source code must retain the above copyright notice, this
- *    list of conditions and the following disclaimer
- * 2. Redistributions in binary form must reproduce the above copyright notice,
- *    this list of conditions and the following disclaimer in the documentation
- *    and/or other materials provided with the distribution.
- * 
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
- * ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- */
+// Copyright (c) 2026 Maarten L. Hekkelman
+//
+// SPDX-License-Identifier: BSD-2-Clause
 
 #pragma once
 
-#include <charconv>
-#include <cmath>
+#ifndef ZEEM_EXPORT
+# error "Please include zeem.hpp only"
+#endif
 
-#if __has_include(<experimental/type_traits>)
-# include <experimental/type_traits>
-#else
-# include <type_traits>
+#ifndef IN_MODULE_INTERFACE
+# include <charconv>
+# include <cmath>
+
+# if __has_include(<experimental/type_traits>)
+#  include <experimental/type_traits>
+# else
+#  include <type_traits>
+# endif
 #endif
 
 namespace zeem
@@ -79,7 +63,7 @@ namespace detail
 	using is_detected = typename detail::detector<nonesuch, void, Op, Args...>::value_t;
 
 	template <template <class...> class Op, class... Args>
-	constexpr inline bool is_detected_v = is_detected<Op, Args...>::value;
+	constexpr ZEEM_INLINE bool is_detected_v = is_detected<Op, Args...>::value;
 
 	template <template <class...> class Op, class... Args>
 	using detected_t = typename detail::detector<nonesuch, void, Op, Args...>::type;
@@ -91,12 +75,12 @@ namespace detail
 	using is_detected_exact = std::is_same<Expected, detected_t<Op, Args...>>;
 
 	template <class Expected, template <class...> class Op, class... Args>
-	constexpr inline bool is_detected_exact_v = is_detected_exact<Expected, Op, Args...>::value;
+	constexpr ZEEM_INLINE bool is_detected_exact_v = is_detected_exact<Expected, Op, Args...>::value;
 
 #else
 
 	template <template <class...> class Op, class... Args>
-	constexpr inline bool is_detected_v = std::experimental::is_detected<Op, Args...>::value;
+	constexpr ZEEM_INLINE bool is_detected_v = std::experimental::is_detected<Op, Args...>::value;
 
 #endif
 
@@ -118,7 +102,8 @@ template <typename T, typename = void>
 struct ff_charconv;
 
 template <typename T>
-struct ff_charconv<T, typename std::enable_if_t<std::is_floating_point_v<T>>>
+	requires(std::is_floating_point_v<T>)
+struct ff_charconv<T>
 {
 	static std::from_chars_result from_chars(const char *a, const char *b, T &v);
 };

@@ -1,54 +1,38 @@
-/*-
- * SPDX-License-Identifier: BSD-2-Clause
- *
- * Copyright (c) 2024 Maarten L. Hekkelman
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *
- * 1. Redistributions of source code must retain the above copyright notice, this
- *    list of conditions and the following disclaimer
- * 2. Redistributions in binary form must reproduce the above copyright notice,
- *    this list of conditions and the following disclaimer in the documentation
- *    and/or other materials provided with the distribution.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
- * ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- */
+// Copyright (c) 2024 Maarten L. Hekkelman
+//
+// SPDX-License-Identifier: BSD-2-Clause
 
 #pragma once
+
+#ifndef ZEEM_EXPORT
+# error "Please include zeem.hpp only"
+#endif
 
 /**
  * @file
  * definition of the serializer classes used to (de-)serialize XML data.
  */
 
-#include "zeem/config.hpp"
-#include "zeem/detail/charconv.hpp"
-#include "zeem/node.hpp"
+#ifndef IN_MODULE_INTERFACE
+# include "zeem/config.hpp"
+# include "zeem/detail/charconv.hpp"
+# include "zeem/node.hpp"
 
-#if ZEEM_USE_DATE_H
-# include <date/date.h>
-# include <date/tz.h>
+# if ZEEM_USE_DATE_H
+#  include <date/date.h>
+#  include <date/tz.h>
+# endif
+
+# include <algorithm>
+# include <charconv>
+# include <chrono>
+# include <map>
+# include <optional>
+# include <regex>
+# include <source_location>
+# include <string>
+# include <system_error>
 #endif
-
-#include <algorithm>
-#include <charconv>
-#include <chrono>
-#include <map>
-#include <optional>
-#include <regex>
-#include <source_location>
-#include <string>
-#include <system_error>
 
 namespace zeem
 {
@@ -60,7 +44,7 @@ namespace zeem
 /// Each specialization should provide a static to_string and a from_string
 /// method
 
-template <typename T>
+ZEEM_EXPORT template <typename T>
 struct value_serializer;
 
 /// @ref value_serializer implementation for booleans
@@ -82,7 +66,7 @@ struct value_serializer<std::string>
 };
 
 /// @ref value_serializer implementation for numbers
-template <typename T>
+ZEEM_EXPORT template <typename T>
 struct char_conv_serializer
 {
 	using value_type = T;
@@ -388,13 +372,13 @@ struct value_serializer<std::chrono::sys_days>
 
 /** @cond */
 
-template <typename T>
+ZEEM_EXPORT template <typename T>
 using serialize_value_t = decltype(std::declval<value_serializer<T> &>().from_string(std::declval<std::string_view>()));
 
-template <typename T, typename Archive>
+ZEEM_EXPORT template <typename T, typename Archive>
 using serialize_function = decltype(std::declval<T &>().serialize(std::declval<Archive &>(), std::declval<uint64_t>()));
 
-template <typename T, typename Archive, typename = void>
+ZEEM_EXPORT template <typename T, typename Archive, typename = void>
 struct has_serialize : std::false_type
 {
 };
@@ -406,25 +390,25 @@ struct has_serialize<T, Archive>
 	static constexpr bool value = detail::is_detected_v<serialize_function, T, Archive>;
 };
 
-template <typename T, typename S>
-inline constexpr bool has_serialize_v = has_serialize<T, S>::value;
+ZEEM_EXPORT template <typename T, typename S>
+ZEEM_INLINE constexpr bool has_serialize_v = has_serialize<T, S>::value;
 
-template <typename T, typename S, typename = void>
+ZEEM_EXPORT template <typename T, typename S, typename = void>
 struct is_serializable_array_type : std::false_type
 {
 };
 
-template <typename T>
+ZEEM_EXPORT template <typename T>
 using value_type_t = typename T::value_type;
 
-template <typename T>
+ZEEM_EXPORT template <typename T>
 using iterator_t = typename T::iterator;
 
-template <typename T>
+ZEEM_EXPORT template <typename T>
 using std_string_npos_t = decltype(T::npos);
 
 /// Struct used to detect whether type \a T is serializable
-template <typename T, typename S>
+ZEEM_EXPORT template <typename T, typename S>
 struct is_serializable_type
 {
 	using value_type = std::remove_cvref_t<T>;
@@ -433,8 +417,8 @@ struct is_serializable_type
 		has_serialize_v<value_type, S>;
 };
 
-template <typename T, typename S>
-inline constexpr bool is_serializable_type_v = is_serializable_type<T, S>::value;
+ZEEM_EXPORT template <typename T, typename S>
+ZEEM_INLINE constexpr bool is_serializable_type_v = is_serializable_type<T, S>::value;
 
 template <typename T, typename S>
 	requires(
@@ -446,19 +430,19 @@ struct is_serializable_array_type<T, S>
 	static constexpr bool value = is_serializable_type_v<typename T::value_type, S>;
 };
 
-template <typename T, typename S>
-inline constexpr bool is_serializable_array_type_v = is_serializable_array_type<T, S>::value;
+ZEEM_EXPORT template <typename T, typename S>
+ZEEM_INLINE constexpr bool is_serializable_array_type_v = is_serializable_array_type<T, S>::value;
 
 /** @endcond */
 // --------------------------------------------------------------------
 
-struct serializer;
-struct deserializer;
+ZEEM_EXPORT struct serializer;
+ZEEM_EXPORT struct deserializer;
 
 /**
  * @brief base struct to capture named values in a structure for serializing
  */
-template <typename T>
+ZEEM_EXPORT template <typename T>
 class name_value_pair
 {
   public:
@@ -487,7 +471,7 @@ class name_value_pair
 };
 
 /// @brief name value pair to create elements
-template <typename T>
+ZEEM_EXPORT template <typename T>
 class element_nvp : public name_value_pair<T>
 {
   public:
@@ -498,7 +482,7 @@ class element_nvp : public name_value_pair<T>
 };
 
 /// @brief name value pair to create attributes
-template <typename T>
+ZEEM_EXPORT template <typename T>
 class attribute_nvp : public name_value_pair<T>
 {
   public:
@@ -511,7 +495,7 @@ class attribute_nvp : public name_value_pair<T>
 /**
  * @brief Create a name/value pair for serializing to and from an XML element
  */
-template <typename T>
+ZEEM_EXPORT template <typename T>
 constexpr attribute_nvp<T> make_attribute_nvp(std::string name, T &value)
 {
 	return attribute_nvp(std::move(name), value);
@@ -520,7 +504,7 @@ constexpr attribute_nvp<T> make_attribute_nvp(std::string name, T &value)
 /**
  * @brief Create a name/value pair for serializing to and from an XML attribute
  */
-template <typename T>
+ZEEM_EXPORT template <typename T>
 constexpr element_nvp<T> make_element_nvp(std::string name, T &value)
 {
 	return element_nvp(std::move(name), value);
@@ -623,7 +607,7 @@ struct deserializer
  * each has its own template specialization.
  */
 
-template <typename T>
+ZEEM_EXPORT template <typename T>
 struct type_serializer;
 
 /** @cond */
@@ -1012,7 +996,7 @@ deserializer &deserializer::deserialize_attribute(std::string_view name, T &valu
  * @brief Write out \a value into XML into document or element \a e
  */
 
-template <typename T>
+ZEEM_EXPORT template <typename T>
 void to_xml(zeem::element_container &e, const T &value)
 {
 	serializer sr(e);
@@ -1024,7 +1008,7 @@ void to_xml(zeem::element_container &e, const T &value)
  * using \a name as name for the element to create.
  */
 
-template <typename T>
+ZEEM_EXPORT template <typename T>
 void to_xml(zeem::element_container &e, std::string_view name, const T &value)
 {
 	serializer sr(e);
@@ -1035,7 +1019,7 @@ void to_xml(zeem::element_container &e, std::string_view name, const T &value)
  * @brief Read in \a value from the XML in document or element \a e
  */
 
-template <typename T>
+ZEEM_EXPORT template <typename T>
 void from_xml(const zeem::element_container &e, T &value)
 {
 	deserializer dsr(e);
@@ -1047,7 +1031,7 @@ void from_xml(const zeem::element_container &e, T &value)
  * using \a name as name for the element to use.
  */
 
-template <typename T>
+ZEEM_EXPORT template <typename T>
 void from_xml(const zeem::element_container &e, std::string_view name, T &value)
 {
 	deserializer dsr(e);

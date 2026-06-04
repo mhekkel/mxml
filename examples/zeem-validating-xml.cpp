@@ -24,7 +24,11 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#if BUILD_CXX_MODULE
+import zeem;
+#else
 #include "zeem.hpp"
+#endif
 
 #include <filesystem>
 #include <fstream>

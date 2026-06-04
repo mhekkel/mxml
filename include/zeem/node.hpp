@@ -1,65 +1,49 @@
-/*-
- * SPDX-License-Identifier: BSD-2-Clause
- *
- * Copyright (c) 2024 Maarten L. Hekkelman
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *
- * 1. Redistributions of source code must retain the above copyright notice, this
- *    list of conditions and the following disclaimer
- * 2. Redistributions in binary form must reproduce the above copyright notice,
- *    this list of conditions and the following disclaimer in the documentation
- *    and/or other materials provided with the distribution.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
- * ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- */
+// Copyright (c) 2024 Maarten L. Hekkelman
+//
+// SPDX-License-Identifier: BSD-2-Clause
 
 #pragma once
+
+#ifndef ZEEM_EXPORT
+# error "Please include zeem.hpp only"
+#endif
 
 /// \file
 /// the core of the zeem XML library defining the main classes in the DOM API
 
-#include "zeem/error.hpp"
-#include "zeem/version.hpp"
+#ifndef IN_MODULE_INTERFACE
+# include "zeem/error.hpp"
+# include "zeem/version.hpp"
 
-#include <algorithm>
-#include <cassert>
-#include <compare>
-#include <cstddef>
-#include <cstdint>
-#include <initializer_list>
-#include <iosfwd>
-#include <iterator>
-#include <string>
-#include <string_view>
-#include <type_traits>
-#include <utility>
-#include <vector>
+# include <algorithm>
+# include <cassert>
+# include <compare>
+# include <cstddef>
+# include <cstdint>
+# include <initializer_list>
+# include <iosfwd>
+# include <iterator>
+# include <string>
+# include <string_view>
+# include <type_traits>
+# include <utility>
+# include <vector>
+#endif
 
 namespace zeem
 {
 
 // forward declarations
-class attribute;
-class element;
-class element_container;
-class node;
-class text;
+ZEEM_EXPORT class attribute;
+ZEEM_EXPORT class element;
+ZEEM_EXPORT class element_container;
+ZEEM_EXPORT class node;
+ZEEM_EXPORT class text;
 
 using node_set = std::vector<node *>;
 using element_set = std::vector<element *>;
 
-template <typename T>
+ZEEM_EXPORT template <typename T>
 concept NodeType = std::is_base_of_v<zeem::node, std::remove_cvref_t<T>>;
 
 /**
@@ -67,8 +51,7 @@ concept NodeType = std::is_base_of_v<zeem::node, std::remove_cvref_t<T>>;
  * to find out the actual type of a node
  */
 
-enum class node_type : uint8_t
-{
+ZEEM_EXPORT enum class node_type : uint8_t {
 	element,
 	text,
 	attribute,
@@ -83,7 +66,7 @@ enum class node_type : uint8_t
 // --------------------------------------------------------------------
 
 /// \brief specification of how XML data should be written out
-struct format_info
+ZEEM_EXPORT struct format_info
 {
 	bool indent = false;
 	bool indent_attributes = false;
@@ -757,7 +740,7 @@ class node_list : public basic_node_list
  * element_container is not exported.
  */
 
-class element_container : public node, public node_list<element>
+ZEEM_EXPORT class element_container : public node, public node_list<element>
 {
   public:
 	/// @brief Default constructor
@@ -841,7 +824,7 @@ class element_container : public node, public node_list<element>
  *
  */
 
-class node_with_text : public node
+ZEEM_EXPORT class node_with_text : public node
 {
   protected:
 	/** @cond */
@@ -899,7 +882,7 @@ class node_with_text : public node
  *
  */
 
-class comment final : public node_with_text
+ZEEM_EXPORT class comment final : public node_with_text
 {
   public:
 	[[nodiscard]] constexpr node_type type() const override { return node_type::comment; }
@@ -1058,7 +1041,7 @@ class text final : public node_with_text
  *
  */
 
-class cdata final : public node_with_text
+ZEEM_EXPORT class cdata final : public node_with_text
 {
   public:
 	[[nodiscard]] constexpr node_type type() const override { return node_type::cdata; }
@@ -1229,7 +1212,7 @@ class attribute final : public node
  *
  */
 
-class attribute_set : public node_list<attribute>
+ZEEM_EXPORT class attribute_set : public node_list<attribute>
 {
   public:
 	/// @brief constructor to create an attribute_set for an element
@@ -1482,7 +1465,7 @@ class element final : public element_container
 // --------------------------------------------------------------------
 /** @cond */
 template <typename T>
-inline node_list<T>::node_list(element_container *e)
+node_list<T>::node_list(element_container *e)
 	: basic_node_list(e)
 {
 	if constexpr (std::is_same_v<value_type, node>)
@@ -1490,34 +1473,34 @@ inline node_list<T>::node_list(element_container *e)
 }
 
 template <>
-inline auto node_list<element>::insert(const_iterator pos, const element &e) -> iterator
+ZEEM_INLINE auto node_list<element>::insert(const_iterator pos, const element &e) -> iterator
 {
 	return iterator{ insert_impl(pos, new element(e)) };
 }
 
 /// \brief insert a copy of \a e at position \a pos, moving its data
 template <>
-inline auto node_list<element>::insert(const_iterator pos, element &&e) -> iterator
+ZEEM_INLINE auto node_list<element>::insert(const_iterator pos, element &&e) -> iterator
 {
 	return iterator{ insert_impl(pos, new element(std::forward<value_type>(e))) };
 }
 
 template <>
-inline auto node_list<attribute>::insert(const_iterator pos, const attribute &e) -> iterator
+ZEEM_INLINE auto node_list<attribute>::insert(const_iterator pos, const attribute &e) -> iterator
 {
 	return iterator{ insert_impl(pos, new attribute(e)) };
 }
 
 /// \brief insert a copy of \a e at position \a pos, moving its data
 template <>
-inline auto node_list<attribute>::insert(const_iterator pos, attribute &&e) -> iterator
+ZEEM_INLINE auto node_list<attribute>::insert(const_iterator pos, attribute &&e) -> iterator
 {
 	return iterator{ insert_impl(pos, new attribute(std::forward<value_type>(e))) };
 }
 
 // NOLINTBEGIN(cppcoreguidelines-owning-memory,cppcoreguidelines-pro-type-static-cast-downcast)
 template <>
-inline auto node_list<node>::insert(const_iterator pos, const value_type &e) -> iterator
+ZEEM_INLINE auto node_list<node>::insert(const_iterator pos, const value_type &e) -> iterator
 {
 	switch (e.type())
 	{
@@ -1546,7 +1529,7 @@ inline auto node_list<node>::insert(const_iterator pos, const value_type &e) -> 
 
 /// \brief insert a copy of \a e at position \a pos, moving its data
 template <>
-inline auto node_list<node>::insert(const_iterator pos, value_type &&e) -> iterator
+ZEEM_INLINE auto node_list<node>::insert(const_iterator pos, value_type &&e) -> iterator
 {
 	switch (e.type())
 	{
@@ -1613,7 +1596,7 @@ void node_list<T>::sort(const Pred &pred)
  * \param dest		The (usually) document element that is the destination
  */
 
-void fix_namespaces(element &e, const element &source, const element &dest);
+ZEEM_EXPORT void fix_namespaces(element &e, const element &source, const element &dest);
 
 } // namespace zeem
 
