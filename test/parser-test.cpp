@@ -2,12 +2,6 @@
 //
 // SPDX-License-Identifier: BSD-2-Clause
 
-#if BUILD_CXX_MODULE
-import zeem;
-#else
-#include "zeem.hpp"
-#endif
-
 #include <algorithm>
 #include <cstdlib>
 #include <exception>
@@ -27,6 +21,12 @@ import zeem;
 #if defined(_WIN32)
 # include <conio.h>
 # include <ctype.h>
+#endif
+
+#if BUILD_CXX_MODULE
+import zeem;
+#else
+#include "zeem.hpp"
 #endif
 
 namespace fs = std::filesystem;

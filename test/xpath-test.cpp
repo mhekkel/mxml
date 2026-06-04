@@ -2,18 +2,18 @@
 //
 // SPDX-License-Identifier: BSD-2-Clause
 
-#if BUILD_CXX_MODULE
-import zeem;
-#else
-#include "zeem.hpp"
-#endif
-
 #include <exception>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <string>
 #include <vector>
+
+#if BUILD_CXX_MODULE
+import zeem;
+#else
+#include "zeem.hpp"
+#endif
 
 namespace fs = std::filesystem;
 

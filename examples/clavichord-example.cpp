@@ -12,16 +12,6 @@
 
 //[ clavichord-example
 
-#if BUILD_CXX_MODULE
-import zeem;
-#else
-#if BUILD_CXX_MODULE
-import zeem;
-#else
-#include "zeem.hpp"
-#endif
-#endif
-
 #include <array>
 #include <cstdint>
 #include <exception>
@@ -29,6 +19,10 @@ import zeem;
 #include <iostream>
 #include <optional>
 #include <string>
+
+#if BUILD_CXX_MODULE
+import zeem;
+#endif
 
 enum class BindingType
 {

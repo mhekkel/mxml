@@ -3,15 +3,16 @@
 // SPDX-License-Identifier: BSD-2-Clause
 
 //[ synopsis_xml_main
+
+#include <exception>
+#include <iostream>
+#include <string>
+
 #if BUILD_CXX_MODULE
 import zeem;
 #else
 #include "zeem.hpp"
 #endif
-
-#include <exception>
-#include <iostream>
-#include <string>
 
 int main()
 {

@@ -35,6 +35,7 @@ namespace zeem
 
 // forward declarations
 ZEEM_EXPORT class attribute;
+ZEEM_EXPORT class attribute_set;
 ZEEM_EXPORT class element;
 ZEEM_EXPORT class element_container;
 ZEEM_EXPORT class node;

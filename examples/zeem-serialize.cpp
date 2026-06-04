@@ -25,16 +25,16 @@
  */
 
 //[ serialisation
+#include <cstdint>
+#include <fstream>
+#include <string>
+#include <vector>
+
 #if BUILD_CXX_MODULE
 import zeem;
 #else
 #include "zeem.hpp"
 #endif
-
-#include <cstdint>
-#include <fstream>
-#include <string>
-#include <vector>
 
 struct Person
 {

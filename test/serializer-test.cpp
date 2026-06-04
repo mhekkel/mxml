@@ -6,12 +6,6 @@
 
 #define CATCH_CONFIG_RUNNER
 
-#if BUILD_CXX_MODULE
-import zeem;
-#else
-#include "zeem.hpp"
-#endif
-
 #if ZEEM_USE_DATE_H
 # include <date/tz.h>
 #endif
@@ -30,6 +24,12 @@ import zeem;
 #include <string>
 #include <system_error>
 #include <vector>
+
+#if BUILD_CXX_MODULE
+import zeem;
+#else
+#include "zeem.hpp"
+#endif
 
 std::filesystem::path gTestDir;
 

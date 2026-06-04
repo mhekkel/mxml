@@ -24,14 +24,14 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <iostream>
+#include <string>
+
 #if BUILD_CXX_MODULE
 import zeem;
 #else
 #include "zeem.hpp"
 #endif
-
-#include <iostream>
-#include <string>
 
 //[ xpath_sample
 int main()

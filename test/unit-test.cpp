@@ -4,12 +4,6 @@
 
 #define CATCH_CONFIG_RUNNER
 
-#if BUILD_CXX_MODULE
-import zeem;
-#else
-#include "zeem.hpp"
-#endif
-
 #include <cassert>
 #include <catch2/catch_session.hpp>
 #include <catch2/catch_test_macros.hpp>
@@ -23,6 +17,12 @@ import zeem;
 #include <sstream>
 #include <string>
 #include <utility>
+
+#if BUILD_CXX_MODULE
+import zeem;
+#else
+#include "zeem.hpp"
+#endif
 
 // #include "zeem.ixx"
 

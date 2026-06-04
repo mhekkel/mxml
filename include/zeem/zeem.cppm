@@ -6,6 +6,7 @@ module;
 
 export module zeem;
 
+export import :charconv;
 export import :doctype;
 export import :document;
 export import :error;
