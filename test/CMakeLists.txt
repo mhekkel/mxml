@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: BSD-2-Clause
 
 CPMFindPackage(NAME Catch2 GIT_REPOSITORY "https://github.com/catchorg/Catch2" VERSION "3.4.0" EXCLUDE_FROM_ALL YES)
-CPMFindPackage(NAME mcfp GIT_REPOSITORY "https://forge.hekkelman.net/maarten/mcfp.git" GIT_TAG v1.4.2 EXCLUDE_FROM_ALL YES)
+CPMFindPackage(NAME mcfp GIT_REPOSITORY "https://forge.hekkelman.net/maarten/mcfp.git" GIT_TAG v2.0.2 EXCLUDE_FROM_ALL YES)
 
 # data files for the parser test
 set(XML_CONF_TAR ${CMAKE_CURRENT_SOURCE_DIR}/XML-Test-Suite.tbz)
