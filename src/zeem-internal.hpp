@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: BSD-2-Clause
 
-#ifndef BUILD_CXX_MODULE
+#ifndef ZEEM_CXX_MODULE
 # include "zeem.hpp"
 
 # define ZEEM_INCLUDE_HEADERS

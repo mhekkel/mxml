@@ -9,7 +9,6 @@
 #include <fstream>
 #include <iostream>
 #include <iterator>
-#include <mcfp/mcfp.hpp>
 #include <regex>
 #include <set>
 #include <sstream>
@@ -23,9 +22,11 @@
 # include <ctype.h>
 #endif
 
-#if BUILD_CXX_MODULE
+#if ZEEM_CXX_MODULE
+import mcfp;
 import zeem;
 #else
+#include "mcfp/mcfp.hpp"
 #include "zeem.hpp"
 #endif
 

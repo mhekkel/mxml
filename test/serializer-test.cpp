@@ -25,7 +25,7 @@
 #include <system_error>
 #include <vector>
 
-#if BUILD_CXX_MODULE
+#if ZEEM_CXX_MODULE
 import zeem;
 #else
 #include "zeem.hpp"

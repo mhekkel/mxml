@@ -12,6 +12,7 @@ include(CPM)
 include(CMakePackageConfigHelpers)
 include(CTest)
 include(CheckCXXSourceCompiles)
+include(GNUInstallDirs)
 include(VersionString)
 
 option(ZEEM_BUILD_DOCUMENTATION "Build documentation" OFF)
@@ -19,12 +20,18 @@ option(ZEEM_BUILD_EXAMPLES "Build example executables" ON)
 option(BUILD_CXX_MODULE "Build the library as a C++ 20 module" OFF)
 
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
-    if(BUILD_CXX_MODULE AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 15)
-        message(FATAL_ERROR "Sorry, your gcc is too old")
+    if(ZEEM_BUILD_CXX_MODULE AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 15)
+        message(WARNING "Sorry, your compiler is too old, not building the module library")
+        set(ZEEM_BUILD_CXX_MODULE OFF)
     endif()
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wno-unused-parameter -Wno-missing-field-initializers")
 elseif(MSVC)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W4")
+elseif(${CMAKE_SYSTEM_NAME} STREQUAL "FreeBSD")
+    if(ZEEM_BUILD_CXX_MODULE AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 20)
+        message(WARNING "Sorry, your compiler is too old, not building the module library")
+        set(ZEEM_BUILD_CXX_MODULE OFF)
+    endif()
 endif()
 
 try_compile(STD_CHARCONV_COMPILING
@@ -33,7 +40,7 @@ try_compile(STD_CHARCONV_COMPILING
 if(NOT STD_CHARCONV_COMPILING)
     message(NOTICE "zeem: Using fast_float for std::from_chars")
     CPMFindPackage(
-        NAME fast_float
+        NAME FastFloat
         GIT_REPOSITORY "https://github.com/fastfloat/fast_float"
         GIT_TAG v8.0.2
         EXCLUDE_FROM_ALL YES)
@@ -71,15 +78,12 @@ write_version_header("${CMAKE_CURRENT_SOURCE_DIR}/src" LIB_NAME "libzeem")
 file(GLOB_RECURSE zeem_headers include/*.hpp)
 file(GLOB_RECURSE zeem_modules include/*.cppm)
 
-if(BUILD_CXX_MODULE)
-    file(GLOB_RECURSE zeem_cpp src/*.cxx)
-else()
-    file(GLOB_RECURSE zeem_cpp src/*.cpp)
-endif()
+file(GLOB_RECURSE zeem_cxx src/*.cxx)
+file(GLOB_RECURSE zeem_cpp src/*.cpp)
 
 if(STD_CHARCONV_COMPILING)
     list(FILTER zeem_cpp EXCLUDE REGEX src/charconv-fast_float\.cpp)
-    list(FILTER zeem_cpp EXCLUDE REGEX src/charconv-fast_float\.cxx)
+    list(FILTER zeem_cxx EXCLUDE REGEX src/charconv-fast_float\.cxx)
 endif()
 
 add_library(zeem ${zeem_cpp})
@@ -96,27 +100,12 @@ if(NOT USE_STD_CHRONO_FROM_STREAM)
     set(FIND_DEPENDENCIES "find_dependency(date REQUIRED)")
 endif()
 
-if(BUILD_CXX_MODULE)
-    target_sources(zeem
-        PUBLIC
-        FILE_SET zeem_module TYPE CXX_MODULES
-        BASE_DIRS include
-        FILES
-        ${zeem_modules})
-
-    target_compile_definitions(zeem PUBLIC BUILD_CXX_MODULE)
-
-    target_include_directories(zeem PUBLIC
-        $<INSTALL_INTERFACE:${CMAKE_INSTALL_LIBDIR}/cxx/miu>
-    )
-else()
-    target_sources(zeem
-        PUBLIC
-        FILE_SET zeem_module TYPE HEADERS
-        BASE_DIRS include
-        FILES
-        ${zeem_headers})
-endif()
+target_sources(zeem
+    PUBLIC
+    FILE_SET zeem_classic TYPE HEADERS
+    BASE_DIRS include
+    FILES
+    ${zeem_headers})
 
 set(zeem_MAJOR_VERSION ${PROJECT_VERSION_MAJOR})
 set_target_properties(zeem PROPERTIES
@@ -125,27 +114,47 @@ set_target_properties(zeem PROPERTIES
     INTERFACE_zeem_MAJOR_VERSION ${PROJECT_VERSION_MAJOR}
     COMPATIBLE_INTERFACE_STRING zeem_MAJOR_VERSION)
 
+install(TARGETS zeem
+    EXPORT zeem-targets
+    FILE_SET zeem_classic
+    DESTINATION "include")
+
+install(EXPORT zeem-targets
+    NAMESPACE zeem::
+    DESTINATION lib/cmake/zeem)
+
 if(BUILD_CXX_MODULE)
-    install(TARGETS zeem
-        EXPORT zeem
+    add_library(zeem-module ${zeem_cxx})
+    add_library(zeem::zeem-module ALIAS zeem-module)
+
+    target_compile_features(zeem-module PUBLIC cxx_std_23)
+
+    if(NOT STD_CHARCONV_COMPILING)
+        target_include_directories(zeem-module PRIVATE $<TARGET_PROPERTY:FastFloat::fast_float,INTERFACE_INCLUDE_DIRECTORIES>)
+    endif()
+
+    target_sources(zeem-module
+        PUBLIC
+        FILE_SET zeem_module TYPE CXX_MODULES
+        BASE_DIRS include
+        FILES
+        ${zeem_modules})
+
+    target_compile_definitions(zeem-module PUBLIC ZEEM_CXX_MODULE)
+
+    target_include_directories(zeem-module PUBLIC
+        $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
+
+    install(TARGETS zeem-module
+        EXPORT zeem-module-targets
         CXX_MODULES_BMI DESTINATION "lib/cxx/bmi"
         FILE_SET zeem_module DESTINATION "lib/cxx/miu")
 
-    install(FILES ${zeem_headers} DESTINATION "lib/cxx/miu")
-
-    install(EXPORT zeem
+    install(EXPORT zeem-module-targets
         NAMESPACE zeem::
         DESTINATION lib/cmake/zeem
-        FILE "zeem-targets.cmake")
-else()
-    install(TARGETS zeem
-        EXPORT zeem-targets
-        FILE_SET zeem_module
-        DESTINATION "include")
+        FILE "zeem-module-targets.cmake")
 
-    install(EXPORT zeem-targets
-        NAMESPACE zeem::
-        DESTINATION lib/cmake/zeem)
 endif()
 
 configure_package_config_file(
@@ -155,6 +164,7 @@ configure_package_config_file(
 
 write_basic_package_version_file(
     "${CMAKE_CURRENT_BINARY_DIR}/zeem-config-version.cmake"
+    VERSION ${PROJECT_VERSION}
     COMPATIBILITY AnyNewerVersion)
 
 install(FILES

@@ -9,9 +9,11 @@
 #include <string>
 #include <vector>
 
-#if BUILD_CXX_MODULE
+#if ZEEM_CXX_MODULE
+import mcfp;
 import zeem;
 #else
+#include "mcfp/mcfp.hpp"
 #include "zeem.hpp"
 #endif
 
