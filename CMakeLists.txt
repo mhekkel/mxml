@@ -17,7 +17,7 @@ include(VersionString)
 
 option(ZEEM_BUILD_DOCUMENTATION "Build documentation" OFF)
 option(ZEEM_BUILD_EXAMPLES "Build example executables" ON)
-option(BUILD_CXX_MODULE "Build the library as a C++ 20 module" OFF)
+option(ZEEM_BUILD_CXX_MODULE "Build the library as a C++ 20 module" OFF)
 
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
     if(ZEEM_BUILD_CXX_MODULE AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 15)
@@ -123,7 +123,7 @@ install(EXPORT zeem-targets
     NAMESPACE zeem::
     DESTINATION lib/cmake/zeem)
 
-if(BUILD_CXX_MODULE)
+if(ZEEM_CXX_MODULE)
     add_library(zeem-module ${zeem_cxx})
     add_library(zeem::zeem-module ALIAS zeem-module)
 

@@ -32,7 +32,7 @@
 #include <string>
 #include <string_view>
 
-#if BUILD_CXX_MODULE
+#if ZEEM_CXX_MODULE
 import zeem;
 #else
 #include "zeem.hpp"
