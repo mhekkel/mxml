@@ -17,14 +17,14 @@ include(VersionString)
 
 option(ZEEM_BUILD_DOCUMENTATION "Build documentation" OFF)
 option(ZEEM_BUILD_EXAMPLES "Build example executables" ON)
-option(ZEEM_BUILD_CXX_MODULE "Build the library as a C++ 20 module" OFF)
+option(ZEEM_BUILD_CXX_MODULE "Build the library as a C++ 20 module" ON)
 
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
     if(ZEEM_BUILD_CXX_MODULE AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 15)
         message(WARNING "Sorry, your compiler is too old, not building the module library")
         set(ZEEM_BUILD_CXX_MODULE OFF)
     endif()
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wno-unused-parameter -Wno-missing-field-initializers")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra")
 elseif(MSVC)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W4")
 elseif(${CMAKE_SYSTEM_NAME} STREQUAL "FreeBSD")
@@ -123,7 +123,7 @@ install(EXPORT zeem-targets
     NAMESPACE zeem::
     DESTINATION lib/cmake/zeem)
 
-if(ZEEM_CXX_MODULE)
+if(ZEEM_BUILD_CXX_MODULE)
     add_library(zeem-module ${zeem_cxx})
     add_library(zeem::zeem-module ALIAS zeem-module)
 
@@ -143,7 +143,8 @@ if(ZEEM_CXX_MODULE)
     target_compile_definitions(zeem-module PUBLIC ZEEM_CXX_MODULE)
 
     target_include_directories(zeem-module PUBLIC
-        $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
+        $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>/zeem
+        $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>/zeem/detail)
 
     install(TARGETS zeem-module
         EXPORT zeem-module-targets
@@ -154,7 +155,6 @@ if(ZEEM_CXX_MODULE)
         NAMESPACE zeem::
         DESTINATION lib/cmake/zeem
         FILE "zeem-module-targets.cmake")
-
 endif()
 
 configure_package_config_file(
