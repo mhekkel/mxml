@@ -8,8 +8,7 @@
  * Main module definition for zeem.
 */
 
-#define ZEEM_EXPORT
-#define ZEEM_INLINE inline
+#include "zeem/export.hpp"
 
 // IWYU pragma: begin_exports
 #include "zeem/doctype.hpp"

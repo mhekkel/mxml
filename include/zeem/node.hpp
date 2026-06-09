@@ -5,7 +5,7 @@
 #pragma once
 
 #ifndef ZEEM_EXPORT
-# error "Please include zeem.hpp only"
+#include <zeem/export.hpp>
 #endif
 
 /// \file
