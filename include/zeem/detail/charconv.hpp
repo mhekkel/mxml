@@ -98,10 +98,10 @@ struct std_charconv
 	}
 };
 
-ZEEM_EXPORT template <typename T, typename = void>
+template <typename T, typename = void>
 struct ff_charconv;
 
-ZEEM_EXPORT template <typename T>
+template <typename T>
 	requires(std::is_floating_point_v<T>)
 struct ff_charconv<T>
 {
