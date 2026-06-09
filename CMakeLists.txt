@@ -123,6 +123,13 @@ install(EXPORT zeem-targets
     NAMESPACE zeem::
     DESTINATION lib/cmake/zeem)
 
+# Remove old header file
+file(GLOB OLD_HEADER ${CMAKE_INSTALL_FULL_INCLUDEDIR}/zeem.hpp)
+if(OLD_HEADER)
+    message(NOTICE "zeem: Installation will remove old header file: ${OLD_HEADER}")
+    install(CODE "file(REMOVE ${OLD_HEADER})")
+endif()
+
 if(ZEEM_BUILD_CXX_MODULE)
     add_library(zeem-module ${zeem_cxx})
     add_library(zeem::zeem-module ALIAS zeem-module)

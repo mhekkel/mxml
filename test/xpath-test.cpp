@@ -14,7 +14,7 @@ import mcfp;
 import zeem;
 #else
 #include "mcfp/mcfp.hpp"
-#include "zeem.hpp"
+#include "zeem/zeem.hpp"
 #endif
 
 namespace fs = std::filesystem;

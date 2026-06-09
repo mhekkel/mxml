@@ -33,7 +33,7 @@
 #if ZEEM_CXX_MODULE
 import zeem;
 #else
-#include "zeem.hpp"
+#include "zeem/zeem.hpp"
 #endif
 
 struct Person
