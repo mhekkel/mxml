@@ -117,7 +117,7 @@ set_target_properties(zeem PROPERTIES
 install(TARGETS zeem
     EXPORT zeem-targets
     FILE_SET zeem_classic
-    DESTINATION "include")
+    DESTINATION include)
 
 install(EXPORT zeem-targets
     NAMESPACE zeem::
@@ -141,6 +141,12 @@ if(ZEEM_BUILD_CXX_MODULE)
         ${zeem_modules})
 
     target_compile_definitions(zeem-module PUBLIC ZEEM_CXX_MODULE)
+
+    set_target_properties(zeem-module PROPERTIES
+        VERSION ${PROJECT_VERSION}
+        SOVERSION ${PROJECT_VERSION_MAJOR}
+        INTERFACE_zeem_MAJOR_VERSION ${PROJECT_VERSION_MAJOR}
+        COMPATIBLE_INTERFACE_STRING zeem_MAJOR_VERSION)
 
     target_include_directories(zeem-module PUBLIC
         $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>/zeem
