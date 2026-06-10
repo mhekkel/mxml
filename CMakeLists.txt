@@ -165,7 +165,7 @@ if(ZEEM_BUILD_CXX_MODULE)
         COMPATIBLE_INTERFACE_STRING zeem_MAJOR_VERSION)
 
     target_include_directories(zeem-module PUBLIC
-        $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>/zeem)
+        $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/zeem>)
 
     install(TARGETS zeem-module
         EXPORT zeem-module-targets
