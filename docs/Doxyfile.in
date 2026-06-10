@@ -1,6 +1,10 @@
+# Copyright (c) Maarten L. Hekkelman 2026
+# 
+# SPDX-License-Identifier: BSD-2-Clause
+
 EXCLUDE_SYMBOLS        = std* zeem::doctype::*
 FILE_PATTERNS          = *.hpp
-PREDEFINED             += and=&& or=|| not=!
+PREDEFINED             += and=&& or=|| not=! ZEEM_EXPORT=export ZEEM_INLINE=inline
 GENERATE_XML           = YES
 GENERATE_HTML          = NO
 GENERATE_LATEX         = NO

@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Maarten L. Hekkelman
+#
+# SPDX-License-Identifier: CC0-1.0
+
 # Look for an executable called sphinx-build
 find_program(SPHINX_EXECUTABLE
 	NAMES sphinx-build

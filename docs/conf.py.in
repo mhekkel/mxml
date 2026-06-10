@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Maarten L. Hekkelman
+#
+# SPDX-License-Identifier: BSD-2-Clause
+
 project = 'zeem-doc'
 copyright = '2024, Maarten L. Hekkelman'
 author = 'Maarten L. Hekkelman'

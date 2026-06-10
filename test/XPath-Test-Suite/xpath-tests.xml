@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2026 Maarten L. Hekkelman
+
+SPDX-License-Identifier: CC0-1.0
+-->
+
 <!DOCTYPE xpath-tests [
 <!ELEMENT xpath-tests (xpath-test+)>
 <!ATTLIST xpath-tests xml:base CDATA #IMPLIED>
