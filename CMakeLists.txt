@@ -69,12 +69,16 @@ if(NOT USE_STD_CHRONO_FROM_STREAM)
     set(ZEEM_USE_DATE_H ON)
 endif()
 
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/include/zeem/config.hpp.in
-    ${CMAKE_CURRENT_SOURCE_DIR}/include/zeem/config.hpp @ONLY)
+# Config file
+configure_file(
+    "${CMAKE_CURRENT_SOURCE_DIR}/include/zeem/config.hpp.in"
+    "${CMAKE_CURRENT_SOURCE_DIR}/include/zeem/config.hpp"
+    @ONLY)
 
 # Version info
 write_version_header("${CMAKE_CURRENT_SOURCE_DIR}/src" LIB_NAME "libzeem")
 
+# Library rules
 file(GLOB_RECURSE zeem_headers include/*.hpp)
 file(GLOB_RECURSE zeem_modules include/*.cppm)
 
@@ -100,13 +104,14 @@ if(NOT USE_STD_CHRONO_FROM_STREAM)
     set(FIND_DEPENDENCIES "find_dependency(date REQUIRED)")
 endif()
 
+# The classic target
 target_sources(zeem
     PUBLIC
     FILE_SET zeem_classic TYPE HEADERS
     BASE_DIRS include
-    FILES
-    ${zeem_headers})
+    FILES ${zeem_headers})
 
+set_target_properties(zeep PROPERTIES POSITION_INDEPENDENT_CODE ON)
 set(zeem_MAJOR_VERSION ${PROJECT_VERSION_MAJOR})
 set_target_properties(zeem PROPERTIES
     VERSION ${PROJECT_VERSION}
@@ -144,8 +149,7 @@ if(ZEEM_BUILD_CXX_MODULE)
         PUBLIC
         FILE_SET zeem_module TYPE CXX_MODULES
         BASE_DIRS include
-        FILES
-        ${zeem_modules})
+        FILES ${zeem_modules})
 
     target_compile_definitions(zeem-module PUBLIC ZEEM_CXX_MODULE)
 
@@ -156,8 +160,7 @@ if(ZEEM_BUILD_CXX_MODULE)
         COMPATIBLE_INTERFACE_STRING zeem_MAJOR_VERSION)
 
     target_include_directories(zeem-module PUBLIC
-        $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>/zeem
-        $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>/zeem/detail)
+        $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>/zeem)
 
     install(TARGETS zeem-module
         EXPORT zeem-module-targets
@@ -166,12 +169,12 @@ if(ZEEM_BUILD_CXX_MODULE)
 
     install(EXPORT zeem-module-targets
         NAMESPACE zeem::
-        DESTINATION lib/cmake/zeem
-        FILE "zeem-module-targets.cmake")
+        DESTINATION lib/cmake/zeem)
+
 endif()
 
 configure_package_config_file(
-    ${PROJECT_SOURCE_DIR}/cmake/zeem-config.cmake.in
+    ${CMAKE_CURRENT_SOURCE_DIR}/cmake/zeem-config.cmake.in
     ${CMAKE_CURRENT_BINARY_DIR}/zeem-config.cmake
     INSTALL_DESTINATION lib/cmake/zeem)
 
@@ -181,8 +184,8 @@ write_basic_package_version_file(
     COMPATIBILITY AnyNewerVersion)
 
 install(FILES
-    ${CMAKE_CURRENT_BINARY_DIR}/zeem-config.cmake
-    ${CMAKE_CURRENT_BINARY_DIR}/zeem-config-version.cmake
+    "${CMAKE_CURRENT_BINARY_DIR}/zeem-config.cmake"
+    "${CMAKE_CURRENT_BINARY_DIR}/zeem-config-version.cmake"
     DESTINATION lib/cmake/zeem)
 
 set(generator -G "${CMAKE_GENERATOR}")
