@@ -111,7 +111,7 @@ target_sources(zeem
     BASE_DIRS include
     FILES ${zeem_headers})
 
-set_target_properties(zeep PROPERTIES POSITION_INDEPENDENT_CODE ON)
+set_target_properties(zeem PROPERTIES POSITION_INDEPENDENT_CODE ON)
 set(zeem_MAJOR_VERSION ${PROJECT_VERSION_MAJOR})
 set_target_properties(zeem PROPERTIES
     VERSION ${PROJECT_VERSION}
