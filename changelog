@@ -1,3 +1,6 @@
+Version 2.2.0
+- Better hybrid implementation (both traditional as wellas module library)
+
 version 2.1.5
 - Yet another fix in date/time parsing
 

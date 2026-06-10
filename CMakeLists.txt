@@ -4,7 +4,7 @@
 
 cmake_minimum_required(VERSION 3.28)
 
-project(zeem VERSION 2.1.5 LANGUAGES CXX)
+project(zeem VERSION 2.2.0 LANGUAGES CXX)
 
 list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 
