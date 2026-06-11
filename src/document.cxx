@@ -4,12 +4,10 @@
 
 module;
 
-#define ZEEM_INCLUDE_HEADERS
-#include "document.cpp"
-#undef ZEEM_INCLUDE_HEADERS
+#include <cassert>
 
 module zeem;
 
-#define ZEEM_INCLUDE_CODE
+import std;
 
 #include "document.cpp"

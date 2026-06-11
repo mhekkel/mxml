@@ -2,29 +2,27 @@
 //
 // SPDX-License-Identifier: BSD-2-Clause
 
-#include "zeem-internal.hpp"
+#ifndef ZEEM_CXX_MODULE
+# include "zeem/zeem.hpp"
 
-#if defined(ZEEM_INCLUDE_HEADERS)
-#include <algorithm>
-#include <cctype>
-#include <charconv>
-#include <cmath>
-#include <compare>
-#include <cstddef>
-#include <exception>
-#include <functional>
-#include <iterator>
-#include <map>
-#include <memory>
-#include <optional>
-#include <ranges>
-#include <string>
-#include <system_error>
-#include <utility>
-#include <vector>
+# include <algorithm>
+# include <cctype>
+# include <charconv>
+# include <cmath>
+# include <compare>
+# include <cstddef>
+# include <exception>
+# include <functional>
+# include <iterator>
+# include <map>
+# include <memory>
+# include <optional>
+# include <ranges>
+# include <string>
+# include <system_error>
+# include <utility>
+# include <vector>
 #endif
-
-#if defined(ZEEM_INCLUDE_CODE)
 
 namespace zeem
 {
@@ -90,7 +88,7 @@ enum class AxisType
 	AxisTypeCount
 };
 
-const char *kAxisNames[static_cast<size_t>(AxisType::AxisTypeCount)] = {
+const char *kAxisNames[static_cast<std::size_t>(AxisType::AxisTypeCount)] = {
 	"ancestor",
 	"ancestor-or-self",
 	"attribute",
@@ -140,7 +138,7 @@ enum class CoreFunction
 	CoreFunctionCount
 };
 
-const size_t kCoreFunctionCount = static_cast<size_t>(CoreFunction::CoreFunctionCount);
+const std::size_t kCoreFunctionCount = static_cast<std::size_t>(CoreFunction::CoreFunctionCount);
 
 struct CoreFunctionInfo
 {
@@ -341,7 +339,7 @@ int object::as<int>() const
 {
 	if (m_type != object_type::number)
 		throw exception("object is not of type number");
-	return static_cast<int>(round(m_number));
+	return static_cast<int>(std::round(m_number));
 }
 
 template <>
@@ -498,7 +496,7 @@ void iterate_child_nodes(element_container *context, node_set &s, bool deep, con
 }
 
 template <typename PREDICATE>
-ZEEM_INLINE void iterate_children(element_container *context, node_set &s, bool deep, const PREDICATE &pred, bool elementsOnly)
+void iterate_children(element_container *context, node_set &s, bool deep, const PREDICATE &pred, bool elementsOnly)
 {
 	if (elementsOnly)
 		iterate_child_elements(context, s, deep, pred);
@@ -637,17 +635,17 @@ struct expression_context : public context_imp_base
 		return m_next.get(std::move(name));
 	}
 
-	[[nodiscard]] size_t position() const;
-	[[nodiscard]] size_t last() const;
+	[[nodiscard]] std::size_t position() const;
+	[[nodiscard]] std::size_t last() const;
 
 	const context_imp_base &m_next;
 	node *m_node;
 	const node_set &m_node_set;
 };
 
-size_t expression_context::position() const
+std::size_t expression_context::position() const
 {
-	size_t result = 0;
+	std::size_t result = 0;
 	for (const node *n : m_node_set)
 	{
 		++result;
@@ -661,7 +659,7 @@ size_t expression_context::position() const
 	return result;
 }
 
-size_t expression_context::last() const
+std::size_t expression_context::last() const
 {
 	return m_node_set.size();
 }
@@ -1194,7 +1192,7 @@ template <>
 object core_function_expression<CoreFunction::Count>::evaluate(expression_context &context)
 {
 	object v = m_args.front()->evaluate(context);
-	size_t result = v.as<const node_set &>().size();
+	std::size_t result = v.as<const node_set &>().size();
 
 	return { static_cast<double>(result) };
 }
@@ -1451,7 +1449,7 @@ object core_function_expression<CoreFunction::NormalizeSpace>::evaluate(expressi
 
 	for (char c : s)
 	{
-		if (isspace(c))
+		if (std::isspace(c))
 		{
 			if (not space)
 				result += ' ';
@@ -1569,21 +1567,21 @@ template <>
 object core_function_expression<CoreFunction::Floor>::evaluate(expression_context &context)
 {
 	object v = m_args.front()->evaluate(context);
-	return floor(v.as<double>());
+	return std::floor(v.as<double>());
 }
 
 template <>
 object core_function_expression<CoreFunction::Ceiling>::evaluate(expression_context &context)
 {
 	object v = m_args.front()->evaluate(context);
-	return ceil(v.as<double>());
+	return std::ceil(v.as<double>());
 }
 
 template <>
 object core_function_expression<CoreFunction::Round>::evaluate(expression_context &context)
 {
 	object v = m_args.front()->evaluate(context);
-	return round(v.as<double>());
+	return std::round(v.as<double>());
 }
 
 // --------------------------------------------------------------------
@@ -2067,7 +2065,7 @@ Token xpath_parser::get_next_token()
 			// look forward and see what's ahead
 			for (std::u32string::const_iterator c = m_next; c != m_end; ++c)
 			{
-				if (isspace(static_cast<int>(*c)))
+				if (std::isspace(static_cast<int>(*c)))
 					continue;
 
 				if (*c == ':' and *(c + 1) == ':') // it must be an axis specifier
@@ -2093,7 +2091,7 @@ Token xpath_parser::get_next_token()
 
 						// set input pointer after the parenthesis
 						m_next = c + 1;
-						while (m_next != m_end and isspace(static_cast<int>(*m_next)))
+						while (m_next != m_end and std::isspace(static_cast<int>(*m_next)))
 							++m_next;
 						if (*m_next != ')')
 							throw exception("expected '()' after a node type specifier");
@@ -2101,7 +2099,7 @@ Token xpath_parser::get_next_token()
 					}
 					else
 					{
-						for (size_t i = 0; i < kCoreFunctionCount; ++i)
+						for (std::size_t i = 0; i < kCoreFunctionCount; ++i)
 						{
 							if (m_token_string == kCoreFunctionInfo[i].name)
 							{
@@ -2310,7 +2308,7 @@ expression_ptr xpath_parser::function_call()
 	int expected_arg_count = kCoreFunctionInfo[static_cast<int>(function)].arg_count;
 	if (expected_arg_count > 0)
 	{
-		if (arguments.size() != static_cast<size_t>(expected_arg_count))
+		if (arguments.size() != static_cast<std::size_t>(expected_arg_count))
 			throw exception("invalid number of arguments for function "s + kCoreFunctionInfo[static_cast<int>(function)].name);
 	}
 	else if (expected_arg_count == kOptionalArgument)
@@ -2615,5 +2613,3 @@ bool xpath::matches(const node *n, const context &ctxt) const
 }
 
 } // namespace zeem
-
-#endif

@@ -4,16 +4,12 @@
 
 #pragma once
 
-#ifndef ZEEM_EXPORT
-#include <zeem/export.hpp>
-#endif
-
 /**
  * \file
  * definition of the zeem::document class
  */
 
-#ifndef IN_MODULE_INTERFACE
+#ifndef ZEEM_CXX_MODULE
 # include "zeem/node.hpp"
 # include "zeem/parser.hpp"
 # include "zeem/text.hpp"
@@ -305,7 +301,7 @@ ZEEM_EXPORT class document final : public element_container
 	cdata *m_cdata = nullptr;           // only defined in a CDATA section
 	std::vector<std::pair<std::string, std::string>> m_namespaces;
 	std::vector<notation> m_notations;
-	size_t m_root_size_at_first_notation = 0; // for processing instructions that occur before a notation
+	std::size_t m_root_size_at_first_notation = 0; // for processing instructions that occur before a notation
 
 	/** @endcond */
 };
@@ -322,7 +318,7 @@ ZEEM_EXPORT namespace literals
 	 * zeem::document doc = "<text>Hello, world!</text>"_xml;"
 	 * @endcode
 	 */
-	document operator""_xml(const char *text, size_t length);
+	document operator""_xml(const char *text, std::size_t length);
 } // namespace literals
 
 } // namespace zeem

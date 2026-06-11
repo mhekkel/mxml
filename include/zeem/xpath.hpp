@@ -4,16 +4,12 @@
 
 #pragma once
 
-#ifndef ZEEM_EXPORT
-#include <zeem/export.hpp>
-#endif
-
 /**
  * \file
  * definition of the zeem::xpath class, implementing a XPath 1.0 compatible search facility
  */
 
-#ifndef IN_MODULE_INTERFACE
+#ifndef ZEEM_CXX_MODULE
 # include <memory>
 # include <string>
 # include <string_view>

@@ -4,10 +4,6 @@
 
 #pragma once
 
-#ifndef ZEEM_EXPORT
-#include <zeem/export.hpp>
-#endif
-
 /** @file
  * File containing code to support DOCTYPE handling. This is private code
  * to the zeem library.
@@ -15,7 +11,7 @@
  * @cond
  */
 
-#ifndef IN_MODULE_INTERFACE
+#ifndef ZEEM_CXX_MODULE
 # include <cassert>
 # include <memory>
 # include <string>

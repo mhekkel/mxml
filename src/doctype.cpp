@@ -2,20 +2,18 @@
 //
 // SPDX-License-Identifier: BSD-2-Clause
 
-#include "zeem-internal.hpp"
+#ifndef ZEEM_CXX_MODULE
+# include "zeem/zeem.hpp"
 
-#if defined(ZEEM_INCLUDE_HEADERS)
-#include <cassert>
-#include <cctype>
-#include <functional>
-#include <memory>
-#include <ranges>
-#include <string_view>
-#include <tuple>
-#include <vector>
+# include <cassert>
+# include <cctype>
+# include <functional>
+# include <memory>
+# include <ranges>
+# include <string_view>
+# include <tuple>
+# include <vector>
 #endif
-
-#if defined(ZEEM_INCLUDE_CODE)
 
 namespace zeem::doctype
 {
@@ -788,5 +786,3 @@ const attribute_ptr element::get_attribute(std::string_view name) const
 }
 
 } // namespace zeem::doctype
-
-#endif

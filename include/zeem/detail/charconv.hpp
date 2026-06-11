@@ -4,11 +4,7 @@
 
 #pragma once
 
-#ifndef ZEEM_EXPORT
-#include <zeem/export.hpp>
-#endif
-
-#ifndef IN_MODULE_INTERFACE
+#ifndef ZEEM_CXX_MODULE
 # include <charconv>
 # include <cmath>
 

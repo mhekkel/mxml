@@ -4,14 +4,10 @@
 
 #pragma once
 
-#ifndef ZEEM_EXPORT
-#include <zeem/export.hpp>
-#endif
-
 /// \file
 /// the core of the zeem XML library defining the main classes in the DOM API
 
-#ifndef IN_MODULE_INTERFACE
+#ifndef ZEEM_CXX_MODULE
 # include "zeem/error.hpp"
 # include "zeem/version.hpp"
 
@@ -523,7 +519,7 @@ class node_list : public basic_node_list
   public:
 	using value_type = T;
 	using allocator_type = std::allocator<value_type>;
-	using size_type = size_t;
+	using size_type = std::size_t;
 	using difference_type = std::ptrdiff_t;
 	using reference = value_type &;
 	using const_reference = const value_type &;
@@ -566,7 +562,7 @@ class node_list : public basic_node_list
 
 	/// @brief The size of the visible items
 	/// @return The count of items visible
-	[[nodiscard]] size_t size() const { return std::distance(begin(), end()); }
+	[[nodiscard]] std::size_t size() const { return std::distance(begin(), end()); }
 	[[nodiscard]] bool empty() const { return size() == 0; }
 	explicit operator bool() const { return not empty(); }
 
@@ -589,7 +585,7 @@ class node_list : public basic_node_list
 		return insert_impl(p, new value_type(std::forward<Args>(args)...));
 	}
 
-	iterator insert(const_iterator pos, size_t count, const value_type &n)
+	iterator insert(const_iterator pos, std::size_t count, const value_type &n)
 	{
 		iterator p(const_cast<value_type *>(&*pos));
 		while (count-- > 0)
@@ -1189,7 +1185,7 @@ class attribute final : public node
 	[[nodiscard]] bool is_id() const { return m_id; }
 
 	/// \brief support for structured binding
-	template <size_t N>
+	template <std::size_t N>
 	[[nodiscard]] decltype(auto) get() const
 	{
 		if constexpr (N == 0)

@@ -24,14 +24,10 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "zeem-internal.hpp"
-
-#if defined(ZEEM_INCLUDE_HEADERS)
+#ifndef ZEEM_CXX_MODULE
 # include "fast_float/fast_float.h"
-# include "zeem/detail/charconv.hpp"
+# include "zeem/zeem.hpp"
 #endif
-
-#if defined(ZEEM_INCLUDE_CODE)
 
 namespace zeem
 {
@@ -51,5 +47,3 @@ std::from_chars_result ff_charconv<double>::from_chars(const char *a, const char
 }
 
 } // namespace zeem
-
-#endif

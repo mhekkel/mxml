@@ -271,7 +271,7 @@ TEST_CASE("xml_1")
 	CHECK(n.attributes().size() == 2);
 	CHECK(n.attributes().begin() != n.attributes().end());
 
-	size_t i = 0;
+	std::size_t i = 0;
 	for (auto &[name, value] : n.attributes())
 	{
 		switch (i++)

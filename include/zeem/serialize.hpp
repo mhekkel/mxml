@@ -4,16 +4,12 @@
 
 #pragma once
 
-#ifndef ZEEM_EXPORT
-#include <zeem/export.hpp>
-#endif
-
 /**
  * @file
  * definition of the serializer classes used to (de-)serialize XML data.
  */
 
-#ifndef IN_MODULE_INTERFACE
+#ifndef ZEEM_CXX_MODULE
 # include "zeem/config.hpp"
 # include "zeem/detail/charconv.hpp"
 # include "zeem/node.hpp"
@@ -293,7 +289,7 @@ struct value_serializer<std::chrono::system_clock::time_point>
 
 		struct membuf : public std::streambuf
 		{
-			membuf(char *text, size_t length)
+			membuf(char *text, std::size_t length)
 			{
 				this->setg(text, text, text + length);
 			}
@@ -612,7 +608,7 @@ struct type_serializer;
 
 /** @cond */
 
-template <typename T, size_t N>
+template <typename T, std::size_t N>
 struct type_serializer<T[N]>
 {
 	using value_type = std::remove_cvref_t<T>;
@@ -628,7 +624,7 @@ struct type_serializer<T[N]>
 
 	static void deserialize_child(const element_container &n, std::string_view name, value_type (&value)[N])
 	{
-		size_t ix = 0;
+		std::size_t ix = 0;
 		for (auto &e : n)
 		{
 			if (e.name() != name)
@@ -806,11 +802,11 @@ struct type_serializer<T>
 			type_serializer_type::serialize_child(n, name, v);
 	}
 
-	template <size_t N>
+	template <std::size_t N>
 	static auto deserialize_array(const element_container &n, std::string_view name,
 		std::array<value_type, N> &value, [[maybe_unused]] priority_tag<2> pt)
 	{
-		size_t ix = 0;
+		std::size_t ix = 0;
 		for (auto &e : n)
 		{
 			if (e.name() != name)

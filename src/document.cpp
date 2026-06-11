@@ -2,20 +2,18 @@
 //
 // SPDX-License-Identifier: BSD-2-Clause
 
-#include "zeem-internal.hpp"
+#ifndef ZEEM_CXX_MODULE
+# include "zeem/zeem.hpp"
 
-#if defined(ZEEM_INCLUDE_HEADERS)
-#include <cassert>
-#include <fstream>
-#include <functional>
-#include <memory>
-#include <ranges>
-#include <string_view>
-#include <tuple>
-#include <utility>
+# include <cassert>
+# include <fstream>
+# include <functional>
+# include <memory>
+# include <ranges>
+# include <string_view>
+# include <tuple>
+# include <utility>
 #endif
-
-#if defined(ZEEM_INCLUDE_CODE)
 
 namespace zeem
 {
@@ -50,7 +48,7 @@ document::document(std::string_view s)
 {
 	struct membuf : public std::streambuf
 	{
-		membuf(char *text, size_t length)
+		membuf(char *text, std::size_t length)
 		{
 			this->setg(text, text, text + length);
 		}
@@ -474,14 +472,14 @@ std::string document::str() const
 namespace literals
 {
 
-	document operator""_xml(const char *text, size_t length)
+	document operator""_xml(const char *text, std::size_t length)
 	{
 		zeem::document doc;
 		doc.set_preserve_cdata(true);
 
 		struct membuf : public std::streambuf
 		{
-			membuf(char *text, size_t length)
+			membuf(char *text, std::size_t length)
 			{
 				this->setg(text, text, text + length);
 			}
@@ -496,5 +494,3 @@ namespace literals
 } // namespace literals
 
 } // namespace zeem
-
-#endif

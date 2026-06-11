@@ -4,16 +4,12 @@
 
 #pragma once
 
-#ifndef ZEEM_EXPORT
-#include <zeem/export.hpp>
-#endif
-
 /**
  * \file
  * various definitions of data types and routines used to work with Unicode encoded text
  */
 
-#ifndef IN_MODULE_INTERFACE
+#ifndef ZEEM_CXX_MODULE
 # include <string>
 # include <string_view>
 #endif

@@ -4,12 +4,12 @@
 
 module;
 
-#define ZEEM_INCLUDE_HEADERS
-#include "parser.cpp"
-#undef ZEEM_INCLUDE_HEADERS
+#include <cassert>
+#include <cstdint>
+#include <cctype>
 
 module zeem;
 
-#define ZEEM_INCLUDE_CODE
+import std;
 
 #include "parser.cpp"

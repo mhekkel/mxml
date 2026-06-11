@@ -4,16 +4,12 @@
 
 #pragma once
 
-#ifndef ZEEM_EXPORT
-#include <zeem/export.hpp>
-#endif
-
 /**
  * \file
  * definition of the zeem XML parser, a recursive descent parser
  */
 
-#ifndef IN_MODULE_INTERFACE
+#ifndef ZEEM_CXX_MODULE
 # include "zeem/error.hpp"
 
 # include <functional>

@@ -82,7 +82,7 @@ foreach(TEST IN LISTS ZEEM_TESTS)
 
     create_test(${ZEEM_TEST} ${ZEEM_TEST_SOURCE} "${ZEEM_TEST_ARGS}" OFF)
 
-    if(ZEEM_CXX_MODULE)
+    if(ZEEM_BUILD_CXX_MODULE)
         create_test("${ZEEM_TEST}-m" ${ZEEM_TEST_SOURCE} "${ZEEM_TEST_ARGS}" ON)
     endif()
 endforeach()

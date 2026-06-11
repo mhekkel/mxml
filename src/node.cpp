@@ -2,22 +2,20 @@
 //
 // SPDX-License-Identifier: BSD-2-Clause
 
-#include "zeem-internal.hpp"
+#ifndef ZEEM_CXX_MODULE
+# include "zeem/zeem.hpp"
 
-#if defined(ZEEM_INCLUDE_HEADERS)
-#include <cassert>
-#include <exception>
-#include <initializer_list>
-#include <iostream>
-#include <map>
-#include <set>
-#include <stack>
-#include <string>
-#include <string_view>
-#include <tuple>
+# include <cassert>
+# include <exception>
+# include <initializer_list>
+# include <iostream>
+# include <map>
+# include <set>
+# include <stack>
+# include <string>
+# include <string_view>
+# include <tuple>
 #endif
-
-#if defined(ZEEM_INCLUDE_CODE)
 
 namespace zeem
 {
@@ -48,7 +46,7 @@ void write_string(std::ostream &os, std::string_view s, bool escape_whitespace, 
 
 	auto sp = s.cbegin();
 	auto se = s.cend();
-	
+
 	while (sp < se)
 	{
 		auto sb = sp;
@@ -795,7 +793,7 @@ void element::move_to_name_space(const std::string &prefix, std::string_view uri
 void element::write(std::ostream &os, format_info fmt) const
 {
 	// if width is set, we wrap and indent the file
-	size_t indentation = fmt.indent_level * fmt.indent_width;
+	std::size_t indentation = fmt.indent_level * fmt.indent_width;
 
 	if (fmt.indent)
 	{
@@ -913,4 +911,3 @@ void fix_namespaces(element &e, const element &source, const element &dest)
 }
 
 } // namespace zeem
-#endif

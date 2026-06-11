@@ -2,31 +2,29 @@
 //
 // SPDX-License-Identifier: BSD-2-Clause
 
-#include "zeem-internal.hpp"
+#ifndef ZEEM_CXX_MODULE
+# include "zeem/zeem.hpp"
 
-#if defined(ZEEM_INCLUDE_HEADERS)
-#include <algorithm>
-#include <array>
-#include <cassert>
-#include <cctype>
-#include <compare>
-#include <cstddef>
-#include <cstdint>
-#include <format>
-#include <map>
-#include <memory>
-#include <ranges>
-#include <set>
-#include <sstream>
-#include <stack>
-#include <string>
-#include <tuple>
-#include <utility>
-#include <variant>
-#include <vector>
+# include <algorithm>
+# include <array>
+# include <cassert>
+# include <cctype>
+# include <compare>
+# include <cstddef>
+# include <cstdint>
+# include <format>
+# include <map>
+# include <memory>
+# include <ranges>
+# include <set>
+# include <sstream>
+# include <stack>
+# include <string>
+# include <tuple>
+# include <utility>
+# include <variant>
+# include <vector>
 #endif
-
-#if defined(ZEEM_INCLUDE_CODE)
 
 namespace zeem
 {
@@ -72,7 +70,7 @@ bool is_absolute_path(std::string_view s)
 	{
 		if (s[0] == '/')
 			result = true;
-		else if (isalpha(s[0]))
+		else if (std::isalpha(s[0]))
 		{
 			auto ch = s.begin() + 1;
 			while (ch != s.end() and isalpha(*ch))
@@ -957,7 +955,7 @@ struct parser_imp
 // --------------------------------------------------------------------
 // some inlines
 
-ZEEM_INLINE void parser_imp::s(bool at_least_one)
+void parser_imp::s(bool at_least_one)
 {
 	if (at_least_one)
 		match(XMLToken::Space);
@@ -966,7 +964,7 @@ ZEEM_INLINE void parser_imp::s(bool at_least_one)
 		match(XMLToken::Space);
 }
 
-ZEEM_INLINE void parser_imp::eq()
+void parser_imp::eq()
 {
 	s();
 	match(XMLToken::Eq);
@@ -4197,5 +4195,3 @@ void parser::report_invalidation(std::string msg)
 }
 
 } // namespace zeem
-
-#endif
