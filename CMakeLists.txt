@@ -2,12 +2,15 @@
 #
 # SPDX-License-Identifier: BSD-2-Clause
 
-cmake_minimum_required(VERSION 4.2.3)
+cmake_minimum_required(VERSION 3.28)
 
-set(CMAKE_EXPERIMENTAL_CXX_IMPORT_STD "451f2fe2-a8a2-47c3-bc32-94786d8fc91b")
+# Experimental import std support
+if(${CMAKE_VERSION} VERSION_EQUAL 4.3.3)
+    set(CMAKE_EXPERIMENTAL_CXX_IMPORT_STD "451f2fe2-a8a2-47c3-bc32-94786d8fc91b")
 
-set(CMAKE_CXX_STANDARD_REQUIRED OFF)
-set(CMAKE_CXX_MODULE_STD 1)
+    set(CMAKE_CXX_STANDARD_REQUIRED OFF)
+    set(CMAKE_CXX_MODULE_STD 1)
+endif()
 
 project(zeem VERSION 2.2.0 LANGUAGES CXX)
 
@@ -22,7 +25,12 @@ include(VersionString)
 
 option(ZEEM_BUILD_DOCUMENTATION "Build documentation" OFF)
 option(ZEEM_BUILD_EXAMPLES "Build example executables" ON)
-option(ZEEM_BUILD_CXX_MODULE "Build the library as a C++ 20 module" ON)
+
+if(${CMAKE_VERSION} VERSION_EQUAL 4.3.3 AND
+    ${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU" AND
+    ${CMAKE_CXX_COMPILER_VERSION} VERSION_GREATER_EQUAL 16)
+    option(ZEEM_BUILD_CXX_MODULE "Build the library as a C++ 20 module" ON)
+endif()
 
 if(${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
     if(ZEEM_BUILD_CXX_MODULE)
