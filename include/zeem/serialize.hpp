@@ -9,6 +9,7 @@
  * definition of the serializer classes used to (de-)serialize XML data.
  */
 
+#include <type_traits>
 #ifndef ZEEM_CXX_MODULE
 # include "zeem/config.hpp"
 # include "zeem/detail/charconv.hpp"
@@ -988,50 +989,117 @@ deserializer &deserializer::deserialize_attribute(std::string_view name, T &valu
 // --------------------------------------------------------------------
 // Convenience routines
 
-/**
- * @brief Write out \a value into XML into document or element \a e
- */
-
-ZEEM_EXPORT template <typename T>
-void to_xml(zeem::element_container &e, const T &value)
+namespace detail
 {
-	serializer sr(e);
-	sr.serialize_element(value);
-}
+	ZEEM_EXPORT template <typename T>
+	concept ElementContainer = std::is_base_of_v<zeem::element_container, T>;
 
-/**
- * @brief Write out \a value into XML into document or element \a e
- * using \a name as name for the element to create.
- */
+	/**
+	 * @brief Write out \a value into XML into document or element \a e
+	 */
+	ZEEM_EXPORT template <typename T>
+	void to_xml(zeem::element_container &e, const T &value)
+	{
+		serializer sr(e);
+		sr.serialize_element(value);
+	}
 
-ZEEM_EXPORT template <typename T>
-void to_xml(zeem::element_container &e, std::string_view name, const T &value)
-{
-	serializer sr(e);
-	sr.serialize_element(name, value);
-}
+	/**
+	 * @brief Write out \a value into XML into document or element \a e
+	 * using \a name as name for the element to create.
+	 */
 
-/**
- * @brief Read in \a value from the XML in document or element \a e
- */
+	ZEEM_EXPORT template <typename T>
+	void to_xml(zeem::element_container &e, std::string_view name, const T &value)
+	{
+		serializer sr(e);
+		sr.serialize_element(name, value);
+	}
 
-ZEEM_EXPORT template <typename T>
-void from_xml(const zeem::element_container &e, T &value)
-{
-	deserializer dsr(e);
-	dsr.deserialize_element(value);
-}
+	// Using customization point objects
+	/** @cond */
 
-/**
- * @brief Read in \a value from the XML in document or element \a e
- * using \a name as name for the element to use.
- */
+	struct to_xml_fn
+	{
+		template <typename T>
+		auto operator()(ElementContainer auto &e, T &&val) const
+			noexcept(noexcept(to_xml(e, std::forward<T>(val))))
+				-> decltype(to_xml(e, std::forward<T>(val)))
+		{
+			return to_xml(e, std::forward<T>(val));
+		}
 
-ZEEM_EXPORT template <typename T>
-void from_xml(const zeem::element_container &e, std::string_view name, T &value)
-{
-	deserializer dsr(e);
-	dsr.deserialize_element(name, value);
-}
+		template <typename T>
+		auto operator()(ElementContainer auto &e, std::string_view name, T &&val) const
+			noexcept(noexcept(to_xml(e, name, std::forward<T>(val))))
+				-> decltype(to_xml(e, name, std::forward<T>(val)))
+		{
+			return to_xml(e, name, std::forward<T>(val));
+		}
+	};
+
+	// taken from ranges-v3
+	template <typename T>
+	struct static_const
+	{
+		static inline constexpr T value{};
+	};
+
+	/** @endcond */
+
+
+	/**
+	 * @brief Read in \a value from the XML in document or element \a e
+	 */
+
+	ZEEM_EXPORT template <typename T>
+	void from_xml(const zeem::element_container &e, T &value)
+	{
+		deserializer dsr(e);
+		dsr.deserialize_element(value);
+	}
+
+	/**
+	 * @brief Read in \a value from the XML in document or element \a e
+	 * using \a name as name for the element to use.
+	 */
+
+	ZEEM_EXPORT template <typename T>
+	void from_xml(const zeem::element_container &e, std::string_view name, T &value)
+	{
+		deserializer dsr(e);
+		dsr.deserialize_element(name, value);
+	}
+
+	/** @cond */
+
+	struct from_xml_fn
+	{
+		template <typename T>
+		auto operator()(const ElementContainer auto &e, T &&val) const
+			noexcept(noexcept(from_xml(e, std::forward<T>(val))))
+				-> decltype(from_xml(e, std::forward<T>(val)))
+		{
+			return from_xml(e, std::forward<T>(val));
+		}
+
+		template <typename T>
+		auto operator()(const ElementContainer auto &e, std::string_view name, T &&val) const
+			noexcept(noexcept(from_xml(e, name, std::forward<T>(val))))
+				-> decltype(from_xml(e, name, std::forward<T>(val)))
+		{
+			return from_xml(e, name, std::forward<T>(val));
+		}
+	};
+
+	/** @endcond */
+
+} // namespace detail
+
+// namespace
+// {
+	ZEEM_EXPORT inline constexpr const auto &to_xml = detail::static_const<detail::to_xml_fn>::value;
+	ZEEM_EXPORT inline constexpr const auto &from_xml = detail::static_const<detail::from_xml_fn>::value;
+// } // namespace
 
 } // namespace zeem

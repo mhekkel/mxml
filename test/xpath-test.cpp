@@ -10,11 +10,15 @@
 #include <vector>
 
 #if ZEEM_CXX_MODULE
-import mcfp;
 import zeem;
 #else
-#include "mcfp/mcfp.hpp"
-#include "zeem/zeem.hpp"
+# include "zeem/zeem.hpp"
+#endif
+
+#if MCFP_CXX_MODULE
+import mcfp;
+#else
+# include "mcfp/mcfp.hpp"
 #endif
 
 namespace fs = std::filesystem;
