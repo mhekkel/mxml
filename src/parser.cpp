@@ -1,6 +1,7 @@
 // Copyright (c) 2024 Maarten L. Hekkelman
 // SPDX-License-Identifier: BSD-2-Clause
 
+#include "zeem/doctype.hpp"
 #ifndef ZEEM_CXX_MODULE
 # include "zeem/zeem.hpp"
 
@@ -949,7 +950,12 @@ struct parser_imp
 	std::set<std::string> m_unresolved_ids; // keep track of IDREFS that were not found yet
 
 	doctype::attribute_ptr m_xmlSpaceAttr;
+
+	// sentinel like entity
+	static const doctype::general_entity s_invalid_entity;
 };
+
+const doctype::general_entity parser_imp::s_invalid_entity("invalid", "invalid-entity", "invalid-entity-path");
 
 // --------------------------------------------------------------------
 // some inlines
@@ -1022,8 +1028,7 @@ const doctype::entity &parser_imp::get_general_entity(std::string_view name) con
 	else
 	{
 		not_valid("undefined entity reference '" + std::string{ name } + "'");
-		static const doctype::general_entity invalid_entity("invalid", "invalid-entity", "invalid-entity-path");
-		return invalid_entity;
+		return s_invalid_entity;
 	}
 }
 
@@ -3873,6 +3878,9 @@ void parser_imp::content(doctype::validator &valid)
 				m_entities_on_stack.push_back(m_token);
 
 				const doctype::entity &e = get_general_entity(m_token);
+
+				if (&e == &s_invalid_entity)
+					not_well_formed("undefined ENTITY " + m_token);
 
 				if (e.is_externally_defined() and m_standalone)
 					not_well_formed("document marked as standalone but an external entity is referenced");
