@@ -289,11 +289,12 @@ struct value_serializer<std::chrono::system_clock::time_point>
 
 		struct membuf : public std::streambuf
 		{
-			membuf(char *text, std::size_t length)
+			membuf(std::string_view s)
 			{
-				this->setg(text, text, text + length);
+				auto text = const_cast<char *>(s.data());
+				this->setg(text, text, text + s.size());
 			}
-		} buffer(const_cast<char *>(s.data()), s.length());
+		} buffer(s);
 		std::istream is(&buffer);
 
 #if ZEEM_USE_DATE_H
