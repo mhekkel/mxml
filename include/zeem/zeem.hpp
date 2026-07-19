@@ -1,5 +1,4 @@
 // Copyright (c) 2024 Maarten L. Hekkelman
-//
 // SPDX-License-Identifier: BSD-2-Clause
 
 #pragma once

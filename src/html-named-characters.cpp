@@ -1,5 +1,4 @@
 // Copyright (c) 2023 Maarten L. Hekkelman
-//
 // SPDX-License-Identifier: BSD-2-Clause
 
 #ifndef ZEEM_CXX_MODULE

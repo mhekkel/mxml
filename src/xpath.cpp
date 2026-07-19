@@ -1,5 +1,4 @@
 // Copyright (c) 2024 Maarten L. Hekkelman
-//
 // SPDX-License-Identifier: BSD-2-Clause
 
 #ifndef ZEEM_CXX_MODULE
@@ -170,7 +169,7 @@ const CoreFunctionInfo kCoreFunctionInfo[kCoreFunctionCount] = {
 	{ "not", 1 },
 	{ "true", 0 },
 	{ "false", 0 },
-	{ "lang", 0 },
+	{ "lang", 1 },
 	{ "number", kOptionalArgument },
 	{ "sum", 0 },
 	{ "floor", 1 },
@@ -1416,19 +1415,21 @@ object core_function_expression<CoreFunction::Substring>::evaluate(expression_co
 	++a;
 	object v2 = (*a)->evaluate(context);
 	++a;
-	object v3 = (*a)->evaluate(context);
 
-	if (v2.type() != object_type::number or v3.type() != object_type::number)
-		throw exception("expected one string and two numbers as argument for substring");
+	if (v1.type() == object_type::string and v2.type() == object_type::number)
+	{
+		if (m_args.size() == 3)
+		{
+			object v3 = (*a)->evaluate(context);
+	
+			if (v3.type() == object_type::number)
+				return v1.as<std::string>().substr(v2.as<int>(), v3.as<int>());
+		}
+		else 
+			return v1.as<std::string>().substr(v2.as<int>(), std::string::npos);
+	}
 
-	try
-	{
-		return v1.as<std::string>().substr(v2.as<int>() - 1, v3.as<int>());
-	}
-	catch (...)
-	{
-		throw exception("expected one string and two numbers as argument for substring");
-	}
+	throw exception("expected one string and one or two numbers as argument for substring");
 }
 
 template <>
@@ -2334,6 +2335,7 @@ expression_ptr xpath_parser::function_call()
 		case CoreFunction::Contains: result = std::make_shared<core_function_expression<CoreFunction::Contains>>(arguments); break;
 		case CoreFunction::SubstringBefore: result = std::make_shared<core_function_expression<CoreFunction::SubstringBefore>>(arguments); break;
 		case CoreFunction::SubstringAfter: result = std::make_shared<core_function_expression<CoreFunction::SubstringAfter>>(arguments); break;
+		case CoreFunction::Substring: result = std::make_shared<core_function_expression<CoreFunction::Substring>>(arguments); break;
 		case CoreFunction::StringLength: result = std::make_shared<core_function_expression<CoreFunction::StringLength>>(arguments); break;
 		case CoreFunction::NormalizeSpace: result = std::make_shared<core_function_expression<CoreFunction::NormalizeSpace>>(arguments); break;
 		case CoreFunction::Translate: result = std::make_shared<core_function_expression<CoreFunction::Translate>>(arguments); break;

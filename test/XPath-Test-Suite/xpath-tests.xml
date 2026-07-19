@@ -158,4 +158,8 @@ SPDX-License-Identifier: CC0-1.0
 	<xpath-test data="data-014.xml" xpath="//BBB[id()='aap' and id()='aap' and id()='aap']" expected-size="1"
 		test-name="ident" test-attr="aap" />
 
+	<xpath-test data="data-014.xml" xpath="//BBB[substring(id(), 1, 1)='o']" expected-size="3" />
+
+	<xpath-test data="data-014.xml" xpath="//BBB[substring(id(), 1)='oom']" expected-size="1" />
+
 </xpath-tests>
