@@ -321,6 +321,9 @@ char32_t istream_data_source::next_utf8_char()
 			if ((ch[0] & 0x0c0) != 0x080)
 				throw source_exception("Invalid utf-8");
 			result = ((result & 0x01F) << 6) | (ch[0] & 0x03F);
+
+			if (result < 0x0080)
+				throw source_exception("invalid utf-8 character (overlong)");
 		}
 		else if ((result & 0x0F0) == 0x0E0)
 		{
@@ -329,6 +332,9 @@ char32_t istream_data_source::next_utf8_char()
 			if ((ch[0] & 0x0c0) != 0x080 or (ch[1] & 0x0c0) != 0x080)
 				throw source_exception("Invalid utf-8");
 			result = ((result & 0x00F) << 12) | ((ch[0] & 0x03F) << 6) | (ch[1] & 0x03F);
+
+			if (result < 0x0800)
+				throw source_exception("invalid utf-8 character (overlong)");
 		}
 		else if ((result & 0x0F8) == 0x0F0)
 		{
@@ -339,10 +345,16 @@ char32_t istream_data_source::next_utf8_char()
 				throw source_exception("Invalid utf-8");
 			result = ((result & 0x007) << 18) | ((ch[0] & 0x03F) << 12) | ((ch[1] & 0x03F) << 6) | (ch[2] & 0x03F);
 
+			if (result < 0x010000)
+				throw source_exception("invalid utf-8 character (overlong)");
+
 			if (result > 0x10ffff)
 				throw source_exception("invalid utf-8 character (out of range)");
 		}
 	}
+
+	if (result >= 0x0D800 and result <= 0x0DFFF)
+		throw source_exception("invalid utf-8 character, surrogate");
 
 	return result;
 }

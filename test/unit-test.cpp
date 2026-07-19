@@ -963,3 +963,15 @@ TEST_CASE("emplace-1")
 	// e1.emplace_back(text);
 	e1.nodes().insert(e1.end(), std::move(text));
 }
+
+TEST_CASE("utf8-1")
+{
+	using namespace zeem::literals;
+
+	// Check overlong character
+	CHECK_THROWS("<foo>\xC1\x81</foo>"_xml);
+	
+	// Check surrogate
+	CHECK_THROWS("<foo>\xED\xA0\x80</foo>"_xml);
+	
+}

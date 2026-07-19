@@ -2,14 +2,14 @@
 # SPDX-License-Identifier: BSD-2-Clause
 
 CPMFindPackage(NAME Catch2
-	GIT_REPOSITORY "https://github.com/catchorg/Catch2"
-	VERSION "3.4.0"
-	EXCLUDE_FROM_ALL YES)
+    GIT_REPOSITORY "https://github.com/catchorg/Catch2"
+    VERSION "3.4.0"
+    EXCLUDE_FROM_ALL YES)
 CPMFindPackage(NAME mcfp
-	GIT_REPOSITORY "https://forge.hekkelman.net/maarten/mcfp.git"
-	GIT_TAG v2.0.2
-	EXCLUDE_FROM_ALL YES
-	OPTIONS "MCFP_BUILD_CXX_MODULE ON")
+    GIT_REPOSITORY "https://forge.hekkelman.net/maarten/mcfp.git"
+    GIT_TAG v2.0.2
+    EXCLUDE_FROM_ALL YES
+    OPTIONS "MCFP_BUILD_CXX_MODULE ON")
 
 # data files for the parser test
 set(XML_CONF_TAR ${CMAKE_CURRENT_SOURCE_DIR}/XML-Test-Suite.tbz)
@@ -72,8 +72,14 @@ foreach(TEST IN LISTS ZEEM_TESTS)
     if("${TEST}" STREQUAL "parser")
         # Some tests should be skipped
         list(APPEND ZEEM_TEST_ARGS
-            ibm-valid-P28-ibm28v02.xml ibm-valid-P29-ibm29v01.xml ibm-valid-P29-ibm29v02.xml
-            ibm-1-1-valid-P03-ibm03v09.xml rmt-e2e-34 rmt-e2e-55 rmt-054 rmt-ns10-006 rmt-e3e-13)
+            ibm-valid-P28-ibm28v02.xml
+            ibm-valid-P29-ibm29v01.xml
+            ibm-valid-P29-ibm29v02.xml
+            ibm-1-1-valid-P03-ibm03v09.xml
+            rmt-e2e-34
+            rmt-e2e-55
+            rmt-054
+            rmt-ns10-006)
         list(TRANSFORM ZEEM_TEST_ARGS PREPEND "--questionable=")
         list(PREPEND ZEEM_TEST_ARGS ${XML_CONF_FILE} "--print-ids")
     else()
