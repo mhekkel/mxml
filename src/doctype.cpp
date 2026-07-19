@@ -640,8 +640,8 @@ bool attribute::is_nmtoken(std::string &s) const
 	bool result = not s.empty();
 
 	std::string::iterator c = s.begin();
-	while (result and ++c != s.end())
-		result = is_name_char(*c);
+	while (result and c != s.end())
+		result = is_name_char(*c++);
 
 	return result;
 }

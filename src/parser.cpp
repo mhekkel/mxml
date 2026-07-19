@@ -1017,7 +1017,14 @@ const doctype::entity &parser_imp::get_general_entity(std::string_view name) con
 			return *c;
 	}
 
-	not_well_formed("undefined entity reference '" + std::string{ name } + "'");
+	if (m_general_entities.empty())
+		not_well_formed("undefined entity reference '" + std::string{ name } + "'");
+	else
+	{
+		not_valid("undefined entity reference '" + std::string{ name } + "'");
+		static const doctype::general_entity invalid_entity("invalid", "invalid-entity", "invalid-entity-path");
+		return invalid_entity;
+	}
 }
 
 const doctype::entity &parser_imp::get_parameter_entity(std::string_view name) const
