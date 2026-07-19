@@ -2171,7 +2171,7 @@ const general_entity *named_character_table::get(std::string name)
 	if (gi == m_entities.end())
 	{
 
-		int L = 0, R = sizeof(kNamedHTMLCharacters) / sizeof(html5_named_character);
+		int L = 0, R = sizeof(kNamedHTMLCharacters) / sizeof(html5_named_character) - 1;
 		while (L <= R)
 		{
 			int i = (L + R) / 2;
