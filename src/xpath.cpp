@@ -1,5 +1,6 @@
 // Copyright (c) 2024 Maarten L. Hekkelman
 // SPDX-License-Identifier: BSD-2-Clause
+
 #ifndef ZEEM_CXX_MODULE
 # include "zeem/zeem.hpp"
 
@@ -131,7 +132,6 @@ enum class CoreFunction
 	Floor,
 	Ceiling,
 	Round,
-	Comment,
 
 	CoreFunctionCount
 };
@@ -170,11 +170,10 @@ const CoreFunctionInfo kCoreFunctionInfo[kCoreFunctionCount] = {
 	{ "false", 0 },
 	{ "lang", 1 },
 	{ "number", kOptionalArgument },
-	{ "sum", 0 },
+	{ "sum", 1 },
 	{ "floor", 1 },
 	{ "ceiling", 1 },
 	{ "round", 1 },
-	{ "comment", 1 },
 };
 
 // the expressions are implemented as interpreter objects
@@ -811,9 +810,10 @@ object name_test_step_expression::evaluate(expression_context &context)
 class node_type_expression : public step_expression
 {
   public:
-	node_type_expression(AxisType axis, node_type test)
+	node_type_expression(AxisType axis, node_type test, std::string target = {})
 		: step_expression(axis)
 		, m_node_type(test)
+		, m_target(std::move(target))
 	{
 	}
 
@@ -830,6 +830,11 @@ class node_type_expression : public step_expression
 		else if (*m_node_type == node_type::text)
 			return step_expression::evaluate(context, [](const node *n)
 				{ return n->type() == node_type::text or n->type() == node_type::cdata; }, false);
+		else if (m_node_type.value() == node_type::processing_instruction)
+			return step_expression::evaluate(context, [target = m_target](const node *n)
+				{
+					auto pi = dynamic_cast<const processing_instruction *>(n);
+					return pi != nullptr and pi->get_target() == target; }, false);
 		else
 			return step_expression::evaluate(context, [t = *m_node_type](const node *n)
 				{ return n->type() == t; }, false);
@@ -837,6 +842,7 @@ class node_type_expression : public step_expression
 
   private:
 	std::optional<node_type> m_node_type;
+	std::string m_target;
 };
 
 // --------------------------------------------------------------------
@@ -1598,6 +1604,22 @@ object core_function_expression<CoreFunction::Number>::evaluate(expression_conte
 }
 
 template <>
+object core_function_expression<CoreFunction::Sum>::evaluate(expression_context &context)
+{
+	object v = m_args.front()->evaluate(context);
+	double sum = 0;
+	for (auto &n : v.as<const node_set &>())
+	{
+		auto s = n->str();
+		double v;
+		auto [p, e] = from_chars(s.data(), s.data() + s.length(), v);
+		if (e == std::errc{})
+			sum += v;
+	}
+	return sum;
+}
+
+template <>
 object core_function_expression<CoreFunction::Floor>::evaluate(expression_context &context)
 {
 	object v = m_args.front()->evaluate(context);
@@ -2122,14 +2144,6 @@ Token xpath_parser::get_next_token()
 						m_token_string == "processing-instruction" or m_token_string == "node")
 					{
 						token = Token::NodeType;
-
-						// set input pointer after the parenthesis
-						m_next = c + 1;
-						while (m_next != m_end and std::isspace(static_cast<int>(*m_next)))
-							++m_next;
-						if (*m_next != ')')
-							throw exception("expected '()' after a node type specifier");
-						++m_next;
 					}
 					else
 					{
@@ -2241,17 +2255,26 @@ expression_ptr xpath_parser::node_test(AxisType axis)
 		std::string name = m_token_string;
 		match(Token::NodeType);
 
-		if (name == "comment")
-			result = std::make_shared<node_type_expression>(axis, node_type::comment);
-		else if (name == "text")
-			result = std::make_shared<node_type_expression>(axis, node_type::text);
-		else if (name == "processing-instruction")
-			result = std::make_shared<node_type_expression>(axis, node_type::processing_instruction);
-		else if (name == "node")
-			result = std::make_shared<node_type_expression>(axis);
+		match(Token::LeftParenthesis);
+		if (name == "processing-instruction")
+		{
+			auto target = m_token_string;
+			match(Token::Literal);
 
+			result = std::make_shared<node_type_expression>(axis, node_type::processing_instruction, target);
+		}
 		else
-			throw exception("invalid node type specified: " + name);
+		{
+			if (name == "comment")
+				result = std::make_shared<node_type_expression>(axis, node_type::comment);
+			else if (name == "text")
+				result = std::make_shared<node_type_expression>(axis, node_type::text);
+			else if (name == "node")
+				result = std::make_shared<node_type_expression>(axis);
+			else
+				throw exception("invalid node type specified: " + name);
+		}
+		match(Token::RightParenthesis);
 	}
 	else if (m_lookahead == Token::FunctionName)
 		result = function_call();
@@ -2384,7 +2407,6 @@ expression_ptr xpath_parser::function_call()
 		case CoreFunction::Floor: result = std::make_shared<core_function_expression<CoreFunction::Floor>>(arguments); break;
 		case CoreFunction::Ceiling: result = std::make_shared<core_function_expression<CoreFunction::Ceiling>>(arguments); break;
 		case CoreFunction::Round: result = std::make_shared<core_function_expression<CoreFunction::Round>>(arguments); break;
-		case CoreFunction::Comment: result = std::make_shared<core_function_expression<CoreFunction::Comment>>(arguments); break;
 		default: break;
 	}
 

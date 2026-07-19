@@ -152,14 +152,18 @@ SPDX-License-Identifier: CC0-1.0
 	<xpath-test data="data-014.xml" xpath="//id('noot')" expected-size="1"
 		test-name="ident" test-attr="noot" />
 
-	<xpath-test data="data-014.xml" xpath="//BBB[@id='noot' or @id='aap']" expected-size="2"
+	<xpath-test data="data-014.xml" xpath="//id('noot aap')" expected-size="2"
 		 />
 
-	<xpath-test data="data-014.xml" xpath="//BBB[@id='aap' and @id='aap' and @id='aap']" expected-size="1"
+	<xpath-test data="data-014.xml" xpath="//BBB[@ident='aap' and @ident='aap' and @ident='aap']" expected-size="1"
 		test-name="ident" test-attr="aap" />
 
 	<xpath-test data="data-014.xml" xpath="//BBB[substring(@ident, 1, 1)='o']" expected-size="3" />
 
 	<xpath-test data="data-014.xml" xpath="//BBB[substring(@ident, 1)='oom']" expected-size="1" />
+
+	<!--comment()?-->
+
+	<xpath-test data="data-001.xml" xpath="//comment()" expected-size="1" />
 
 </xpath-tests>
