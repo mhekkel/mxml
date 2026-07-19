@@ -164,7 +164,7 @@ int main()
 		std::ifstream f("clavichord-v2.xml");
 		f >> doc;
 
-		from_xml(doc, "data", cs);
+		zeem::from_xml(doc, "data", cs);
 
 		// And now do something useful with the data in cs
 	}

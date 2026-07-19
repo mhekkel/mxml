@@ -58,12 +58,12 @@ int main()
     
     std::vector<Person> persons;
     /* Deserialize all persons into an array */
-    from_xml(doc, "persons", persons);
+    zeem::from_xml(doc, "persons", persons);
 
     doc.clear();
 
     /* Serialize all persons back into an XML document again */
-    to_xml(doc, "persons", persons);
+    zeem::to_xml(doc, "persons", persons);
 
     return 0;
 }

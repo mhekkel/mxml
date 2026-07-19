@@ -86,12 +86,12 @@ TEST_CASE("serializer_1")
 	auto doc = R"(<test>42</test>)"_xml;
 
 	int32_t i = -1;
-	from_xml(doc, "test", i);
+	zeem::from_xml(doc, "test", i);
 
 	CHECK(i == 42);
 
 	document doc2;
-	to_xml(doc2, "test", i);
+	zeem::to_xml(doc2, "test", i);
 
 	CHECK(doc == doc2);
 }
@@ -122,7 +122,7 @@ TEST_CASE("serializer_2")
 
 	auto doc = R"(<test><a>1</a><b>0.2</b><c>aap</c></test>)"_xml;
 	S s;
-	from_xml(doc, "test", s);
+	zeem::from_xml(doc, "test", s);
 
 	CHECK(s.a == 1);
 	CHECK(std::to_string(s.b).substr(0, 3) == "0.2");
@@ -150,7 +150,7 @@ TEST_CASE("test_s_1")
 	CHECK((std::ostringstream() << doc).str() == "<s1><i>1</i><s>aap</s></s1>");
 
 	st_1 s2;
-	from_xml(doc, "s1", s2);
+	zeem::from_xml(doc, "s1", s2);
 
 	CHECK(s1 == s2);
 }
@@ -185,7 +185,7 @@ TEST_CASE("test_serialize_arrays")
 	doc.insert(doc.begin(), e); // copy
 
 	std::vector<int> ii2;
-	from_xml(e, "i", ii2);
+	zeem::from_xml(e, "i", ii2);
 
 	CHECK(ii == ii2);
 }
@@ -204,7 +204,7 @@ TEST_CASE("test_serialize_arrays2")
 	to_xml(doc, "test", sa);
 
 	S_arr sa2;
-	from_xml(doc, "test", sa2);
+	zeem::from_xml(doc, "test", sa2);
 
 	CHECK(sa.vi == sa2.vi);
 	CHECK(sa.ds == sa2.ds);
@@ -342,7 +342,7 @@ TEST_CASE("test_optional")
 
 	s.reset();
 
-	from_xml(doc, "test", s);
+	zeem::from_xml(doc, "test", s);
 
 	CHECK((bool)s);
 	CHECK(s.value_or("") == "aap");
@@ -368,7 +368,7 @@ TEST_CASE("test_date_1")
 	auto doc = "<d>2022-12-06</d>"_xml;
 
 	date_t1 t1;
-	from_xml(doc, t1);
+	zeem::from_xml(doc, t1);
 
 	CHECK(t1.sd == 2022y / 12 / 6);
 }
@@ -382,7 +382,7 @@ TEST_CASE("test_date_2")
 	date_t1 t1{ 1966y / 6 / 27 };
 
 	zeem::document doc;
-	to_xml(doc, t1);
+	zeem::to_xml(doc, t1);
 
 	CHECK(doc == "<d>1966-06-27</d>"_xml);
 }
@@ -413,7 +413,7 @@ TEST_CASE("test_time_1")
 	})
 	{
 		time_t1 t1;
-		from_xml(doc, t1);
+		zeem::from_xml(doc, t1);
 
 		if (t1.st == t0)
 			continue;
@@ -433,7 +433,7 @@ TEST_CASE("test_time_2")
 	time_t1 t1{ sys_days{ 2022y / 12 / 6 } + 1h + 2min + 3s };
 
 	zeem::document doc;
-	to_xml(doc, t1);
+	zeem::to_xml(doc, t1);
 
 	auto ti = doc.find_first("//t");
 	REQUIRE(ti != doc.end());
@@ -445,7 +445,7 @@ TEST_CASE("test_time_2")
 	CHECK(std::regex_match(ti_c, rx));
 
 	time_t1 t2;
-	from_xml(doc, t2);
+	zeem::from_xml(doc, t2);
 
 	CHECK(t2.st == t1.st);
 }
@@ -460,7 +460,7 @@ TEST_CASE("test_time_3")
 	auto doc = "<t>2022-12-06T00:01:02</t>"_xml;
 
 	time_t1 t1;
-	from_xml(doc, t1);
+	zeem::from_xml(doc, t1);
 
 	auto t2 = sys_days{ 2022y / 12 / 6 } + 1min + 2s;
 
@@ -481,7 +481,7 @@ TEST_CASE("test_time_4")
 	auto doc = "<t>2026-04-24T08:14Z</t>"_xml;
 
 	time_t1 t1;
-	from_xml(doc, t1);
+	zeem::from_xml(doc, t1);
 
 #if ZEEM_USE_DATE_H
 	auto t2 = date::zoned_time(date::current_zone(), sys_days{ 2026y / 4 / 24 } + 8h + 14min).get_sys_time();
@@ -519,7 +519,7 @@ TEST_CASE("test_s_6")
 	CHECK((std::ostringstream() << doc).str() == "<v1><s1><i>1</i><s>aap</s></s1><s1><i>2</i><s>noot</s></s1></v1>");
 
 	v_st_1 v2;
-	// CHECK_THROWS_AS(zeem::from_xml(doc, "v1", v2), zeem::exception);
+	// CHECK_THROWS_AS(zeem::zeem::from_xml(doc, "v1", v2), zeem::exception);
 
 	zeem::from_xml(doc.front(), "s1", v2);
 
