@@ -1,6 +1,5 @@
 // Copyright (c) 2024 Maarten L. Hekkelman
 // SPDX-License-Identifier: BSD-2-Clause
-
 #ifndef ZEEM_CXX_MODULE
 # include "zeem/zeem.hpp"
 
@@ -423,7 +422,7 @@ bool object::operator<(const object &o) const
 
 object operator%(const object &lhs, const object &rhs)
 {
-	return lhs.as<double>() + rhs.as<int>();
+	return std::fmod(lhs.as<double>(), rhs.as<int>());
 }
 
 object operator*(const object &lhs, const object &rhs)
@@ -1196,24 +1195,56 @@ object core_function_expression<CoreFunction::Count>::evaluate(expression_contex
 	return { static_cast<double>(result) };
 }
 
+// --------------------------------------------------------------------
+/// \brief Simplistic implementation of split, with std:string in the vector
+void split(std::vector<std::string> &v, std::string_view s, std::string_view p)
+{
+	v.clear();
+
+	std::string_view::size_type i = 0;
+	const auto e = s.length();
+
+	while (i <= e)
+	{
+		auto n = s.find_first_of(p, i);
+		if (n > e)
+			n = e;
+
+		if (n > i)
+			v.emplace_back(s.substr(i, n - i));
+
+		i = n + 1;
+	}
+}
+
 template <>
 object core_function_expression<CoreFunction::Id>::evaluate(expression_context &context)
 {
-	node *n = nullptr;
+	node_set result;
 
-	if (m_args.empty())
-		n = context.m_node;
-	else
+	if (not m_args.empty())
 	{
 		object v = m_args.front()->evaluate(context);
-		if (not v.as<const node_set &>().empty())
-			n = v.as<const node_set &>().front();
+
+		std::vector<std::string> ids;
+		if (v.type() == object_type::node_set)
+		{
+			for (const node *n : v.as<const node_set &>())
+				ids.emplace_back(n->str());
+		}
+		else
+			split(ids, v.as<std::string>(), " \t\n\r");
+
+		if (auto en = dynamic_cast<element_container *>(context.m_node); en != nullptr and not ids.empty())
+		{
+			iterate_child_nodes(en, result, false, [&ids](const node *n)
+				{
+					auto e = dynamic_cast<const element *>(n);
+					return e != nullptr and std::ranges::contains(ids, e->id()); });
+		}
 	}
 
-	if (n == nullptr or n->type() != node_type::element)
-		throw exception("argument is not an element in function 'id()'");
-
-	return static_cast<element *>(n)->id();
+	return result;
 }
 
 template <>
@@ -1416,17 +1447,19 @@ object core_function_expression<CoreFunction::Substring>::evaluate(expression_co
 	object v2 = (*a)->evaluate(context);
 	++a;
 
-	if (v1.type() == object_type::string and v2.type() == object_type::number)
+	if (v2.type() == object_type::number)
 	{
+		auto s = v1.as<std::string>();
+
 		if (m_args.size() == 3)
 		{
 			object v3 = (*a)->evaluate(context);
-	
+
 			if (v3.type() == object_type::number)
-				return v1.as<std::string>().substr(v2.as<int>(), v3.as<int>());
+				return s.substr(v2.as<int>(), v3.as<int>());
 		}
-		else 
-			return v1.as<std::string>().substr(v2.as<int>(), std::string::npos);
+		else
+			return s.substr(v2.as<int>(), std::string::npos);
 	}
 
 	throw exception("expected one string and one or two numbers as argument for substring");
@@ -2220,6 +2253,8 @@ expression_ptr xpath_parser::node_test(AxisType axis)
 		else
 			throw exception("invalid node type specified: " + name);
 	}
+	else if (m_lookahead == Token::FunctionName)
+		result = function_call();
 	else
 	{
 		result = std::make_shared<name_test_step_expression>(axis, m_token_string);

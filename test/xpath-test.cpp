@@ -76,7 +76,7 @@ bool run_test(const zeem::element &test)
 	if (ns.size() != std::stoul(test.get_attribute("expected-size")))
 	{
 		std::cout << "incorrect number of nodes in returned node-set\n"
-				  << "expected: " << test.get_attribute("expected-size") << '\n';
+				  << "expected: " << test.get_attribute("expected-size") << " found: " << ns.size() << '\n';
 
 		result = false;
 	}
