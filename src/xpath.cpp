@@ -444,7 +444,14 @@ bool object::operator<(const object &o) const
 		}
 	}
 	else
-		result = m_type < o.m_type;
+	{
+		if (m_type == object_type::number or o.m_type == object_type::number)
+			result = as<double>() < o.as<double>();
+		else if (m_type ==object_type::boolean or o.m_type == object_type::boolean)
+			result = as<bool>() < o.as<bool>();
+		else
+		 	result = as<std::string>() < o.as<std::string>();
+	}
 	return result;
 }
 
