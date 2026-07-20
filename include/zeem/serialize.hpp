@@ -250,6 +250,14 @@ struct value_serializer<T>
 	{
 		return instance().m_value_map.empty();
 	}
+
+	std::vector<std::string> values() const
+	{
+		std::vector<std::string> result;
+		for (const auto &[_, value] : m_value_map)
+			result.emplace_back(value);
+		return result;
+	}
 };
 
 /** @endcond */
@@ -600,6 +608,45 @@ struct deserializer
 	/** @endcond */
 };
 
+/**
+ * @brief schema creator is used to create XML Schema's
+ */
+
+#ifndef LIBZEEP_DOXYGEN_INVOKED
+ZEEM_EXPORT using type_map = std::map<std::string, element>;
+#endif
+
+ZEEM_EXPORT struct schema_creator
+{
+	schema_creator(type_map &types, element &node)
+		: m_node(node)
+		, m_types(types)
+	{
+	}
+
+	template <typename T>
+	schema_creator &operator&(const element_nvp<T> &rhs)
+	{
+		return add_element(rhs.name(), rhs.value());
+	}
+
+	template <typename T>
+	schema_creator &operator&(const attribute_nvp<T> &rhs)
+	{
+		return add_attribute(rhs.name(), rhs.value());
+	}
+
+	template <typename T>
+	schema_creator &add_element(std::string_view name, const T &value);
+
+	template <typename T>
+	schema_creator &add_attribute(std::string_view name, const T &value);
+
+  private:
+	element &m_node;
+	type_map &m_types;
+};
+
 // --------------------------------------------------------------------
 
 /**
@@ -643,6 +690,23 @@ struct type_serializer<T[N]>
 			if (ix >= N)
 				break;
 		}
+	}
+
+	static element schema(std::string_view name)
+	{
+		return element{
+			"xsd:element",
+			{ //
+				{ "name", name },
+				{ "type", type_serializer_type::type_name() },
+				{ "minOccurs", std::to_string(N) },
+				{ "maxOccurs", std::to_string(N) } }
+		};
+	}
+
+	static void register_type(type_map &types)
+	{
+		type_serializer_type::register_type(types);
 	}
 };
 
@@ -693,6 +757,43 @@ struct type_serializer<T>
 				value = value_serializer_type::from_string(e->get_content());
 		}
 	}
+
+	static element schema(std::string_view name)
+	{
+		return element{
+			"xsd:element",
+			{ //
+				{ "name", name },
+				{ "type", value_serializer_type::type_name() },
+				{ "minOccurs", "1" },
+				{ "maxOccurs", "1" } }
+		};
+	}
+
+	static void register_type(type_map &types)
+	{
+		element n("xsd:simpleType", { { "name", value_serializer_type::type_name() } });
+
+		element restriction("xsd:restriction", { { "base", "xsd:string" } });
+
+		for (std::string v : value_serializer_type::instance().values())
+			restriction.emplace_back(element{ "xsd:enumeration", { { "value", v } } });
+
+		n.emplace_back(std::move(restriction));
+		types[type_name()] = std::move(n);
+	}
+};
+
+// code to serialize structs.
+// struct_serializer_archive is a helper class to be used as Archive
+
+template <typename Archive, typename T>
+struct struct_serializer
+{
+	static void serialize(Archive &stream, T &data)
+	{
+		data.serialize(stream, 0U);
+	}
 };
 
 template <typename T>
@@ -704,7 +805,7 @@ struct type_serializer<T>
 	// the name of this type
 	std::string m_type_name;
 
-	static std::string type_name() { return instance().m_type_name.c_str(); }
+	static std::string type_name() { return instance().m_type_name; }
 	void type_name(std::string_view name) { m_type_name = name; }
 
 	static type_serializer &instance()
@@ -748,6 +849,36 @@ struct type_serializer<T>
 			}
 		}
 	}
+
+	static element schema(std::string_view name)
+	{
+		return element{
+			"xsd:element",
+			{ //
+				{ "name", name },
+				{ "type", "ns:" + value_type::type_name() },
+				{ "minOccurs", "1" },
+				{ "maxOccurs", "1" } }
+		};
+	}
+
+	static void register_type(type_map &types)
+	{
+		auto name = value_type::type_name();
+
+		element n("xsd:complexType", { { "name", name } });
+
+		element sequence("xsd:sequence");
+		using archive = struct_serializer<schema_creator, value_type>;
+		schema_creator schema(types, sequence);
+
+		value_type v;
+		archive::serialize(schema, v);
+
+		n.emplace_back(std::move(sequence));
+
+		types[name] = std::move(n);
+	}
 };
 
 template <typename T>
@@ -776,6 +907,23 @@ struct type_serializer<std::optional<T>>
 			type_serializer_type::deserialize_child(e, ".", v);
 			value.emplace(std::move(v));
 		}
+	}
+
+	static element schema(std::string_view name)
+	{
+		return element{
+			"xsd:element",
+			{ //
+				{ "name", name },
+				{ "type", type_serializer_type::type_name() },
+				{ "minOccurs", "0" },
+				{ "maxOccurs", "1" } }
+		};
+	}
+
+	static void register_type(type_map &types)
+	{
+		type_serializer_type::register_type(types);
 	}
 };
 
@@ -864,6 +1012,23 @@ struct type_serializer<T>
 	{
 		type_serializer::deserialize_array(n, name, value, priority_tag<2>{});
 	}
+
+	static element schema(std::string_view name)
+	{
+		return element{
+			"xsd:element",
+			{ //
+				{ "name", name },
+				{ "type", type_serializer_type::type_name() },
+				{ "minOccurs", "0" },
+				{ "maxOccurs", "unbounded" } }
+		};
+	}
+
+	static void register_type(type_map &types)
+	{
+		type_serializer_type::register_type(types);
+	}
 };
 
 template <typename T>
@@ -911,6 +1076,21 @@ struct type_serializer
 			if (e != n.end())
 				value = value_serializer_type::from_string(e->get_content());
 		}
+	}
+
+	static element schema(std::string_view name)
+	{
+		return element{
+			"xsd:element",
+			{ { "name", name },
+				{ "type", value_serializer_type::type_name() },
+				{ "minOccurs", "1" },
+				{ "maxOccurs", "1" } }
+		};
+	}
+
+	static void register_type(type_map &types)
+	{
 	}
 };
 
@@ -987,6 +1167,47 @@ deserializer &deserializer::deserialize_attribute(std::string_view name, T &valu
 	return *this;
 }
 
+// Schema creation
+template <typename T>
+schema_creator &schema_creator::add_element(std::string_view name, const T &value)
+{
+	using value_type = std::remove_cv_t<T>;
+	using type_serializer = type_serializer<value_type>;
+
+	m_node.emplace_back(type_serializer::schema(name));
+
+	std::string type_name = type_serializer::type_name();
+
+	// we might be known already
+	if (m_types.find(type_name) == m_types.end())
+		type_serializer::register_type(m_types);
+
+	return *this;
+}
+
+template <typename T>
+schema_creator &schema_creator::add_attribute(std::string_view name, const T &value)
+{
+	using value_type = std::remove_cv_t<T>;
+	using type_serializer = type_serializer<value_type>;
+
+	element n("xsd:attribute");
+
+	std::string type_name = type_serializer::type_name();
+
+	n.set_attribute("name", name);
+	n.set_attribute("type", type_name);
+
+	if (m_types.find(type_name) == m_types.end())
+		type_serializer::register_type(m_types);
+
+	assert(m_node.parent() != nullptr);
+	if (m_node.parent() != nullptr)
+		m_node.parent()->emplace_back(std::move(n));
+
+	return *this;
+}
+
 /** @endcond */
 
 // --------------------------------------------------------------------
@@ -1050,7 +1271,6 @@ namespace detail
 
 	/** @endcond */
 
-
 	/**
 	 * @brief Read in \a value from the XML in document or element \a e
 	 */
@@ -1101,8 +1321,8 @@ namespace detail
 
 // namespace
 // {
-	ZEEM_EXPORT inline constexpr const auto &to_xml = detail::static_const<detail::to_xml_fn>::value;
-	ZEEM_EXPORT inline constexpr const auto &from_xml = detail::static_const<detail::from_xml_fn>::value;
+ZEEM_EXPORT inline constexpr const auto &to_xml = detail::static_const<detail::to_xml_fn>::value;
+ZEEM_EXPORT inline constexpr const auto &from_xml = detail::static_const<detail::from_xml_fn>::value;
 // } // namespace
 
 } // namespace zeem

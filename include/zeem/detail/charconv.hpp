@@ -4,6 +4,8 @@
 #pragma once
 
 #ifndef ZEEM_CXX_MODULE
+# include "zeem/config.hpp"
+
 # include <charconv>
 # include <cmath>
 

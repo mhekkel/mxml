@@ -39,6 +39,7 @@ add_custom_target(XML_CONF ALL DEPENDS ${XML_CONF_FILE})
 list(APPEND ZEEM_TESTS
     unit
     parser
+    schema
     serializer
     xpath)
 
