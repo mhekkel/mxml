@@ -6,16 +6,11 @@
 #include <cassert>
 #include <catch2/catch_session.hpp>
 #include <catch2/catch_test_macros.hpp>
-#include <compare>
-#include <cstddef>
 #include <filesystem>
 #include <initializer_list>
 #include <iomanip>
 #include <iostream>
-#include <iterator>
-#include <sstream>
 #include <string>
-#include <utility>
 
 #if ZEEM_CXX_MODULE
 import zeem;
@@ -71,6 +66,7 @@ struct S
 	std::optional<int> f;
 	std::vector<double> g;
 	E h;
+	std::array<short, 4> i;
 
 	template <typename Archive>
 	void serialize(Archive &ar, unsigned long)
@@ -83,7 +79,8 @@ struct S
 		   & zeem::make_element_nvp("e", e)
 		   & zeem::make_element_nvp("f", f)
 		   & zeem::make_element_nvp("g", g)
-		   & zeem::make_element_nvp("h", h);
+		   & zeem::make_element_nvp("h", h)
+		   & zeem::make_element_nvp("i", i);
 		// clang-format on
 	}
 };
@@ -119,11 +116,47 @@ TEST_CASE("schema-1")
 		<xsd:element name="one" type="xsd:int" minOccurs="1" maxOccurs="1"/>
 		<xsd:element name="two" type="xsd:float" minOccurs="2" maxOccurs="2"/>
 		<xsd:element name="three" type="xsd:string" minOccurs="0" maxOccurs="unbounded"/>
+		<xsd:element name="four" type="ns:S" minOccurs="1" maxOccurs="1"/>
 	</schema>)"_xml;
 
 	CHECK(schema == *test.child());
 
+	auto type_test_1a = R"(<schema xmlns:xsd="http://www.w3.org/2001/XMLSchema"/>)"_xml;
+	type_test_1a.child()->emplace_back(types["E"]);
 
-	for (auto &[name, type] : types)
-		std::cout << name << '\n' << std::setw(2) << type << '\n';
+	auto type_test_1b = R"(
+	<schema xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+	<xsd:simpleType name="E">
+		<xsd:restriction base="xsd:string">
+			<xsd:enumeration value="one"/>
+			<xsd:enumeration value="two"/>
+			<xsd:enumeration value="three"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	</schema>)"_xml;
+	
+	CHECK(type_test_1a == type_test_1b);
+
+	auto type_test_2a = R"(<schema xmlns:xsd="http://www.w3.org/2001/XMLSchema"/>)"_xml;
+	type_test_2a.child()->emplace_back(types["S"]);
+
+	auto type_test_2b = R"(
+	<schema xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+		<xsd:complexType name="S">
+			<xsd:sequence>
+				<xsd:element name="a" type="xsd:int" minOccurs="1" maxOccurs="1"/>
+				<xsd:element name="b" type="xsd:float" minOccurs="1" maxOccurs="1"/>
+				<xsd:element name="c" type="xsd:double" minOccurs="1" maxOccurs="1"/>
+				<xsd:element name="d" type="xsd:boolean" minOccurs="1" maxOccurs="1"/>
+				<xsd:element name="e" type="xsd:string" minOccurs="1" maxOccurs="1"/>
+				<xsd:element name="f" type="xsd:int" minOccurs="0" maxOccurs="1"/>
+				<xsd:element name="g" type="xsd:double" minOccurs="0" maxOccurs="unbounded"/>
+				<xsd:element name="h" type="E" minOccurs="1" maxOccurs="1"/>
+				<xsd:element name="i" type="xsd:short" minOccurs="4" maxOccurs="4"/>
+			</xsd:sequence>
+		</xsd:complexType>
+	</schema>)"_xml;
+
+	CHECK(type_test_2a == type_test_2b);
+
 }

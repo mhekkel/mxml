@@ -1013,7 +1013,21 @@ struct type_serializer<T>
 		type_serializer::deserialize_array(n, name, value, priority_tag<2>{});
 	}
 
-	static element schema(std::string_view name)
+	template <std::size_t N>
+	static element schema_array(std::string_view name,
+		const std::array<value_type, N> &value, [[maybe_unused]] priority_tag<1> pt)
+	{
+		return element{
+			"xsd:element",
+			{ //
+				{ "name", name },
+				{ "type", type_serializer_type::type_name() },
+				{ "minOccurs", std::to_string(N) },
+				{ "maxOccurs", std::to_string(N) } }
+		};
+	}
+
+	static element schema_array(std::string_view name, const container_type &arr, [[maybe_unused]] priority_tag<0> pt)
 	{
 		return element{
 			"xsd:element",
@@ -1023,6 +1037,11 @@ struct type_serializer<T>
 				{ "minOccurs", "0" },
 				{ "maxOccurs", "unbounded" } }
 		};
+	}
+
+	static element schema(std::string_view name)
+	{
+		return schema_array(name, container_type{}, priority_tag<1>());
 	}
 
 	static void register_type(type_map &types)
