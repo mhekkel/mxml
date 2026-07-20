@@ -184,13 +184,13 @@ class node
 	element_container *parent() { return m_parent; }                           ///< The parent node for this node
 	[[nodiscard]] const element_container *parent() const { return m_parent; } ///< The parent node for this node
 
-	void next(const node *n) noexcept { m_next = const_cast<node *>(n); } ///< Set next to \a n
-	node *next() { return m_next; }                                       ///< The next sibling
-	[[nodiscard]] const node *next() const { return m_next; }             ///< The next sibling
+	void next(node *n) noexcept { m_next = const_cast<node *>(n); } ///< Set next to \a n
+	node *next() { return m_next; }                                 ///< The next sibling
+	[[nodiscard]] const node *next() const { return m_next; }       ///< The next sibling
 
-	void prev(const node *n) noexcept { m_prev = const_cast<node *>(n); } ///< Set prev to \a n
-	node *prev() { return m_prev; }                                       ///< The previous sibling
-	[[nodiscard]] const node *prev() const { return m_prev; }             ///< The previous sibling
+	void prev(node *n) noexcept { m_prev = const_cast<node *>(n); } ///< Set prev to \a n
+	node *prev() { return m_prev; }                                 ///< The previous sibling
+	[[nodiscard]] const node *prev() const { return m_prev; }       ///< The previous sibling
 
 	/// Compare the node with \a n
 	virtual bool equals(const node *n) const;
@@ -573,9 +573,8 @@ class node_list : public basic_node_list
 
 	/// \brief construct a new node using arguments provided in \a a
 
-	// TODO: maarten - When users try to emplace/insert e.g. a cdata node in an element
-	// this will fail, since they need to use the nodes() variant. However,
-	// a better error is required in that case. Perhaps using concepts?
+	// When users try to emplace/insert e.g. a cdata node in an element
+	// this will fail, since they need to use the nodes() variant.
 
 	template <typename... Args>
 	iterator insert(const_iterator p, Args &&...args)

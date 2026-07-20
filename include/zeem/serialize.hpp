@@ -188,6 +188,11 @@ struct value_serializer<T>
 	std::string m_type_name;
 	value_map_type m_value_map;
 
+	value_serializer(std::string name)
+		: m_type_name(std::move(name))
+	{
+	}
+
   public:
 	/// \brief Initialize a new instance of value_serializer for this enum, with name and a set of name/value pairs
 	static void init(std::string_view name, std::initializer_list<value_map_value_type> values)
@@ -203,9 +208,7 @@ struct value_serializer<T>
 
 	static value_serializer &instance(std::string name = {})
 	{
-		static value_serializer s_instance;
-		if (not name.empty() and s_instance.m_type_name.empty())
-			s_instance.m_type_name = std::move(name);
+		static value_serializer s_instance(std::move(name));
 		return s_instance;
 	}
 

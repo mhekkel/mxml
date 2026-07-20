@@ -334,9 +334,33 @@ double object::as<double>() const
 template <>
 int object::as<int>() const
 {
-	if (m_type != object_type::number)
-		throw exception("object is not of type number");
-	return static_cast<int>(std::round(m_number));
+	int result = 0;
+	switch (m_type)
+	{
+		case object_type::number: result = std::round(m_number); break;
+		case object_type::node_set:
+		{
+			if (not m_node_set.empty())
+			{
+				auto s = m_node_set.front()->str();
+
+				auto r = zeem::from_chars(s.data(), s.data() + s.length(), result);
+				if (r.ec != std::errc{} or r.ptr != s.data() + s.length())
+					throw std::system_error(std::make_error_code(r.ec), "Not an integer");
+			}
+			break;
+		}
+		case object_type::string:
+		{
+			auto r = zeem::from_chars(m_string.data(), m_string.data() + m_string.length(), result);
+			if (r.ec != std::errc{} or r.ptr != m_string.data() + m_string.length())
+				throw std::system_error(std::make_error_code(r.ec), "Not an integer");
+			break;
+		}
+		case object_type::boolean: result = m_boolean; break;
+		default: result = 0; break;
+	}
+	return result;
 }
 
 template <>
@@ -408,20 +432,25 @@ bool object::operator==(const object &o) const
 bool object::operator<(const object &o) const
 {
 	bool result = false;
-	switch (m_type)
+	if (m_type == o.m_type)
 	{
-		case object_type::node_set: result = m_node_set < o.m_node_set; break;
-		case object_type::boolean: result = m_boolean < o.m_boolean; break;
-		case object_type::number: result = m_number < o.m_number; break;
-		case object_type::string: result = m_string < o.m_string; break;
-		default: break;
+		switch (m_type)
+		{
+			case object_type::node_set: result = m_node_set < o.m_node_set; break;
+			case object_type::boolean: result = m_boolean < o.m_boolean; break;
+			case object_type::number: result = m_number < o.m_number; break;
+			case object_type::string: result = m_string < o.m_string; break;
+			default: break;
+		}
 	}
+	else
+		result = m_type < o.m_type;
 	return result;
 }
 
 object operator%(const object &lhs, const object &rhs)
 {
-	return std::fmod(lhs.as<double>(), rhs.as<int>());
+	return std::fmod(lhs.as<double>(), rhs.as<double>());
 }
 
 object operator*(const object &lhs, const object &rhs)
@@ -642,18 +671,12 @@ struct expression_context : public context_imp_base
 
 std::size_t expression_context::position() const
 {
-	std::size_t result = 0;
-	for (const node *n : m_node_set)
-	{
-		++result;
-		if (n == m_node)
-			break;
-	}
+	auto i = std::ranges::find(m_node_set, m_node);
 
-	if (result == 0)
+	if (i == m_node_set.end())
 		throw exception("invalid context for position");
 
-	return result;
+	return i - m_node_set.begin() + 1;
 }
 
 std::size_t expression_context::last() const
@@ -1453,22 +1476,15 @@ object core_function_expression<CoreFunction::Substring>::evaluate(expression_co
 	object v2 = (*a)->evaluate(context);
 	++a;
 
-	if (v2.type() == object_type::number)
+	auto s = v1.as<std::string>();
+
+	if (m_args.size() == 3)
 	{
-		auto s = v1.as<std::string>();
-
-		if (m_args.size() == 3)
-		{
-			object v3 = (*a)->evaluate(context);
-
-			if (v3.type() == object_type::number)
-				return s.substr(v2.as<int>(), v3.as<int>());
-		}
-		else
-			return s.substr(v2.as<int>(), std::string::npos);
+		object v3 = (*a)->evaluate(context);
+		return s.substr(v2.as<int>(), v3.as<int>());
 	}
-
-	throw exception("expected one string and one or two numbers as argument for substring");
+	else
+		return s.substr(v2.as<int>(), std::string::npos);
 }
 
 template <>

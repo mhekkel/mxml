@@ -267,9 +267,9 @@ node *basic_node_list::insert_impl(const node *p, node *n)
 
 	n->parent(m_header->m_parent);
 
-	n->prev(p->prev());
+	n->prev(const_cast<node *>(p->prev()));
 	n->prev()->next(n);
-	n->next(p);
+	n->next(const_cast<node *>(p));
 	n->next()->prev(n);
 
 	return n;
@@ -615,10 +615,13 @@ void element::set_content(std::string s)
 {
 	// remove all existing text nodes (including cdata ones)
 	auto nn = nodes();
-	for (auto n = nn.begin(); n != nn.end(); ++n)
+	auto n = nn.begin();
+	while (n != nn.end())
 	{
 		if (n->type() == node_type::text or n->type() == node_type::cdata)
 			n = nn.erase(n);
+		else
+			++n;
 	}
 
 	// and add a new text node with the content
@@ -629,10 +632,10 @@ void element::add_text(std::string s)
 {
 	auto nn = nodes();
 
-	if (nn.back().type() == node_type::text)
-		static_cast<text &>(nn.back()).append(s);
-	else
+	if (nn.empty() or nn.back().type() != node_type::text)
 		nn.emplace_back(text(std::move(s)));
+	else
+		static_cast<text &>(nn.back()).append(s);
 }
 
 void element::set_text(std::string s)

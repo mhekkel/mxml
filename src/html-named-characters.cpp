@@ -2174,7 +2174,7 @@ const general_entity *named_character_table::get(std::string name)
 		int L = 0, R = sizeof(kNamedHTMLCharacters) / sizeof(html5_named_character) - 1;
 		while (L <= R)
 		{
-			int i = (L + R) / 2;
+			int i = L + (R - L) / 2;
 			int d = name.compare(kNamedHTMLCharacters[i].name);
 			if (d == 0)
 			{

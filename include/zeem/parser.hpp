@@ -83,6 +83,19 @@ ZEEM_EXPORT class parser
 	/// @brief constructor taking a std::istream in \a is
 	explicit parser(std::istream &is);
 
+	// Avoid default constructor
+	parser() = delete;
+
+	// Avoid copy
+	parser(const parser *) = delete;
+
+	// Move constructor
+	parser(parser &&rhs) noexcept
+		: m_impl(std::exchange(rhs.m_impl, nullptr))
+		, m_istream(std::exchange(rhs.m_istream, nullptr))
+	{
+	}
+
 	/// @brief destructor
 	virtual ~parser();
 

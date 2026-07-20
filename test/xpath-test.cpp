@@ -14,12 +14,6 @@ import zeem;
 # include "zeem/zeem.hpp"
 #endif
 
-#if MCFP_CXX_MODULE
-import mcfp;
-#else
-# include "mcfp/mcfp.hpp"
-#endif
-
 namespace fs = std::filesystem;
 
 int VERBOSE;
@@ -123,7 +117,10 @@ bool run_test(const zeem::element &test)
 void run_tests(const fs::path &file)
 {
 	if (not fs::exists(file))
-		throw zeem::exception("test file does not exist");
+	{
+		std::cerr << "test file does not exist\n";
+		exit(1);
+	}
 
 	std::ifstream input(file, std::ios::binary);
 
