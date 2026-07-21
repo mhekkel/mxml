@@ -810,7 +810,7 @@ struct type_serializer<T>
 
 	static type_serializer &instance()
 	{
-		static type_serializer s_instance{ std::source_location::current().function_name() };
+		static type_serializer s_instance{ "ns:" + value_type::type_name() };
 		return s_instance;
 	}
 
