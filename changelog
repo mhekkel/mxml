@@ -1,5 +1,8 @@
+Version 2.3.0
+- Implemented an automatic schema creator
+
 Version 2.2.0
-- Better hybrid implementation (both traditional as wellas module library)
+- Better hybrid implementation (both traditional as well as module library)
 
 version 2.1.5
 - Yet another fix in date/time parsing
