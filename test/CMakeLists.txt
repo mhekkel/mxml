@@ -16,20 +16,8 @@ set(XML_CONF_TAR ${CMAKE_CURRENT_SOURCE_DIR}/XML-Test-Suite.tbz)
 set(XML_CONF_FILE ${CMAKE_CURRENT_SOURCE_DIR}/XML-Test-Suite/xmlconf/xmlconf.xml)
 
 if(NOT EXISTS ${XML_CONF_FILE})
-    if(${CMAKE_VERSION} VERSION_LESS "3.18.0")
-        find_program(TAR tar)
-
-        if(TAR)
-            add_custom_command(OUTPUT ${XML_CONF_FILE}
-                COMMAND ${TAR} xf ${XML_CONF_TAR}
-                WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/lib-xml/test/)
-        else()
-            message(FATAL_ERROR "Please extract the archive ${XML_CONF_TAR} manually or update your cmake version to at least 3.18")
-        endif()
-    else()
-        file(ARCHIVE_EXTRACT INPUT ${XML_CONF_TAR}
-            DESTINATION ${CMAKE_CURRENT_SOURCE_DIR})
-    endif()
+    file(ARCHIVE_EXTRACT INPUT ${XML_CONF_TAR}
+        DESTINATION ${CMAKE_CURRENT_SOURCE_DIR})
 endif()
 
 add_custom_target(XML_CONF ALL DEPENDS ${XML_CONF_FILE})

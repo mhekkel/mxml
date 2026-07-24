@@ -20,7 +20,7 @@ version 2.1.2
 
 version 2.1.1
 - Fix parsing of date/time strings without time zone
-  information. The output should be UTC so a convertion
+  information. The output should be UTC so a conversion
   from local time is required here.
 
 version 2.1.0

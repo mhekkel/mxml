@@ -970,8 +970,893 @@ TEST_CASE("utf8-1")
 
 	// Check overlong character
 	CHECK_THROWS("<foo>\xC1\x81</foo>"_xml);
-	
+
 	// Check surrogate
 	CHECK_THROWS("<foo>\xED\xA0\x80</foo>"_xml);
-	
+}
+
+// Warning! AI generated code below
+
+TEST_CASE("pi-1")
+{
+	zeem::processing_instruction pi("php", "echo 'hello';");
+
+	CHECK(pi.type() == zeem::node_type::processing_instruction);
+	CHECK(pi.get_target() == "php");
+	CHECK(pi.get_qname() == "php");
+	CHECK(pi.str() == "echo 'hello';");
+	CHECK(pi.get_text() == "echo 'hello';");
+
+	zeem::element wrapper("w");
+	wrapper.nodes().emplace_back(zeem::processing_instruction(pi));
+	std::ostringstream os;
+	os << wrapper;
+	CHECK(os.str() == "<w><?php echo 'hello';?></w>");
+}
+
+TEST_CASE("pi-2")
+{
+	zeem::processing_instruction pi;
+
+	CHECK(pi.type() == zeem::node_type::processing_instruction);
+	CHECK(pi.get_target().empty());
+	CHECK(pi.str().empty());
+
+	pi.set_target("xml-stylesheet");
+	pi.set_text(R"(type="text/xsl" href="style.xsl")");
+
+	CHECK(pi.get_target() == "xml-stylesheet");
+	CHECK(pi.get_qname() == "xml-stylesheet");
+	CHECK(pi.get_text() == "type=\"text/xsl\" href=\"style.xsl\"");
+
+	zeem::element wrapper("w");
+	wrapper.nodes().emplace_back(std::move(pi));
+	std::ostringstream os;
+	os << wrapper;
+	CHECK(os.str() == R"(<w><?xml-stylesheet type="text/xsl" href="style.xsl"?></w>)");
+}
+
+TEST_CASE("pi-3")
+{
+	zeem::processing_instruction pi1("target", "data");
+	zeem::processing_instruction pi2(pi1);
+
+	CHECK(pi1.equals(&pi2));
+	CHECK(pi2.get_target() == "target");
+	CHECK(pi2.get_text() == "data");
+
+	zeem::processing_instruction pi3(std::move(pi2));
+
+	CHECK(pi3.get_target() == "target");
+	CHECK(pi3.get_text() == "data");
+
+	zeem::processing_instruction pi4;
+	pi4 = pi1;
+
+	CHECK(pi4.equals(&pi1));
+	CHECK(pi4.get_target() == "target");
+}
+
+TEST_CASE("pi-4")
+{
+	zeem::processing_instruction pi1("a", "text1");
+	zeem::processing_instruction pi2("b", "text2");
+
+	using namespace zeem;
+	swap(pi1, pi2);
+
+	CHECK(pi1.get_target() == "b");
+	CHECK(pi1.get_text() == "text2");
+	CHECK(pi2.get_target() == "a");
+	CHECK(pi2.get_text() == "text1");
+
+	swap(pi1, pi2);
+
+	CHECK(pi1.get_target() == "a");
+	CHECK(pi1.get_text() == "text1");
+	CHECK(pi2.get_target() == "b");
+	CHECK(pi2.get_text() == "text2");
+}
+
+TEST_CASE("pi-5")
+{
+	zeem::element e("test");
+	e.nodes().emplace_front(zeem::processing_instruction("xml-stylesheet", "type=\"text/xsl\" href=\"foo.xsl\""));
+
+	auto nodes = e.nodes();
+	CHECK(nodes.size() == 1);
+
+	auto &pi = dynamic_cast<zeem::processing_instruction &>(*nodes.begin());
+	CHECK(pi.get_target() == "xml-stylesheet");
+	CHECK(pi.get_text() == "type=\"text/xsl\" href=\"foo.xsl\"");
+
+	// element iterator skips non-element nodes
+	CHECK(e.begin() == e.end());
+
+	std::ostringstream os;
+	os << e;
+	CHECK(os.str() == R"(<test><?xml-stylesheet type="text/xsl" href="foo.xsl"?></test>)");
+}
+
+TEST_CASE("pi-6")
+{
+	zeem::element e("test");
+	e.emplace_back("child");
+	e.nodes().emplace_back(zeem::processing_instruction("target", "data"));
+	e.emplace_back("child2");
+
+	// nodes() sees all node types
+	auto nodes = e.nodes();
+	REQUIRE(nodes.size() == 3);
+
+	std::ostringstream os;
+	os << e;
+	CHECK(os.str() == R"(<test><child/><?target data?><child2/></test>)");
+}
+
+TEST_CASE("pi-7")
+{
+	using namespace zeem::literals;
+
+	auto doc = R"(<?xml version="1.0"?><?xml-stylesheet type="text/xsl" href="style.xsl"?><root/>)"_xml;
+
+	auto nodes = doc.nodes();
+	bool found = false;
+	for (auto &n : nodes)
+	{
+		if (n.type() == zeem::node_type::processing_instruction)
+		{
+			auto &pi = dynamic_cast<zeem::processing_instruction &>(n);
+			CHECK(pi.get_target() == "xml-stylesheet");
+			CHECK(pi.get_text() == "type=\"text/xsl\" href=\"style.xsl\"");
+			found = true;
+		}
+	}
+	CHECK(found);
+
+	// document child() returns the root element, skipping PI
+	REQUIRE(doc.child() != nullptr);
+	CHECK(doc.child()->get_qname() == "root");
+}
+
+TEST_CASE("pi-8")
+{
+	using namespace zeem::literals;
+
+	auto doc = R"(<root><?app config="verbose"?><?app config="quiet"?></root>)"_xml;
+
+	auto &root = *doc.child();
+	auto nodes = root.nodes();
+
+	std::size_t i = 0;
+	for (auto &n : nodes)
+	{
+		if (n.type() == zeem::node_type::processing_instruction)
+		{
+			auto &pi = dynamic_cast<zeem::processing_instruction &>(n);
+			CHECK(pi.get_target() == "app");
+			CHECK(pi.type() == zeem::node_type::processing_instruction);
+
+			if (i == 0)
+				CHECK(pi.get_text() == "config=\"verbose\"");
+			else
+				CHECK(pi.get_text() == "config=\"quiet\"");
+			++i;
+		}
+	}
+	CHECK(i == 2);
+
+	// element iterator skips both PIs
+	CHECK(root.size() == 0);
+	CHECK(root.begin() == root.end());
+}
+
+TEST_CASE("pi-9")
+{
+	zeem::processing_instruction pi1("target", "data");
+	zeem::processing_instruction pi2("target", "data");
+	zeem::processing_instruction pi3("other", "data");
+	zeem::processing_instruction pi4("target", "other");
+
+	CHECK(pi1.equals(&pi2));
+	CHECK_FALSE(pi1.equals(&pi3));
+	CHECK_FALSE(pi1.equals(&pi4));
+	CHECK(pi1.equals(&pi1));
+
+	zeem::comment c("data");
+	CHECK_FALSE(pi1.equals(&c));
+
+	zeem::element e("test");
+	CHECK_FALSE(pi1.equals(&e));
+}
+
+TEST_CASE("pi-copy-in-element")
+{
+	zeem::element e("root");
+	e.nodes().emplace_back(zeem::processing_instruction("php", "code"));
+
+	auto copy = e;
+
+	auto orig_nodes = e.nodes();
+	auto copy_nodes = copy.nodes();
+
+	REQUIRE(copy_nodes.size() == 1);
+
+	auto &orig_pi = dynamic_cast<zeem::processing_instruction &>(*orig_nodes.begin());
+	auto &copy_pi = dynamic_cast<zeem::processing_instruction &>(*copy_nodes.begin());
+
+	CHECK(copy_pi.get_target() == "php");
+	CHECK(copy_pi.get_text() == "code");
+	CHECK_FALSE(&orig_pi == &copy_pi);
+}
+
+TEST_CASE("ns-move-1")
+{
+	zeem::element e("item");
+	e.move_to_name_space("m", "http://example.com/ns", false, false);
+
+	CHECK(e.get_qname() == "m:item");
+	CHECK(e.name() == "item");
+	CHECK(e.get_ns() == "http://example.com/ns");
+
+	auto ns_attr = e.attributes().find("xmlns:m");
+	REQUIRE(ns_attr != e.attributes().end());
+	CHECK(ns_attr->value() == "http://example.com/ns");
+
+	std::ostringstream os;
+	os << e;
+	CHECK(os.str() == R"(<m:item xmlns:m="http://example.com/ns"/>)");
+}
+
+TEST_CASE("ns-move-2")
+{
+	zeem::element e("item", { { "xmlns:m", "http://example.com/ns" } });
+	e.set_qname("m", "item");
+
+	// same prefix, same URI: should be a no-op
+	e.move_to_name_space("m", "http://example.com/ns", false, false);
+
+	CHECK(e.get_qname() == "m:item");
+	CHECK(e.get_ns() == "http://example.com/ns");
+
+	// URI already bound to prefix "m", trying to use "x" should throw
+	CHECK_THROWS_AS(e.move_to_name_space("x", "http://example.com/ns", false, false), zeem::exception);
+}
+
+TEST_CASE("ns-move-3")
+{
+	zeem::element root("root");
+	auto &child1 = *root.emplace_back("child1");
+	auto &child2 = *child1.emplace_back("child2");
+
+	root.move_to_name_space("m", "http://example.com/ns", true, false);
+
+	CHECK(root.get_qname() == "m:root");
+	CHECK(child1.get_qname() == "m:child1");
+	CHECK(child2.get_qname() == "m:child2");
+
+	CHECK(root.get_ns() == "http://example.com/ns");
+	CHECK(child1.get_ns() == "http://example.com/ns");
+	CHECK(child2.get_ns() == "http://example.com/ns");
+}
+
+TEST_CASE("ns-move-4")
+{
+	zeem::element e("item");
+	e.set_attribute("a", "1");
+	e.set_attribute("b", "2");
+
+	e.move_to_name_space("m", "http://example.com/ns", false, true);
+
+	CHECK(e.get_qname() == "m:item");
+
+	// attributes should now be in the m: namespace
+	auto a_attr = e.attributes().find("m:a");
+	REQUIRE(a_attr != e.attributes().end());
+	CHECK(a_attr->get_qname() == "m:a");
+	CHECK(a_attr->get_ns() == "http://example.com/ns");
+
+	auto b_attr = e.attributes().find("m:b");
+	REQUIRE(b_attr != e.attributes().end());
+	CHECK(b_attr->get_qname() == "m:b");
+	CHECK(b_attr->get_ns() == "http://example.com/ns");
+
+	std::ostringstream os;
+	os << e;
+	CHECK(os.str() == R"(<m:item m:a="1" m:b="2" xmlns:m="http://example.com/ns"/>)");
+}
+
+TEST_CASE("ns-move-5")
+{
+	zeem::element e("item");
+	e.move_to_name_space("", "http://example.com/ns", false, false);
+
+	CHECK(e.get_qname() == "item");
+	CHECK(e.name() == "item");
+	CHECK(e.get_ns() == "http://example.com/ns");
+
+	auto ns_attr = e.attributes().find("xmlns");
+	REQUIRE(ns_attr != e.attributes().end());
+	CHECK(ns_attr->value() == "http://example.com/ns");
+
+	std::ostringstream os;
+	os << e;
+	CHECK(os.str() == R"(<item xmlns="http://example.com/ns"/>)");
+}
+
+TEST_CASE("ns-move-7")
+{
+	zeem::element root("root");
+	root.emplace_back("child1");
+	root.emplace_back("child2");
+
+	// non-recursive: children should not change
+	root.move_to_name_space("m", "http://example.com/ns", false, false);
+
+	CHECK(root.get_qname() == "m:root");
+	CHECK(root.front().get_qname() == "child1");
+	CHECK(root.back().get_qname() == "child2");
+	CHECK(root.front().get_ns().empty());
+	CHECK(root.back().get_ns().empty());
+}
+
+TEST_CASE("ns-move-8")
+{
+	using namespace zeem::literals;
+
+	auto doc = R"(<?xml version="1.0"?><data><item a="1"><sub/></item></data>)"_xml;
+
+	auto &data = *doc.child();
+	auto &item = data.front();
+
+	item.move_to_name_space("m", "http://example.com/ns", true, true);
+
+	CHECK(data.get_qname() == "data");
+	CHECK(item.get_qname() == "m:item");
+	CHECK(item.front().get_qname() == "m:sub");
+
+	auto a_attr = item.attributes().find("m:a");
+	REQUIRE(a_attr != item.attributes().end());
+	CHECK(a_attr->get_qname() == "m:a");
+
+	std::ostringstream os;
+	os << doc;
+	CHECK(os.str() == R"(<data><m:item m:a="1" xmlns:m="http://example.com/ns"><m:sub/></m:item></data>)");
+}
+
+TEST_CASE("set_qname-1")
+{
+	zeem::element e("item");
+
+	CHECK(e.get_qname() == "item");
+	CHECK(e.name() == "item");
+	CHECK(e.get_prefix().empty());
+
+	e.set_qname("newname");
+
+	CHECK(e.get_qname() == "newname");
+	CHECK(e.name() == "newname");
+	CHECK(e.get_prefix().empty());
+
+	std::ostringstream os;
+	os << e;
+	CHECK(os.str() == "<newname/>");
+}
+
+TEST_CASE("set_qname-2")
+{
+	zeem::element e("item");
+
+	// two-argument form: prefix + name
+	e.set_qname("m", "item");
+
+	CHECK(e.get_qname() == "m:item");
+	CHECK(e.name() == "item");
+	CHECK(e.get_prefix() == "m");
+
+	std::ostringstream os;
+	os << e;
+	CHECK(os.str() == "<m:item/>");
+}
+
+TEST_CASE("set_qname-3")
+{
+	zeem::element e("item");
+
+	// two-argument form with empty prefix: qname is just the name
+	e.set_qname("", "plain");
+
+	CHECK(e.get_qname() == "plain");
+	CHECK(e.name() == "plain");
+	CHECK(e.get_prefix().empty());
+
+	std::ostringstream os;
+	os << e;
+	CHECK(os.str() == "<plain/>");
+}
+
+TEST_CASE("set_qname-4")
+{
+	zeem::element e("item");
+
+	// change qname preserves attributes and children
+	e.set_attribute("a", "1");
+	e.emplace_back("child");
+
+	e.set_qname("renamed");
+
+	CHECK(e.get_qname() == "renamed");
+	CHECK(e.attributes().size() == 1);
+	CHECK(e.size() == 1);
+	CHECK(e.front().get_qname() == "child");
+
+	std::ostringstream os;
+	os << e;
+	CHECK(os.str() == R"(<renamed a="1"><child/></renamed>)");
+}
+
+TEST_CASE("set_qname-5")
+{
+	using namespace zeem::literals;
+
+	// parse with a namespaced qname, then rename
+	auto doc = R"(<?xml version="1.0"?><data xmlns:m="http://example.com"><m:item/></data>)"_xml;
+
+	auto &data = *doc.child();
+	auto &item = data.front();
+
+	CHECK(item.get_qname() == "m:item");
+	CHECK(item.get_ns() == "http://example.com");
+
+	item.set_qname("x", "item");
+
+	CHECK(item.get_qname() == "x:item");
+	CHECK(item.name() == "item");
+	CHECK(item.get_prefix() == "x");
+
+	// namespace URI is resolved via xmlns:m, but the prefix in qname is now "x"
+	// so get_ns() can no longer resolve it (no xmlns:x exists)
+	CHECK(item.get_ns().empty());
+}
+
+TEST_CASE("set_text-1")
+{
+	zeem::element e("item");
+	e.set_text("hello");
+
+	CHECK(e.get_content() == "hello");
+
+	auto nodes = e.nodes();
+	REQUIRE(nodes.size() == 1);
+	CHECK(nodes.begin()->type() == zeem::node_type::text);
+
+	std::ostringstream os;
+	os << e;
+	CHECK(os.str() == "<item>hello</item>");
+}
+
+TEST_CASE("set_text-2")
+{
+	zeem::element e("item");
+	e.set_text("first");
+	e.set_text("second");
+
+	// set_text replaces all text nodes
+	CHECK(e.get_content() == "second");
+
+	auto nodes = e.nodes();
+	std::size_t text_count = 0;
+	for (auto &n : nodes)
+	{
+		if (n.type() == zeem::node_type::text)
+			++text_count;
+	}
+	CHECK(text_count == 1);
+
+	std::ostringstream os;
+	os << e;
+	CHECK(os.str() == "<item>second</item>");
+}
+
+TEST_CASE("set_text-3")
+{
+	zeem::element e("item");
+	e.emplace_back("child");
+	e.set_text("text");
+
+	// set_text removes text but preserves element children
+	// text is appended after existing children
+	CHECK(e.get_content() == "text");
+	CHECK(e.size() == 1);
+	CHECK(e.front().get_qname() == "child");
+
+	std::ostringstream os;
+	os << e;
+	CHECK(os.str() == "<item><child/>text</item>");
+}
+
+TEST_CASE("set_text-4")
+{
+	zeem::element e("item");
+	e.set_text("hello");
+	e.set_attribute("a", "1");
+
+	// set_text does not affect attributes
+	CHECK(e.get_content() == "hello");
+	CHECK(e.attributes().size() == 1);
+
+	std::ostringstream os;
+	os << e;
+	CHECK(os.str() == R"(<item a="1">hello</item>)");
+}
+
+TEST_CASE("set_text-5")
+{
+	zeem::element e("item");
+	e.set_text("");
+
+	// empty string still creates a text node
+	CHECK(e.get_content().empty());
+
+	auto nodes = e.nodes();
+	CHECK(nodes.size() == 1);
+	CHECK(nodes.begin()->type() == zeem::node_type::text);
+}
+
+TEST_CASE("add_text-1")
+{
+	zeem::element e("item");
+	e.add_text("hello");
+
+	CHECK(e.get_content() == "hello");
+
+	std::ostringstream os;
+	os << e;
+	CHECK(os.str() == "<item>hello</item>");
+}
+
+TEST_CASE("add_text-2")
+{
+	zeem::element e("item");
+	e.add_text("hel");
+	e.add_text("lo");
+
+	// adjacent adds should append to the same text node
+	CHECK(e.get_content() == "hello");
+
+	auto nodes = e.nodes();
+	std::size_t text_count = 0;
+	for (auto &n : nodes)
+	{
+		if (n.type() == zeem::node_type::text)
+			++text_count;
+	}
+	CHECK(text_count == 1);
+
+	std::ostringstream os;
+	os << e;
+	CHECK(os.str() == "<item>hello</item>");
+}
+
+TEST_CASE("add_text-3")
+{
+	zeem::element e("item");
+	e.add_text("text1");
+	e.emplace_back("child");
+	e.add_text("text2");
+
+	// non-text child in between means a new text node is created
+	CHECK(e.get_content() == "text1text2");
+
+	auto nodes = e.nodes();
+	std::size_t text_count = 0;
+	for (auto &n : nodes)
+	{
+		if (n.type() == zeem::node_type::text)
+			++text_count;
+	}
+	CHECK(text_count == 2);
+
+	std::ostringstream os;
+	os << e;
+	CHECK(os.str() == "<item>text1<child/>text2</item>");
+}
+
+TEST_CASE("add_text-4")
+{
+	zeem::element e("item");
+	e.add_text("a");
+	e.add_text("b");
+	e.add_text("c");
+
+	CHECK(e.get_content() == "abc");
+
+	// all three should be in one text node
+	auto nodes = e.nodes();
+	std::size_t text_count = 0;
+	for (auto &n : nodes)
+	{
+		if (n.type() == zeem::node_type::text)
+			++text_count;
+	}
+	CHECK(text_count == 1);
+}
+
+TEST_CASE("flatten_text-1")
+{
+	zeem::element e("item");
+
+	// manually insert adjacent text nodes
+	auto nodes = e.nodes();
+	nodes.emplace_back(zeem::text("hello"));
+	nodes.emplace_back(zeem::text(" world"));
+
+	CHECK(e.get_content() == "hello world");
+
+	// two text nodes before flatten
+	std::size_t text_count = 0;
+	for (auto &n : nodes)
+	{
+		if (n.type() == zeem::node_type::text)
+			++text_count;
+	}
+	CHECK(text_count == 2);
+
+	e.flatten_text();
+
+	// after flatten: adjacent text nodes are merged into one
+	CHECK(e.get_content() == "hello world");
+
+	auto nodes2 = e.nodes();
+	text_count = 0;
+	for (auto &n : nodes2)
+	{
+		if (n.type() == zeem::node_type::text)
+			++text_count;
+	}
+	CHECK(text_count == 1);
+
+	std::ostringstream os;
+	os << e;
+	CHECK(os.str() == "<item>hello world</item>");
+}
+
+TEST_CASE("flatten_text-2")
+{
+	zeem::element e("item");
+
+	// text + element + text: non-adjacent text nodes should NOT be merged
+	auto nodes = e.nodes();
+	nodes.emplace_back(zeem::text("hello"));
+	e.emplace_back("child");
+	nodes.emplace_back(zeem::text("world"));
+
+	e.flatten_text();
+
+	CHECK(e.get_content() == "helloworld");
+
+	auto nodes2 = e.nodes();
+	std::size_t text_count = 0;
+	for (auto &n : nodes2)
+	{
+		if (n.type() == zeem::node_type::text)
+			++text_count;
+	}
+	CHECK(text_count == 2);
+}
+
+TEST_CASE("flatten_text-3")
+{
+	zeem::element e("item");
+
+	// three adjacent text nodes should all merge into one
+	auto nodes = e.nodes();
+	nodes.emplace_back(zeem::text("a"));
+	nodes.emplace_back(zeem::text("b"));
+	nodes.emplace_back(zeem::text("c"));
+
+	e.flatten_text();
+
+	CHECK(e.get_content() == "abc");
+
+	auto nodes2 = e.nodes();
+	std::size_t text_count = 0;
+	for (auto &n : nodes2)
+	{
+		if (n.type() == zeem::node_type::text)
+			++text_count;
+	}
+	CHECK(text_count == 1);
+
+	std::ostringstream os;
+	os << e;
+	CHECK(os.str() == "<item>abc</item>");
+}
+
+TEST_CASE("flatten_text-4")
+{
+	zeem::element e("item");
+
+	// text + comment + text: should NOT be merged (comment in between)
+	auto nodes = e.nodes();
+	nodes.emplace_back(zeem::text("hello"));
+	nodes.emplace_back(zeem::comment("comment"));
+	nodes.emplace_back(zeem::text("world"));
+
+	e.flatten_text();
+
+	CHECK(e.get_content() == "helloworld");
+
+	auto nodes2 = e.nodes();
+	std::size_t text_count = 0;
+	for (auto &n : nodes2)
+	{
+		if (n.type() == zeem::node_type::text)
+			++text_count;
+	}
+	CHECK(text_count == 2);
+}
+
+TEST_CASE("flatten_text-5")
+{
+	zeem::element e("item");
+
+	// empty element: flatten_text should be a no-op
+	e.flatten_text();
+
+	CHECK(e.get_content().empty());
+	CHECK(e.empty());
+}
+
+TEST_CASE("flatten_text-6")
+{
+	zeem::element e("item");
+
+	// single text node: flatten_text should be a no-op
+	auto nodes = e.nodes();
+	nodes.emplace_back(zeem::text("hello"));
+
+	e.flatten_text();
+
+	CHECK(e.get_content() == "hello");
+
+	auto nodes2 = e.nodes();
+	std::size_t text_count = 0;
+	for (auto &n : nodes2)
+	{
+		if (n.type() == zeem::node_type::text)
+			++text_count;
+	}
+	CHECK(text_count == 1);
+}
+
+TEST_CASE("attr_erase-1")
+{
+	zeem::element e("item", { { "a", "1" }, { "b", "2" }, { "c", "3" } });
+
+	auto erased = e.attributes().erase("b");
+	CHECK(erased == 1);
+	CHECK(e.attributes().size() == 2);
+	CHECK_FALSE(e.attributes().contains("b"));
+	CHECK(e.attributes().contains("a"));
+	CHECK(e.attributes().contains("c"));
+
+	std::ostringstream os;
+	os << e;
+	CHECK(os.str() == R"(<item a="1" c="3"/>)");
+}
+
+TEST_CASE("attr_erase-2")
+{
+	zeem::element e("item", { { "a", "1" } });
+
+	// erasing a non-existent key returns 0 and leaves the set unchanged
+	auto erased = e.attributes().erase("z");
+	CHECK(erased == 0);
+	CHECK(e.attributes().size() == 1);
+	CHECK(e.attributes().contains("a"));
+
+	std::ostringstream os;
+	os << e;
+	CHECK(os.str() == R"(<item a="1"/>)");
+}
+
+TEST_CASE("attr_erase-3")
+{
+	zeem::element e("item");
+
+	// erasing from empty attribute set returns 0
+	auto erased = e.attributes().erase("a");
+	CHECK(erased == 0);
+	CHECK(e.attributes().empty());
+}
+
+TEST_CASE("attr_erase-4")
+{
+	zeem::element e("item", { { "a", "1" }, { "b", "2" } });
+
+	// erase all attributes one by one
+	CHECK(e.attributes().erase("a") == 1);
+	CHECK(e.attributes().size() == 1);
+	CHECK(e.attributes().erase("b") == 1);
+	CHECK(e.attributes().empty());
+
+	// erasing again from empty set returns 0
+	CHECK(e.attributes().erase("a") == 0);
+
+	std::ostringstream os;
+	os << e;
+	CHECK(os.str() == "<item/>");
+}
+
+TEST_CASE("attr_erase-5")
+{
+	zeem::element e("item", { { "a", "1" }, { "b", "2" }, { "c", "3" } });
+
+	// erase middle attribute
+	e.attributes().erase("b");
+
+	// remaining attributes should be intact
+	auto ai = e.attributes().begin();
+	REQUIRE(ai != e.attributes().end());
+	CHECK(ai->name() == "a");
+	CHECK(ai->value() == "1");
+	++ai;
+	REQUIRE(ai != e.attributes().end());
+	CHECK(ai->name() == "c");
+	CHECK(ai->value() == "3");
+	++ai;
+	CHECK(ai == e.attributes().end());
+}
+
+TEST_CASE("attr_erase-6")
+{
+	zeem::element e("item");
+	e.set_attribute("xmlns:m", "http://example.com");
+	e.set_attribute("a", "1");
+
+	// erase a namespace attribute by its qname
+	auto erased = e.attributes().erase("xmlns:m");
+	CHECK(erased == 1);
+	CHECK(e.attributes().size() == 1);
+	CHECK(e.attributes().contains("a"));
+	CHECK_FALSE(e.attributes().contains("xmlns:m"));
+
+	std::ostringstream os;
+	os << e;
+	CHECK(os.str() == R"(<item a="1"/>)");
+}
+
+TEST_CASE("attr_erase-7")
+{
+	using namespace zeem::literals;
+
+	// erase from a parsed document's element
+	auto doc = R"(<?xml version="1.0"?><item a="1" b="2" c="3"/>)"_xml;
+
+	auto &item = *doc.child();
+	CHECK(item.attributes().size() == 3);
+
+	item.attributes().erase("b");
+	CHECK(item.attributes().size() == 2);
+
+	std::ostringstream os;
+	os << item;
+	CHECK(os.str() == R"(<item a="1" c="3"/>)");
+}
+
+TEST_CASE("attr_erase-8")
+{
+	zeem::element e("item", { { "a", "1" }, { "b", "2" } });
+
+	// erase does not affect the element itself or its children
+	e.emplace_back("child");
+
+	e.attributes().erase("a");
+
+	CHECK(e.get_qname() == "item");
+	CHECK(e.size() == 1);
+	CHECK(e.front().get_qname() == "child");
+	CHECK(e.attributes().size() == 1);
+	CHECK(e.attributes().contains("b"));
 }

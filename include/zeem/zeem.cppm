@@ -52,7 +52,7 @@ export module zeem;
 #include "error.hpp"
 #include "text.hpp"
 #include "node.hpp"
+#include "xpath.hpp"
 #include "parser.hpp"
 #include "document.hpp"
 #include "serialize.hpp"
-#include "xpath.hpp"

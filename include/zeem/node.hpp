@@ -31,10 +31,12 @@ namespace zeem
 // forward declarations
 ZEEM_EXPORT class attribute;
 ZEEM_EXPORT class attribute_set;
+ZEEM_EXPORT class context;
 ZEEM_EXPORT class element;
 ZEEM_EXPORT class element_container;
 ZEEM_EXPORT class node;
 ZEEM_EXPORT class text;
+ZEEM_EXPORT class xpath;
 
 using node_set = std::vector<node *>;
 using element_set = std::vector<element *>;
@@ -806,6 +808,16 @@ ZEEM_EXPORT class element_container : public node, public node_list<element>
 	[[nodiscard]] iterator find_first(std::string_view path);
 	[[nodiscard]] const_iterator find_first(std::string_view path) const;
 
+	// With prepared xpaths:
+
+	/// \brief return the elements that match XPath \a path.
+	[[nodiscard]] element_set find(const xpath &path, const context &ctxt) const;
+
+	/// \brief return the first element that matches XPath \a path.
+	[[nodiscard]] iterator find_first(const xpath &path, const context &ctxt);
+	[[nodiscard]] const_iterator find_first(const xpath &path, const context &ctxt) const;
+
+
 	/** @cond */
 	void write(std::ostream &os, format_info fmt) const override;
 	/** @endcond */
@@ -921,7 +933,7 @@ ZEEM_EXPORT class comment final : public node_with_text
  *
  */
 
-class processing_instruction final : public node_with_text
+ZEEM_EXPORT class processing_instruction final : public node_with_text
 {
   public:
 	[[nodiscard]] constexpr node_type type() const override { return node_type::processing_instruction; }
@@ -973,7 +985,10 @@ class processing_instruction final : public node_with_text
 	/// \brief compare nodes for equality
 	bool equals(const node *n) const override
 	{
-		return this == n or (n->type() == node_type::processing_instruction and node_with_text::equals(n));
+		return this == n or
+		       (n->type() == node_type::processing_instruction and
+		        node_with_text::equals(n) and
+		        m_target == static_cast<const processing_instruction *>(n)->m_target);
 	}
 
 	/** @cond */

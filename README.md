@@ -31,7 +31,7 @@ cmake --install build
  ```bash
 git clone https://forge.hekkelman.net/maarten/zeem.git
 cd zeem
-cmake -B build -G Ninja -DBUILD_CXX_MODULE=ON
+cmake -B build -G Ninja -DZEEM_BUILD_CXX_MODULE=ON
 cmake --build build
 cmake --install build
 ```

@@ -566,3 +566,363 @@ struct st_2
 // 	type_map types;
 // 	schema_creator sc(types, )
 // }
+
+// --------------------------------------------------------------------
+// Negative / error-path tests
+
+TEST_CASE("ser_err_int16")
+{
+	zeem::value_serializer<int16_t> s;
+
+	CHECK(s.from_string("0") == 0);
+	CHECK(s.from_string("-1") == -1);
+	CHECK(s.from_string("32767") == 32767);
+	CHECK(s.from_string("-32768") == -32768);
+	CHECK_THROWS_AS(s.from_string("32768"), std::system_error);
+	CHECK_THROWS_AS(s.from_string("-32769"), std::system_error);
+	CHECK_THROWS_AS(s.from_string("x"), std::system_error);
+}
+
+TEST_CASE("ser_err_uint16")
+{
+	zeem::value_serializer<uint16_t> s;
+
+	CHECK(s.from_string("0") == 0);
+	CHECK(s.from_string("65535") == 65535);
+	CHECK_THROWS_AS(s.from_string("65536"), std::system_error);
+	CHECK_THROWS_AS(s.from_string("-1"), std::system_error);
+	CHECK_THROWS_AS(s.from_string("x"), std::system_error);
+}
+
+TEST_CASE("ser_err_int32")
+{
+	zeem::value_serializer<int32_t> s;
+
+	CHECK(s.from_string("0") == 0);
+	CHECK(s.from_string("2147483647") == 2147483647);
+	CHECK(s.from_string("-2147483648") == -2147483648);
+	CHECK_THROWS_AS(s.from_string("2147483648"), std::system_error);
+	CHECK_THROWS_AS(s.from_string("-2147483649"), std::system_error);
+	CHECK_THROWS_AS(s.from_string("x"), std::system_error);
+}
+
+TEST_CASE("ser_err_uint32")
+{
+	zeem::value_serializer<uint32_t> s;
+
+	CHECK(s.from_string("0") == 0);
+	CHECK(s.from_string("4294967295") == 4294967295);
+	CHECK_THROWS_AS(s.from_string("4294967296"), std::system_error);
+	CHECK_THROWS_AS(s.from_string("-1"), std::system_error);
+	CHECK_THROWS_AS(s.from_string("x"), std::system_error);
+}
+
+TEST_CASE("ser_err_int64")
+{
+	zeem::value_serializer<int64_t> s;
+
+	CHECK(s.from_string("0") == 0);
+	CHECK(s.from_string("9223372036854775807") == INT64_MAX);
+	CHECK(s.from_string("-9223372036854775808") == INT64_MIN);
+	CHECK_THROWS_AS(s.from_string("x"), std::system_error);
+}
+
+TEST_CASE("ser_err_uint64")
+{
+	zeem::value_serializer<uint64_t> s;
+
+	CHECK(s.from_string("0") == 0);
+	CHECK(s.from_string("18446744073709551615") == UINT64_MAX);
+	CHECK_THROWS_AS(s.from_string("-1"), std::system_error);
+	CHECK_THROWS_AS(s.from_string("x"), std::system_error);
+}
+
+TEST_CASE("ser_err_float")
+{
+	zeem::value_serializer<float> s;
+
+	CHECK(s.from_string("0") == 0.0f);
+	CHECK(s.from_string("3.14") != 0.0f);
+	CHECK(s.from_string("-1.5") < 0.0f);
+	CHECK_THROWS_AS(s.from_string("x"), std::system_error);
+	CHECK_THROWS_AS(s.from_string("abc"), std::system_error);
+}
+
+TEST_CASE("ser_err_double")
+{
+	zeem::value_serializer<double> s;
+
+	CHECK(s.from_string("0") == 0.0);
+	CHECK(s.from_string("3.14159") != 0.0);
+	CHECK(s.from_string("-2.5") < 0.0);
+	CHECK_THROWS_AS(s.from_string("x"), std::system_error);
+	CHECK_THROWS_AS(s.from_string("abc"), std::system_error);
+}
+
+TEST_CASE("ser_err_bool")
+{
+	zeem::value_serializer<bool> s;
+
+	CHECK(s.from_string("true") == true);
+	CHECK(s.from_string("false") == false);
+	CHECK(s.from_string("1") == true);
+	CHECK(s.from_string("0") == false);
+	CHECK(s.from_string("yes") == true);
+
+	// "no" is not recognized as false — it returns the default (false)
+	CHECK(s.from_string("no") == false);
+
+	// unrecognized strings return the default-initialized value (false)
+	CHECK(s.from_string("") == false);
+	CHECK(s.from_string("maybe") == false);
+	CHECK(s.from_string("TRUE") == false);
+	CHECK(s.from_string("FALSE") == false);
+
+	CHECK(s.to_string(true) == "true");
+	CHECK(s.to_string(false) == "false");
+}
+
+TEST_CASE("ser_err_enum_unknown")
+{
+	using namespace zeem;
+
+	// register a fresh enum for this test
+	enum class color : int { red, green, blue };
+
+	value_serializer<color>::init("color",
+		{ { color::red, "red" }, { color::green, "green" }, { color::blue, "blue" } });
+
+	// deserialize a string that doesn't match any registered enum value
+	// returns the default-constructed value (first enumerator = 0)
+	CHECK(value_serializer<color>::from_string("nonexistent") == color{});
+	CHECK(value_serializer<color>::from_string("") == color{});
+
+	// valid values work
+	CHECK(value_serializer<color>::from_string("red") == color::red);
+	CHECK(value_serializer<color>::from_string("green") == color::green);
+	CHECK(value_serializer<color>::from_string("blue") == color::blue);
+}
+
+TEST_CASE("ser_err_date_invalid")
+{
+	using namespace zeem;
+	using namespace zeem::literals;
+
+	auto doc = "<d>not-a-date</d>"_xml;
+
+	std::chrono::sys_days sd;
+	CHECK_THROWS_AS(
+		zeem::from_xml(doc, "d", sd),
+		std::runtime_error);
+
+	auto doc2 = "<d></d>"_xml;
+	CHECK_THROWS_AS(
+		zeem::from_xml(doc2, "d", sd),
+		std::runtime_error);
+}
+
+TEST_CASE("ser_err_datetime_invalid")
+{
+	using namespace zeem;
+	using namespace zeem::literals;
+
+	std::chrono::system_clock::time_point tp;
+
+	auto doc = "<t>not-a-time</t>"_xml;
+	CHECK_THROWS_AS(
+		zeem::from_xml(doc, "t", tp),
+		std::runtime_error);
+
+	auto doc2 = "<t></t>"_xml;
+	CHECK_THROWS_AS(
+		zeem::from_xml(doc2, "t", tp),
+		std::runtime_error);
+}
+
+TEST_CASE("ser_err_deser_missing_element")
+{
+	using namespace zeem;
+	using namespace zeem::literals;
+
+	// from_xml with a name that doesn't exist: value is zero-initialized
+	auto doc = R"(<root><other>42</other></root>)"_xml;
+
+	int32_t i = -1;
+	zeem::from_xml(*doc.child(), "missing", i);
+	CHECK(i == 0); // zero-initialized since element not found
+
+	std::string s = "default";
+	zeem::from_xml(*doc.child(), "missing", s);
+	CHECK(s.empty()); // empty string since element not found
+}
+
+TEST_CASE("ser_err_deser_wrong_type")
+{
+	using namespace zeem;
+	using namespace zeem::literals;
+
+	// text "hello" where int32_t is expected
+	auto doc = R"(<val>hello</val>)"_xml;
+
+	int32_t i = 0;
+	CHECK_THROWS_AS(zeem::from_xml(doc, "val", i), std::system_error);
+}
+
+TEST_CASE("ser_err_deser_empty_element")
+{
+	using namespace zeem;
+	using namespace zeem::literals;
+
+	// empty element where numeric type is expected
+	auto doc = R"(<val></val>)"_xml;
+
+	int32_t i = 0;
+	CHECK_THROWS_AS(zeem::from_xml(doc, "val", i), std::system_error);
+}
+
+TEST_CASE("ser_err_document_two_roots")
+{
+	zeem::document doc;
+	doc.emplace("first");
+
+	// to_xml on document with existing root should throw
+	int x = 1;
+	CHECK_THROWS_AS(zeem::to_xml(doc, "second", x), zeem::exception);
+}
+
+TEST_CASE("ser_err_deser_partial_number")
+{
+	using namespace zeem;
+	using namespace zeem::literals;
+
+	// "42abc" — partial parse should fail since from_chars requires full consumption
+	auto doc = R"(<val>42abc</val>)"_xml;
+
+	int32_t i = 0;
+	CHECK_THROWS_AS(zeem::from_xml(doc, "val", i), std::system_error);
+}
+
+TEST_CASE("ser_err_deser_negative_into_unsigned")
+{
+	using namespace zeem;
+	using namespace zeem::literals;
+
+	auto doc = R"(<val>-1</val>)"_xml;
+
+	uint32_t u = 0;
+	CHECK_THROWS_AS(zeem::from_xml(doc, "val", u), std::system_error);
+}
+
+TEST_CASE("ser_err_optional_empty")
+{
+	using namespace zeem;
+	using namespace zeem::literals;
+
+	// missing element for optional — should remain empty
+	auto doc = R"(<root></root>)"_xml;
+
+	std::optional<int32_t> opt;
+	zeem::from_xml(doc, "val", opt);
+	CHECK_FALSE(opt.has_value());
+}
+
+TEST_CASE("ser_err_deser_float_from_int")
+{
+	using namespace zeem;
+	using namespace zeem::literals;
+
+	auto doc = R"(<val>not-a-number</val>)"_xml;
+
+	float f = 0.0f;
+	CHECK_THROWS_AS(zeem::from_xml(doc, "val", f), std::system_error);
+}
+
+TEST_CASE("ser_err_deser_attribute_missing")
+{
+	using namespace zeem;
+	using namespace zeem::literals;
+
+	// deserializing a non-existent attribute should leave value at default
+	auto doc = R"(<root><child a="1"></child></root>)"_xml;
+
+	auto &child = *doc.child()->begin();
+	int32_t val = -1;
+	zeem::deserializer dsr(child);
+	dsr.deserialize_attribute("missing", val);
+	CHECK(val == -1);
+}
+
+TEST_CASE("ser_err_schema_attribute")
+{
+	using namespace zeem;
+	using namespace zeem::literals;
+
+	// schema_creator with an attribute nvp: verify it doesn't crash
+	// when used on an element whose parent exists
+	auto doc = "<root><child></child></root>"_xml;
+	auto &child = *doc.child()->begin();
+
+	zeem::type_map types;
+	zeem::element seq("xsd:sequence");
+	child.nodes().emplace_back(std::move(seq));
+
+	zeem::type_map types2;
+	auto &seq3 = static_cast<zeem::element &>(*std::prev(child.nodes().end()));
+	zeem::schema_creator sc(types2, seq3);
+
+	int32_t dummy{};
+	sc & zeem::make_attribute_nvp("x", dummy);
+}
+
+TEST_CASE("ser_err_roundtrip_int8_overflow")
+{
+	using namespace zeem;
+	using namespace zeem::literals;
+
+	auto doc = R"(<val>128</val>)"_xml;
+
+	int8_t v = 0;
+	CHECK_THROWS_AS(zeem::from_xml(doc, "val", v), std::system_error);
+}
+
+TEST_CASE("ser_err_roundtrip_uint8_overflow")
+{
+	using namespace zeem;
+	using namespace zeem::literals;
+
+	auto doc = R"(<val>256</val>)"_xml;
+
+	uint8_t v = 0;
+	CHECK_THROWS_AS(zeem::from_xml(doc, "val", v), std::system_error);
+}
+
+TEST_CASE("ser_err_to_xml_attribute")
+{
+	using namespace zeem;
+
+	// serialize_attribute on a non-element node should be a no-op
+	zeem::document doc;
+	doc.emplace("root");
+
+	zeem::serializer sr(doc);
+	int32_t x = 42;
+	sr.serialize_attribute("a", x);
+
+	// attribute should NOT have been added (document is not an element)
+	CHECK(doc.child()->attributes().empty());
+}
+
+TEST_CASE("ser_err_deser_attribute_empty")
+{
+	using namespace zeem;
+	using namespace zeem::literals;
+
+	auto doc = "<root><child></child></root>"_xml;
+	auto &child = *doc.child()->begin();
+
+	// deserialize_attribute from non-existent attribute — value stays default
+	int32_t val = 99;
+	zeem::deserializer dsr(child);
+	dsr.deserialize_attribute("nonexistent", val);
+	CHECK(val == 99);
+}

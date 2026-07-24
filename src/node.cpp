@@ -437,21 +437,36 @@ void element_container::write(std::ostream & /* os */, format_info /* fmt */) co
 {
 }
 
-element_set element_container::find(std::string_view path) const
+element_set element_container::find(const xpath &path, const context &ctxt) const
 {
-	return xpath(path).evaluate<element>(*this);
+	return path.evaluate<element>(*this, ctxt);
 }
 
-element_container::iterator element_container::find_first(std::string_view path)
+element_container::iterator element_container::find_first(const xpath &path, const context &ctxt)
 {
-	element_set s = xpath(path).evaluate<element>(*this);
+	element_set s = path.evaluate<element>(*this, ctxt);
 
 	return s.empty() ? end() : iterator(s.front());
 }
 
+element_container::const_iterator element_container::find_first(const xpath &path, const context &ctxt) const
+{
+	return const_cast<element_container *>(this)->find_first(path, ctxt);
+}
+
+element_set element_container::find(std::string_view path) const
+{
+	return find(xpath{ path }, context{});
+}
+
+element_container::iterator element_container::find_first(std::string_view path)
+{
+	return find_first(xpath{ path }, context{});
+}
+
 element_container::const_iterator element_container::find_first(std::string_view path) const
 {
-	return const_cast<element_container *>(this)->find_first(path);
+	return find_first(xpath{ path }, context{});
 }
 
 // --------------------------------------------------------------------
