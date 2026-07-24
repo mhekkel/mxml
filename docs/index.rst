@@ -111,6 +111,11 @@ attributes
 
 Suppose you want to serialize a value into a XML attribute, you would have to replace `zeem::make_element_nvp` with `zeem::make_attribute_nvp`.
 
+schema
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The class `zeem::schema_creator` can be used to create XML Schema's. It is still a bare bones implementation, mainly used to create `WSDL` document in libzeep.
+
 custom types
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 

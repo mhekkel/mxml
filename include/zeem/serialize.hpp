@@ -609,12 +609,14 @@ struct deserializer
 };
 
 /**
- * @brief schema creator is used to create XML Schema's
+ * @brief This type_map contains the complex types collected by the @ref schema_creator
  */
 
-#ifndef LIBZEEP_DOXYGEN_INVOKED
-ZEEM_EXPORT using type_map = std::map<std::string, element>;
-#endif
+ ZEEM_EXPORT using type_map = std::map<std::string, element>;
+
+/**
+ * @brief schema creator is used to create XML Schema's for data that is serialized or deserialized.
+ */
 
 ZEEM_EXPORT struct schema_creator
 {
