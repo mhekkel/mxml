@@ -1017,7 +1017,7 @@ struct type_serializer<T>
 
 	template <std::size_t N>
 	static element schema_array(std::string_view name,
-		const std::array<value_type, N> &value, [[maybe_unused]] priority_tag<1> pt)
+		[[maybe_unused]] const std::array<value_type, N> &value, [[maybe_unused]] priority_tag<1> pt)
 	{
 		return element{
 			"xsd:element",
@@ -1029,7 +1029,7 @@ struct type_serializer<T>
 		};
 	}
 
-	static element schema_array(std::string_view name, const container_type &arr, [[maybe_unused]] priority_tag<0> pt)
+	static element schema_array(std::string_view name, [[maybe_unused]] const container_type &arr, [[maybe_unused]] priority_tag<0> pt)
 	{
 		return element{
 			"xsd:element",
@@ -1110,7 +1110,7 @@ struct type_serializer
 		};
 	}
 
-	static void register_type(type_map &types)
+	static void register_type(type_map &/* types */)
 	{
 	}
 };
@@ -1190,7 +1190,7 @@ deserializer &deserializer::deserialize_attribute(std::string_view name, T &valu
 
 // Schema creation
 template <typename T>
-schema_creator &schema_creator::add_element(std::string_view name, const T &value)
+schema_creator &schema_creator::add_element(std::string_view name, const T &/* value */)
 {
 	using value_type = std::remove_cv_t<T>;
 	using type_serializer = type_serializer<value_type>;
@@ -1207,7 +1207,7 @@ schema_creator &schema_creator::add_element(std::string_view name, const T &valu
 }
 
 template <typename T>
-schema_creator &schema_creator::add_attribute(std::string_view name, const T &value)
+schema_creator &schema_creator::add_attribute(std::string_view name, const T &/* value */)
 {
 	using value_type = std::remove_cv_t<T>;
 	using type_serializer = type_serializer<value_type>;
