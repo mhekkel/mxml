@@ -3,7 +3,6 @@
 
 #define CATCH_CONFIG_RUNNER
 
-#include <cassert>
 #include <catch2/catch_session.hpp>
 #include <catch2/catch_test_macros.hpp>
 #include <compare>
@@ -63,7 +62,7 @@ TEST_CASE("test-0")
 
 	swap(attr, a2);
 
-	assert(attr.empty());
+	REQUIRE(attr.empty());
 }
 
 TEST_CASE("test_1")

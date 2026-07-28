@@ -382,7 +382,7 @@ int main(int argc, char *argv[])
 	if (ec)
 	{
 		std::clog << "error parsing arguments: " << ec.message() << '\n';
-		exit(1);
+		return 1;
 	}
 
 	if (config.count("help"))
