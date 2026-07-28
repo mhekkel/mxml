@@ -1526,17 +1526,10 @@ object core_function_expression<CoreFunction::Contains>::evaluate(expression_con
 	object v1 = m_args.front()->evaluate(context);
 	object v2 = m_args.back()->evaluate(context);
 
-	try
-	{
-		auto s1 = v1.as<std::string>();
-		auto s2 = v2.as<std::string>();
+	auto s1 = v1.as<std::string>();
+	auto s2 = v2.as<std::string>();
 
-		return s1.find(s2) != std::string::npos;
-	}
-	catch (...)
-	{
-		throw exception("expected two strings as argument for contains");
-	}
+	return s1.find(s2) != std::string::npos;
 }
 
 template <>
@@ -1545,22 +1538,15 @@ object core_function_expression<CoreFunction::SubstringBefore>::evaluate(express
 	object v1 = m_args.front()->evaluate(context);
 	object v2 = m_args.back()->evaluate(context);
 
-	try
+	std::string result;
+	if (not v2.as<std::string>().empty())
 	{
-		std::string result;
-		if (not v2.as<std::string>().empty())
-		{
-			std::string::size_type p = v1.as<std::string>().find(v2.as<std::string>());
-			if (p != std::string::npos)
-				result = v1.as<std::string>().substr(0, p);
-		}
+		std::string::size_type p = v1.as<std::string>().find(v2.as<std::string>());
+		if (p != std::string::npos)
+			result = v1.as<std::string>().substr(0, p);
+	}
 
-		return result;
-	}
-	catch (...)
-	{
-		throw exception("expected two strings as argument for substring-before");
-	}
+	return result;
 }
 
 template <>
@@ -1569,24 +1555,17 @@ object core_function_expression<CoreFunction::SubstringAfter>::evaluate(expressi
 	object v1 = m_args.front()->evaluate(context);
 	object v2 = m_args.back()->evaluate(context);
 
-	try
+	std::string result;
+	if (v2.as<std::string>().empty())
+		result = v1.as<std::string>();
+	else
 	{
-		std::string result;
-		if (v2.as<std::string>().empty())
-			result = v1.as<std::string>();
-		else
-		{
-			std::string::size_type p = v1.as<std::string>().find(v2.as<std::string>());
-			if (p != std::string::npos and p + v2.as<std::string>().length() < v1.as<std::string>().length())
-				result = v1.as<std::string>().substr(p + v2.as<std::string>().length());
-		}
+		std::string::size_type p = v1.as<std::string>().find(v2.as<std::string>());
+		if (p != std::string::npos and p + v2.as<std::string>().length() < v1.as<std::string>().length())
+			result = v1.as<std::string>().substr(p + v2.as<std::string>().length());
+	}
 
-		return result;
-	}
-	catch (...)
-	{
-		throw exception("expected two strings as argument for substring-after");
-	}
+	return result;
 }
 
 template <>
