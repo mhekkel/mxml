@@ -8,6 +8,7 @@
 #include <compare>
 #include <cstddef>
 #include <filesystem>
+#include <fstream>
 #include <initializer_list>
 #include <iomanip>
 #include <iostream>
@@ -19,7 +20,7 @@
 #if ZEEM_CXX_MODULE
 import zeem;
 #else
-#include "zeem/zeem.hpp"
+# include "zeem/zeem.hpp"
 #endif
 
 // #include "zeem.ixx"
@@ -283,7 +284,7 @@ TEST_CASE("xml_1")
 				CHECK(name == "attr2");
 				CHECK(value == "value-2");
 				break;
-			
+
 			default:;
 		}
 	}
@@ -346,7 +347,7 @@ TEST_CASE("xml_3")
 
 	auto &&n3 = std::move(b);
 	CHECK(e.nodes().emplace(e.end(), std::move(n3))->get_local_name() == "noot"); // NOLINT(bugprone-use-after-move,hicpp-invalid-access-moved)
-	CHECK(b.get_local_name() == ""); // NOLINT(bugprone-use-after-move,hicpp-invalid-access-moved)
+	CHECK(b.get_local_name() == "");                                              // NOLINT(bugprone-use-after-move,hicpp-invalid-access-moved)
 	CHECK((std::ostringstream() << e).str() == R"(<test><aap/><aap/><noot/><noot/><noot/></test>)");
 
 	e.attributes().emplace("attr1", "value1");
@@ -1858,4 +1859,15 @@ TEST_CASE("attr_erase-8")
 	CHECK(e.front().get_qname() == "child");
 	CHECK(e.attributes().size() == 1);
 	CHECK(e.attributes().contains("b"));
+}
+
+// --------------------------------------------------------------------
+// billion laughs?
+
+TEST_CASE("billion-laughs")
+{
+	std::ifstream file(gTestDir / "billion-laughs.xml");
+	REQUIRE(file.is_open());
+
+	CHECK_THROWS(zeem::document(file));
 }

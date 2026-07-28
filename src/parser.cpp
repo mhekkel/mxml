@@ -819,6 +819,9 @@ struct parser_imp
 
 	void push_data_source(data_source *source, bool insert)
 	{
+		if (m_source.size() >= m_max_source_stack_size)
+			not_well_formed("Reached the maximum recursion level for entity expansion");
+
 		source->version(m_version);
 		m_source.emplace(this, source, insert);
 	}
@@ -960,6 +963,7 @@ struct parser_imp
 	std::string m_token;
 
 	std::stack<source_state> m_source;
+	int m_max_source_stack_size = 8;
 
 	std::array<char32_t, 4> m_buffer{};
 	std::array<char32_t, 4>::iterator m_buffer_ptr = m_buffer.begin();
