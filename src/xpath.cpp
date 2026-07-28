@@ -1,6 +1,7 @@
 // Copyright (c) 2024 Maarten L. Hekkelman
 // SPDX-License-Identifier: BSD-2-Clause
 
+#include <stdexcept>
 #ifndef ZEEM_CXX_MODULE
 # include "zeem/zeem.hpp"
 
@@ -419,7 +420,7 @@ int object::as<int>() const
 			break;
 		}
 		case object_type::boolean: result = m_boolean; break;
-		default: result = 0; break;
+		default: throw exception("Invalid type for cast to int"); break;
 	}
 	return result;
 }
