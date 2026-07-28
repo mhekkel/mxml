@@ -944,7 +944,7 @@ class name_test_step_expression : public step_expression
   protected:
 	bool name_matches(const node *n)
 	{
-		bool result = m_name == "*" or n->name() == m_name;
+		bool result = m_name == "*" or n->get_local_name() == m_name;
 		return result;
 	}
 
@@ -1423,7 +1423,7 @@ object core_function_expression<CoreFunction::LocalName>::evaluate(expression_co
 	if (n == nullptr)
 		throw exception("argument is not an element in function 'local-name'");
 
-	return n->name(); // name() returns the local-name part of the expanded-name of a node
+	return n->get_local_name(); // name() returns the local-name part of the expanded-name of a node
 }
 
 template <>

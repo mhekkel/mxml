@@ -154,9 +154,14 @@ class node
 		set_qname(prefix.empty() ? std::move(name) : prefix + ':' + name);
 	}
 
-	[[nodiscard]] virtual std::string name() const;       ///< The local-name for the node as parsed from the qname.
-	[[nodiscard]] virtual std::string get_prefix() const; ///< The prefix for the node as parsed from the qname.
-	[[nodiscard]] virtual std::string get_ns() const;     ///< Returns the namespace URI for the node, if it can be resolved.
+	[[nodiscard]] virtual std::string get_local_name() const; ///< The local-name for the node as parsed from the qname.
+	[[nodiscard]] virtual std::string get_prefix() const;     ///< The prefix for the node as parsed from the qname.
+	[[nodiscard]] virtual std::string get_ns() const;         ///< Returns the namespace URI for the node, if it can be resolved.
+
+	[[nodiscard]] virtual std::string name() const ///< By default, the name returns the local name
+	{
+		return get_local_name();
+	}
 
 	/// Return the namespace URI for a prefix
 	[[nodiscard]] virtual std::string namespace_for_prefix(std::string_view prefix) const;
@@ -814,7 +819,6 @@ ZEEM_EXPORT class element_container : public node, public node_list<element>
 	[[nodiscard]] iterator find_first(const xpath &path, const context &ctxt);
 	[[nodiscard]] const_iterator find_first(const xpath &path, const context &ctxt) const;
 
-
 	/** @cond */
 	void write(std::ostream &os, format_info fmt) const override;
 	/** @endcond */
@@ -984,8 +988,8 @@ ZEEM_EXPORT class processing_instruction final : public node_with_text
 	{
 		return this == n or
 		       (n->type() == node_type::processing_instruction and
-		        node_with_text::equals(n) and
-		        m_target == static_cast<const processing_instruction *>(n)->m_target);
+				   node_with_text::equals(n) and
+				   m_target == static_cast<const processing_instruction *>(n)->m_target);
 	}
 
 	/** @cond */
@@ -1199,7 +1203,7 @@ class attribute final : public node
 	[[nodiscard]] decltype(auto) get() const
 	{
 		if constexpr (N == 0)
-			return name();
+			return get_local_name();
 		else if constexpr (N == 1)
 			return value();
 	}

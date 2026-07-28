@@ -8,6 +8,11 @@
  * definition of the serializer classes used to (de-)serialize XML data.
  */
 
+#include "zeem/parser.hpp"
+#include "zeem/xpath.hpp"
+
+#include <exception>
+#include <stdexcept>
 #include <type_traits>
 #ifndef ZEEM_CXX_MODULE
 # include "zeem/config.hpp"
@@ -232,19 +237,17 @@ struct value_serializer<T>
 
 	static std::string to_string(T value)
 	{
-		return instance().m_value_map[value];
+		return instance().m_value_map.at(value);
 	}
 
 	static T from_string(std::string_view value)
 	{
-		T result = {};
 		for (auto &t : instance().m_value_map)
+		{
 			if (t.second == value)
-			{
-				result = t.first;
-				break;
-			}
-		return result;
+				return t.first;
+		}
+		throw std::invalid_argument(std::format("{} is not valid for enum {}", value, type_name()));
 	}
 
 	static bool empty()
@@ -291,7 +294,7 @@ struct value_serializer<std::chrono::system_clock::time_point>
 	{
 		time_type result;
 
-		std::regex kRX(R"(^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?)(Z|([-+]\d{2})(?::(\d{2}))?)?)");
+		static const std::regex kRX(R"(^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?)(Z|([-+]\d{2})(?::(\d{2}))?)?)");
 		std::cmatch m;
 
 		if (not std::regex_match(s.data(), s.data() + s.length(), m, kRX))
@@ -613,7 +616,7 @@ struct deserializer
  * @brief This type_map contains the complex types collected by the @ref schema_creator
  */
 
- ZEEM_EXPORT using type_map = std::map<std::string, element>;
+ZEEM_EXPORT using type_map = std::map<std::string, element>;
 
 /**
  * @brief schema creator is used to create XML Schema's for data that is serialized or deserialized.
@@ -1111,7 +1114,7 @@ struct type_serializer
 		};
 	}
 
-	static void register_type(type_map &/* types */)
+	static void register_type(type_map & /* types */)
 	{
 	}
 };
@@ -1191,7 +1194,7 @@ deserializer &deserializer::deserialize_attribute(std::string_view name, T &valu
 
 // Schema creation
 template <typename T>
-schema_creator &schema_creator::add_element(std::string_view name, const T &/* value */)
+schema_creator &schema_creator::add_element(std::string_view name, const T & /* value */)
 {
 	using value_type = std::remove_cv_t<T>;
 	using type_serializer = type_serializer<value_type>;
@@ -1208,7 +1211,7 @@ schema_creator &schema_creator::add_element(std::string_view name, const T &/* v
 }
 
 template <typename T>
-schema_creator &schema_creator::add_attribute(std::string_view name, const T &/* value */)
+schema_creator &schema_creator::add_attribute(std::string_view name, const T & /* value */)
 {
 	using value_type = std::remove_cv_t<T>;
 	using type_serializer = type_serializer<value_type>;

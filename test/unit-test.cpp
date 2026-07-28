@@ -69,47 +69,47 @@ TEST_CASE("test_1")
 {
 	zeem::element n("test");
 
-	CHECK(n.name() == "test");
+	CHECK(n.get_local_name() == "test");
 
 	SECTION("insert")
 	{
 		auto i1 = n.insert(n.end(), zeem::element("c1"));
 
-		CHECK(i1->name() == "c1");
+		CHECK(i1->get_local_name() == "c1");
 		CHECK(i1->empty());
 		CHECK(i1->size() == 0);
 		CHECK(n.size() == 1);
-		CHECK(n.front().name() == "c1");
+		CHECK(n.front().get_local_name() == "c1");
 		for (auto &e : n)
 			CHECK(e.parent() == &n);
 
 		auto i2 = n.insert(n.end(), zeem::element("c2"));
 
-		CHECK(i2->name() == "c2");
+		CHECK(i2->get_local_name() == "c2");
 		CHECK(i2->empty());
 		CHECK(i2->size() == 0);
 		CHECK(n.size() == 2);
-		CHECK(n.front().name() == "c1");
-		CHECK(n.back().name() == "c2");
+		CHECK(n.front().get_local_name() == "c1");
+		CHECK(n.back().get_local_name() == "c2");
 		for (auto &e : n)
 			CHECK(e.parent() == &n);
 
 		auto i3 = n.insert(n.begin(), zeem::element("c0"));
-		CHECK(i3->name() == "c0");
+		CHECK(i3->get_local_name() == "c0");
 		CHECK(i3->empty());
 		CHECK(i3->size() == 0);
 		CHECK(n.size() == 3);
-		CHECK(n.front().name() == "c0");
-		CHECK(n.back().name() == "c2");
+		CHECK(n.front().get_local_name() == "c0");
+		CHECK(n.back().get_local_name() == "c2");
 
 		zeem::element c3("c3");
 		auto i4 = n.insert(n.end(), c3);
-		CHECK(i4->name() == "c3");
+		CHECK(i4->get_local_name() == "c3");
 		CHECK(i4->empty());
 		CHECK(i4->size() == 0);
 		CHECK(n.size() == 4);
-		CHECK(n.front().name() == "c0");
-		CHECK(n.back().name() == "c3");
+		CHECK(n.front().get_local_name() == "c0");
+		CHECK(n.back().get_local_name() == "c3");
 
 		for (auto &e : n)
 		{
@@ -120,7 +120,7 @@ TEST_CASE("test_1")
 
 		for (int i = 0; auto &e : n)
 		{
-			CHECK(e.name() == "c" + std::to_string(i));
+			CHECK(e.get_local_name() == "c" + std::to_string(i));
 			++i;
 		}
 
@@ -129,32 +129,32 @@ TEST_CASE("test_1")
 		auto n2 = n;
 
 		CHECK(n2.size() == 4);
-		CHECK(n2.name() == "test");
-		CHECK(n2.front().name() == "c0");
-		CHECK(n2.back().name() == "c3");
+		CHECK(n2.get_local_name() == "test");
+		CHECK(n2.front().get_local_name() == "c0");
+		CHECK(n2.back().get_local_name() == "c3");
 		for (auto &e : n2)
 			CHECK(e.parent() == &n2);
 
 		for (int i = 0; auto &e : n2)
 		{
-			CHECK(e.name() == "c" + std::to_string(i));
+			CHECK(e.get_local_name() == "c" + std::to_string(i));
 			++i;
 		}
 
 		auto n3(std::move(n2));
 
-		CHECK(n2.name().empty()); // NOLINT(bugprone-use-after-move,hicpp-invalid-access-moved)
+		CHECK(n2.get_local_name().empty()); // NOLINT(bugprone-use-after-move,hicpp-invalid-access-moved)
 		CHECK(n2.empty());
-		CHECK(n3.name() == "test");
+		CHECK(n3.get_local_name() == "test");
 		CHECK(n3.size() == 4);
-		CHECK(n3.front().name() == "c0");
-		CHECK(n3.back().name() == "c3");
+		CHECK(n3.front().get_local_name() == "c0");
+		CHECK(n3.back().get_local_name() == "c3");
 		for (auto &e : n3)
 			CHECK(e.parent() == &n3);
 
 		for (int i = 0; auto &e : n3)
 		{
-			CHECK(e.name() == "c" + std::to_string(i));
+			CHECK(e.get_local_name() == "c" + std::to_string(i));
 			++i;
 		}
 
@@ -163,14 +163,14 @@ TEST_CASE("test_1")
 
 		CHECK(n3.empty()); // NOLINT(bugprone-use-after-move,hicpp-invalid-access-moved)
 		CHECK(n4.size() == 4);
-		CHECK(n4.front().name() == "c0");
-		CHECK(n4.back().name() == "c3");
+		CHECK(n4.front().get_local_name() == "c0");
+		CHECK(n4.back().get_local_name() == "c3");
 		for (auto &e : n4)
 			CHECK(e.parent() == &n4);
 
 		for (int i = 0; auto &e : n4)
 		{
-			CHECK(e.name() == "c" + std::to_string(i));
+			CHECK(e.get_local_name() == "c" + std::to_string(i));
 			++i;
 		}
 
@@ -195,26 +195,26 @@ TEST_CASE("test_1")
 	{
 		auto t = n.emplace(n.end(), "c1");
 
-		CHECK(t->name() == "c1");
+		CHECK(t->get_local_name() == "c1");
 		CHECK(n.size() == 1);
-		CHECK(n.front().name() == "c1");
+		CHECK(n.front().get_local_name() == "c1");
 		for (auto &e : n)
 			CHECK(e.parent() == &n);
 
 		auto t2 = n.emplace_back("c2");
 
-		CHECK(t2->name() == "c2");
+		CHECK(t2->get_local_name() == "c2");
 		CHECK(n.size() == 2);
-		CHECK(n.front().name() == "c1");
-		CHECK(n.back().name() == "c2");
+		CHECK(n.front().get_local_name() == "c1");
+		CHECK(n.back().get_local_name() == "c2");
 		for (auto &e : n)
 			CHECK(e.parent() == &n);
 
 		auto t3 = n.emplace_front("c0");
-		CHECK(t3->name() == "c0");
+		CHECK(t3->get_local_name() == "c0");
 		CHECK(n.size() == 3);
-		CHECK(n.front().name() == "c0");
-		CHECK(n.back().name() == "c2");
+		CHECK(n.front().get_local_name() == "c0");
+		CHECK(n.back().get_local_name() == "c2");
 		for (auto &e : n)
 			CHECK(e.parent() == &n);
 
@@ -264,7 +264,7 @@ TEST_CASE("xml_1")
 {
 	zeem::element n("data", { { "attr1", "value-1" }, { "attr2", "value-2" } });
 
-	CHECK(n.name() == "data");
+	CHECK(n.get_local_name() == "data");
 	CHECK(n.attributes().empty() == false);
 	CHECK(n.attributes().size() == 2);
 	CHECK(n.attributes().begin() != n.attributes().end());
@@ -326,27 +326,27 @@ TEST_CASE("xml_3")
 	zeem::element a("aap");
 
 	e.nodes().emplace(e.end(), a);
-	CHECK(a.name() == "aap");
+	CHECK(a.get_local_name() == "aap");
 	CHECK((std::ostringstream() << e).str() == R"(<test><aap/></test>)");
 
 	e.nodes().emplace(e.end(), std::move(a));
-	CHECK(a.name() == ""); // NOLINT(bugprone-use-after-move,hicpp-invalid-access-moved)
+	CHECK(a.get_local_name() == ""); // NOLINT(bugprone-use-after-move,hicpp-invalid-access-moved)
 	CHECK((std::ostringstream() << e).str() == R"(<test><aap/><aap/></test>)");
 
 	zeem::element b("noot");
 	// zeem::node &n = b;
 
 	// e.nodes().emplace(e.end(), n);
-	CHECK(e.nodes().emplace(e.end(), b)->name() == "noot");
+	CHECK(e.nodes().emplace(e.end(), b)->get_local_name() == "noot");
 	CHECK((std::ostringstream() << e).str() == R"(<test><aap/><aap/><noot/></test>)");
 
 	const auto &n2 = b;
-	CHECK(e.nodes().emplace(e.end(), n2)->name() == "noot");
+	CHECK(e.nodes().emplace(e.end(), n2)->get_local_name() == "noot");
 	CHECK((std::ostringstream() << e).str() == R"(<test><aap/><aap/><noot/><noot/></test>)");
 
 	auto &&n3 = std::move(b);
-	CHECK(e.nodes().emplace(e.end(), std::move(n3))->name() == "noot"); // NOLINT(bugprone-use-after-move,hicpp-invalid-access-moved)
-	CHECK(b.name() == ""); // NOLINT(bugprone-use-after-move,hicpp-invalid-access-moved)
+	CHECK(e.nodes().emplace(e.end(), std::move(n3))->get_local_name() == "noot"); // NOLINT(bugprone-use-after-move,hicpp-invalid-access-moved)
+	CHECK(b.get_local_name() == ""); // NOLINT(bugprone-use-after-move,hicpp-invalid-access-moved)
 	CHECK((std::ostringstream() << e).str() == R"(<test><aap/><aap/><noot/><noot/><noot/></test>)");
 
 	e.attributes().emplace("attr1", "value1");
@@ -368,14 +368,14 @@ TEST_CASE("xml_attributes_1")
 
 	for (auto &a : t.attributes())
 	{
-		CHECK(a.name() == "a");
+		CHECK(a.get_local_name() == "a");
 		CHECK(a.get_qname() == "m:a");
 		CHECK(a.get_ns() == "http://www.hekkelman.com");
 	}
 
 	for (auto a : t.attributes()) // NOLINT
 	{
-		CHECK(a.name() == "a");
+		CHECK(a.get_local_name() == "a");
 		CHECK(a.get_qname() == "m:a");
 
 		// the attribute was copied and thus lost namespace information
@@ -458,16 +458,16 @@ TEST_CASE("xml_container_and_iterators")
 
 	e.pop_front();
 	CHECK(e.size() == 1);
-	CHECK(e.front().name() == "c");
+	CHECK(e.front().get_local_name() == "c");
 
 	e.emplace_front("aa");
 	CHECK(e.size() == 2);
-	CHECK(e.front().name() == "aa");
+	CHECK(e.front().get_local_name() == "aa");
 
 	e.pop_back();
 	CHECK(e.size() == 1);
-	CHECK(e.back().name() == "aa");
-	CHECK(e.front().name() == "aa");
+	CHECK(e.back().get_local_name() == "aa");
+	CHECK(e.front().get_local_name() == "aa");
 
 	e.pop_back();
 	CHECK(e.empty());
@@ -724,42 +724,42 @@ TEST_CASE("xml_namespaces")
 
 	auto &data = *doc.child();
 	CHECK(data.parent() == &doc);
-	CHECK(data.name() == "data");
+	CHECK(data.get_local_name() == "data");
 	CHECK(data.get_ns().empty());
 
 	CHECK(data.empty() == false);
 	CHECK(data.begin() != data.end());
 
 	auto &div = data.front();
-	CHECK(div.name() == "div");
+	CHECK(div.get_local_name() == "div");
 	CHECK(div.get_ns().empty());
 	CHECK(div.parent() == &data);
 
 	auto &test0 = div.front();
 	CHECK(test0.parent() == &div);
-	CHECK(test0.name() == "test0");
+	CHECK(test0.get_local_name() == "test0");
 	CHECK(test0.get_qname() == "m:test0");
 	CHECK(test0.get_ns() == "http://www.hekkelman.com/zeem/m2");
 
 	auto &test1 = *(std::next(div.begin()));
 	CHECK(test1.parent() == &div);
-	CHECK(test1.name() == "test1");
+	CHECK(test1.get_local_name() == "test1");
 	CHECK(test1.get_ns().empty());
 
 	CHECK(test1.attributes().size() == 1);
 	auto &test1_if = *test1.attributes().begin();
-	CHECK(test1_if.name() == "if");
+	CHECK(test1_if.get_local_name() == "if");
 	CHECK(test1_if.get_qname() == "m:if");
 	CHECK(test1_if.get_ns() == "http://www.hekkelman.com/zeem/m2");
 
 	auto &test2 = *(std::next(std::next(div.begin())));
 	CHECK(test2.parent() == &div);
-	CHECK(test2.name() == "test2");
+	CHECK(test2.get_local_name() == "test2");
 	CHECK(test2.get_ns().empty());
 
 	CHECK(test2.attributes().size() == 1);
 	auto &test2_unless = *test2.attributes().begin();
-	CHECK(test2_unless.name() == "unless");
+	CHECK(test2_unless.get_local_name() == "unless");
 	CHECK(test2_unless.get_qname() == "m:unless");
 	CHECK(test2_unless.get_ns() == "http://www.hekkelman.com/zeem/m2");
 }
@@ -778,14 +778,14 @@ TEST_CASE("xml_namespaces_2")
 
 	auto &data = *doc.child();
 	CHECK(data.parent() == &doc);
-	CHECK(data.name() == "data");
+	CHECK(data.get_local_name() == "data");
 	CHECK(data.get_ns() == "http://www.hekkelman.com/zeem");
 
 	CHECK(data.empty() == false);
 	CHECK(data.begin() != data.end());
 
 	auto &x = data.front();
-	CHECK(x.name() == "x");
+	CHECK(x.get_local_name() == "x");
 	CHECK(x.get_qname() == "x");
 	CHECK(x.get_ns() == "http://www.hekkelman.com/zeem");
 	CHECK(x.parent() == &data);
@@ -797,7 +797,7 @@ TEST_CASE("xml_namespaces_2")
 
 	auto &y = x.front();
 	CHECK(y.parent() == &x);
-	CHECK(y.name() == "y");
+	CHECK(y.get_local_name() == "y");
 	CHECK(y.get_qname() == "y");
 	CHECK(y.get_ns() == "http://www.hekkelman.com/zeem");
 
@@ -827,14 +827,14 @@ TEST_CASE("xml_namespaces_3")
 
 	auto &data = *doc.child();
 	CHECK(data.parent() == &doc);
-	CHECK(data.name() == "data");
+	CHECK(data.get_local_name() == "data");
 	CHECK(data.get_ns() == "http://www.hekkelman.com/zeem");
 
 	CHECK(data.empty() == false);
 	CHECK(data.begin() != data.end());
 
 	auto &x = data.front();
-	CHECK(x.name() == "x");
+	CHECK(x.get_local_name() == "x");
 	CHECK(x.get_qname() == "x");
 	CHECK(x.get_ns() == "http://www.hekkelman.com/zeem");
 	CHECK(x.parent() == &data);
@@ -846,7 +846,7 @@ TEST_CASE("xml_namespaces_3")
 
 	auto &y = x.front();
 	CHECK(y.parent() == &x);
-	CHECK(y.name() == "y");
+	CHECK(y.get_local_name() == "y");
 	CHECK(y.get_qname() == "y");
 	CHECK(y.get_ns() == "http://www.hekkelman.com/zeem");
 
@@ -944,7 +944,7 @@ TEST_CASE("sort-1")
 	CHECK((std::ostringstream() << e).str() == R"(<test aap="1" noot="2" mies="3" boom="4" roos="5" vis="6" vuur="7"/>)");
 
 	e.attributes().sort([](attribute &a, attribute &b)
-		{ return a.name() < b.name(); });
+		{ return a.get_local_name() < b.get_local_name(); });
 
 	CHECK((std::ostringstream() << e).str() == R"(<test aap="1" boom="4" mies="3" noot="2" roos="5" vis="6" vuur="7"/>)");
 
@@ -1195,7 +1195,7 @@ TEST_CASE("ns-move-1")
 	e.move_to_name_space("m", "http://example.com/ns", false, false);
 
 	CHECK(e.get_qname() == "m:item");
-	CHECK(e.name() == "item");
+	CHECK(e.get_local_name() == "item");
 	CHECK(e.get_ns() == "http://example.com/ns");
 
 	auto ns_attr = e.attributes().find("xmlns:m");
@@ -1271,7 +1271,7 @@ TEST_CASE("ns-move-5")
 	e.move_to_name_space("", "http://example.com/ns", false, false);
 
 	CHECK(e.get_qname() == "item");
-	CHECK(e.name() == "item");
+	CHECK(e.get_local_name() == "item");
 	CHECK(e.get_ns() == "http://example.com/ns");
 
 	auto ns_attr = e.attributes().find("xmlns");
@@ -1328,13 +1328,13 @@ TEST_CASE("set_qname-1")
 	zeem::element e("item");
 
 	CHECK(e.get_qname() == "item");
-	CHECK(e.name() == "item");
+	CHECK(e.get_local_name() == "item");
 	CHECK(e.get_prefix().empty());
 
 	e.set_qname("newname");
 
 	CHECK(e.get_qname() == "newname");
-	CHECK(e.name() == "newname");
+	CHECK(e.get_local_name() == "newname");
 	CHECK(e.get_prefix().empty());
 
 	std::ostringstream os;
@@ -1350,7 +1350,7 @@ TEST_CASE("set_qname-2")
 	e.set_qname("m", "item");
 
 	CHECK(e.get_qname() == "m:item");
-	CHECK(e.name() == "item");
+	CHECK(e.get_local_name() == "item");
 	CHECK(e.get_prefix() == "m");
 
 	std::ostringstream os;
@@ -1366,7 +1366,7 @@ TEST_CASE("set_qname-3")
 	e.set_qname("", "plain");
 
 	CHECK(e.get_qname() == "plain");
-	CHECK(e.name() == "plain");
+	CHECK(e.get_local_name() == "plain");
 	CHECK(e.get_prefix().empty());
 
 	std::ostringstream os;
@@ -1410,7 +1410,7 @@ TEST_CASE("set_qname-5")
 	item.set_qname("x", "item");
 
 	CHECK(item.get_qname() == "x:item");
-	CHECK(item.name() == "item");
+	CHECK(item.get_local_name() == "item");
 	CHECK(item.get_prefix() == "x");
 
 	// namespace URI is resolved via xmlns:m, but the prefix in qname is now "x"
@@ -1798,11 +1798,11 @@ TEST_CASE("attr_erase-5")
 	// remaining attributes should be intact
 	auto ai = e.attributes().begin();
 	REQUIRE(ai != e.attributes().end());
-	CHECK(ai->name() == "a");
+	CHECK(ai->get_local_name() == "a");
 	CHECK(ai->value() == "1");
 	++ai;
 	REQUIRE(ai != e.attributes().end());
-	CHECK(ai->name() == "c");
+	CHECK(ai->get_local_name() == "c");
 	CHECK(ai->value() == "3");
 	++ai;
 	CHECK(ai == e.attributes().end());

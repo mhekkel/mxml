@@ -125,7 +125,7 @@ void document::set_version(version_type v)
 bool document::is_html5() const
 {
 	return m_doctype.m_root == "html" and
-	       (not empty() and front().name() == "html") and
+	       (not empty() and front().get_local_name() == "html") and
 	       m_doctype.m_pubid == "" and
 	       m_doctype.m_dtd == "about:legacy-compat";
 }

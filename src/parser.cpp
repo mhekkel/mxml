@@ -66,7 +66,7 @@ bool iequals(std::string_view a, std::string_view b)
 
 		if (cb >= 'a' and cb <= 'z')
 			cb &= ~0x0020;
-		
+
 		equal = ca == cb;
 	}
 
@@ -2845,9 +2845,7 @@ void parser_imp::attlist_decl()
 
 				s(true);
 
-				std::string token_value = m_token;
-				// Only normalize to see if the content is valid
-				(void)normalize_attribute_value(token_value, attribute->get_type() == doctype::attribute_type::CDATA);
+				std::string token_value = normalize_attribute_value(m_token, attribute->get_type() == doctype::attribute_type::CDATA);
 				if (not token_value.empty() and not attribute->validate_value(token_value, m_general_entities))
 				{
 					not_valid(std::format("default value '{}' for attribute '{}' is not valid", token_value, name));
@@ -2866,9 +2864,7 @@ void parser_imp::attlist_decl()
 				if (m_standalone)
 					not_valid("Document cannot be standalone since there is a default value for an attribute");
 
-				std::string token_value = m_token;
-				// Only normalize to see if the content is valid
-				(void)normalize_attribute_value(token_value, attribute->get_type() == doctype::attribute_type::CDATA);
+				std::string token_value = normalize_attribute_value(m_token, attribute->get_type() == doctype::attribute_type::CDATA);
 				collapse_spaces(token_value);
 				if (not token_value.empty() and not attribute->validate_value(token_value, m_general_entities))
 				{
@@ -3376,149 +3372,157 @@ std::string parser_imp::normalize_attribute_value()
 
 	} state = state_Start;
 
-	for (;;)
+	try
 	{
-		char32_t c = get_next_char();
-
-		if (c == 0)
-			break;
-
-		if (c == '<')
-			not_well_formed("Attribute values may not contain '<' character");
-
-		switch (state)
+		for (;;)
 		{
-			case state_Start:
-				if (c == ' ' or c == '\t' or c == '\r' or c == '\n')
-					result += ' ';
-				else if (c == '&')
-					state = state_ReferenceStart;
-				else
-					append(result, c);
+			char32_t c = get_next_char();
+
+			if (c == 0)
 				break;
 
-			case state_ReferenceStart:
-				if (c == '#')
-					state = state_CharReferenceStart;
-				else if (is_name_start_char(c))
-				{
-					name.clear();
-					append(name, c);
-					state = state_EntityReference;
-				}
-				else
-					not_well_formed("invalid reference found in attribute value");
-				break;
+			if (c == '<')
+				not_well_formed("Attribute values may not contain '<' character");
 
-			case state_CharReferenceStart:
-				if (c == 'x')
-					state = state_HexCharReference;
-				else if (c >= '0' and c <= '9')
-				{
-					charref = c - '0';
-					state = state_DecCharReference;
-				}
-				else
-					not_well_formed("invalid character reference");
-				break;
+			switch (state)
+			{
+				case state_Start:
+					if (c == ' ' or c == '\t' or c == '\r' or c == '\n')
+						result += ' ';
+					else if (c == '&')
+						state = state_ReferenceStart;
+					else
+						append(result, c);
+					break;
 
-			case state_DecCharReference:
-				if (auto ch = charref * 10ULL + (c - '0'); c >= '0' and c <= '9' and std::cmp_less(ch, std::numeric_limits<uint32_t>::max()))
-					charref = static_cast<char32_t>(ch);
-				else if (c == ';')
-				{
-					if (not is_referrable_char(charref))
-						not_well_formed("Illegal character referenced: '" + to_hex(charref) + '\'');
+				case state_ReferenceStart:
+					if (c == '#')
+						state = state_CharReferenceStart;
+					else if (is_name_start_char(c))
+					{
+						name.clear();
+						append(name, c);
+						state = state_EntityReference;
+					}
+					else
+						not_well_formed("invalid reference found in attribute value");
+					break;
 
-					append(result, charref);
-					state = state_Start;
-				}
-				else
-					not_well_formed("invalid character reference");
-				break;
+				case state_CharReferenceStart:
+					if (c == 'x')
+						state = state_HexCharReference;
+					else if (c >= '0' and c <= '9')
+					{
+						charref = c - '0';
+						state = state_DecCharReference;
+					}
+					else
+						not_well_formed("invalid character reference");
+					break;
 
-			case state_HexCharReference:
-				if (c >= 'a' and c <= 'f')
-				{
-					charref = c - 'a' + 10;
-					state = state_HexCharReference2;
-				}
-				else if (c >= 'A' and c <= 'F')
-				{
-					charref = c - 'A' + 10;
-					state = state_HexCharReference2;
-				}
-				else if (c >= '0' and c <= '9')
-				{
-					charref = c - '0';
-					state = state_HexCharReference2;
-				}
-				else
-					not_well_formed("invalid character reference");
-				break;
+				case state_DecCharReference:
+					if (auto ch = charref * 10ULL + (c - '0'); c >= '0' and c <= '9' and std::cmp_less(ch, std::numeric_limits<uint32_t>::max()))
+						charref = static_cast<char32_t>(ch);
+					else if (c == ';')
+					{
+						if (not is_referrable_char(charref))
+							not_well_formed("Illegal character referenced: '" + to_hex(charref) + '\'');
 
-			case state_HexCharReference2:
-				if (charref < 0x01000000 and c >= 'a' and c <= 'f')
-					charref = (charref << 4) + (c - 'a' + 10);
-				else if (charref < 0x01000000 and c >= 'A' and c <= 'F')
-					charref = (charref << 4) + (c - 'A' + 10);
-				else if (charref < 0x01000000 and c >= '0' and c <= '9')
-					charref = (charref << 4) + (c - '0');
-				else if (charref < 0x01000000 and c == ';')
-				{
-					if (not is_referrable_char(charref))
-						not_well_formed("Illegal character referenced: '" + to_hex(charref) + '\'');
+						append(result, charref);
+						state = state_Start;
+					}
+					else
+						not_well_formed("invalid character reference");
+					break;
 
-					append(result, charref);
-					state = state_Start;
-				}
-				else
-					not_well_formed("invalid character reference");
-				break;
+				case state_HexCharReference:
+					if (c >= 'a' and c <= 'f')
+					{
+						charref = c - 'a' + 10;
+						state = state_HexCharReference2;
+					}
+					else if (c >= 'A' and c <= 'F')
+					{
+						charref = c - 'A' + 10;
+						state = state_HexCharReference2;
+					}
+					else if (c >= '0' and c <= '9')
+					{
+						charref = c - '0';
+						state = state_HexCharReference2;
+					}
+					else
+						not_well_formed("invalid character reference");
+					break;
 
-			case state_EntityReference:
-				if (c == ';')
-				{
-					if (std::ranges::find(m_entities_on_stack, name) != m_entities_on_stack.end())
-						not_well_formed("infinite recursion in nested entity references");
+				case state_HexCharReference2:
+					if (charref < 0x01000000 and c >= 'a' and c <= 'f')
+						charref = (charref << 4) + (c - 'a' + 10);
+					else if (charref < 0x01000000 and c >= 'A' and c <= 'F')
+						charref = (charref << 4) + (c - 'A' + 10);
+					else if (charref < 0x01000000 and c >= '0' and c <= '9')
+						charref = (charref << 4) + (c - '0');
+					else if (charref < 0x01000000 and c == ';')
+					{
+						if (not is_referrable_char(charref))
+							not_well_formed("Illegal character referenced: '" + to_hex(charref) + '\'');
 
-					m_entities_on_stack.push_back(name);
+						append(result, charref);
+						state = state_Start;
+					}
+					else
+						not_well_formed("invalid character reference");
+					break;
 
-					const doctype::entity &e = get_general_entity(name);
+				case state_EntityReference:
+					if (c == ';')
+					{
+						if (std::ranges::find(m_entities_on_stack, name) != m_entities_on_stack.end())
+							not_well_formed("infinite recursion in nested entity references");
 
-					if (e.is_external())
-						not_well_formed("attribute value may not contain external entity reference");
+						m_entities_on_stack.push_back(name);
 
-					if (e.is_externally_defined() and m_standalone)
-						not_well_formed("document marked as standalone but an external entity is referenced");
+						const doctype::entity &e = get_general_entity(name);
 
-					push_data_source(new entity_data_source(e.get_replacement(), m_source.top()->base()), false);
+						if (e.is_external())
+							not_well_formed("attribute value may not contain external entity reference");
 
-					std::string replacement = normalize_attribute_value();
-					result += replacement;
+						if (e.is_externally_defined() and m_standalone)
+							not_well_formed("document marked as standalone but an external entity is referenced");
 
-					state = state_Start;
+						push_data_source(new entity_data_source(e.get_replacement(), m_source.top()->base()), false);
 
-					m_entities_on_stack.pop_back();
-				}
-				else if (is_name_char(c))
-					append(name, c);
-				else
-					not_well_formed("invalid entity reference");
-				break;
+						std::string replacement = normalize_attribute_value();
+						result += replacement;
 
-			default:
-				assert(false);
-				not_well_formed("invalid state");
+						state = state_Start;
+
+						m_entities_on_stack.pop_back();
+					}
+					else if (is_name_char(c))
+						append(name, c);
+					else
+						not_well_formed("invalid entity reference");
+					break;
+
+				default:
+					assert(false);
+					not_well_formed("invalid state");
+			}
 		}
+
+		if (state != state_Start)
+			not_well_formed("invalid reference");
+
+		m_source.pop();
+
+		return result;
 	}
-
-	if (state != state_Start)
-		not_well_formed("invalid reference");
-
-	m_source.pop();
-
-	return result;
+	catch (...)
+	{
+		m_source.pop();
+		throw;
+	}
 }
 
 void parser_imp::collapse_spaces(std::string &s)

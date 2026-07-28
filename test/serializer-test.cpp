@@ -693,9 +693,8 @@ TEST_CASE("ser_err_enum_unknown")
 		{ { color::red, "red" }, { color::green, "green" }, { color::blue, "blue" } });
 
 	// deserialize a string that doesn't match any registered enum value
-	// returns the default-constructed value (first enumerator = 0)
-	CHECK(value_serializer<color>::from_string("nonexistent") == color{});
-	CHECK(value_serializer<color>::from_string("") == color{});
+	CHECK_THROWS_AS(value_serializer<color>::from_string("nonexistent"), std::invalid_argument);
+	CHECK_THROWS_AS(value_serializer<color>::from_string(""), std::invalid_argument);
 
 	// valid values work
 	CHECK(value_serializer<color>::from_string("red") == color::red);
@@ -925,4 +924,110 @@ TEST_CASE("ser_err_deser_attribute_empty")
 	zeem::deserializer dsr(child);
 	dsr.deserialize_attribute("nonexistent", val);
 	CHECK(val == 99);
+}
+
+// --------------------------------------------------------------------
+
+enum class Fruit { apple, banana, cherry };
+enum class Priority : int { low = -1, medium = 0, high = 1 };
+
+TEST_CASE("value_serializer_enum")
+{
+	using namespace zeem;
+
+	value_serializer<Fruit>::init("Fruit",
+		{ { Fruit::apple, "apple" }, { Fruit::banana, "banana" }, { Fruit::cherry, "cherry" } });
+
+	SECTION("type_name returns registered name")
+	{
+		CHECK(value_serializer<Fruit>::type_name() == "Fruit");
+	}
+
+	SECTION("to_string round-trip")
+	{
+		CHECK(value_serializer<Fruit>::to_string(Fruit::apple) == "apple");
+		CHECK(value_serializer<Fruit>::to_string(Fruit::banana) == "banana");
+		CHECK(value_serializer<Fruit>::to_string(Fruit::cherry) == "cherry");
+	}
+
+	SECTION("from_string round-trip")
+	{
+		CHECK(value_serializer<Fruit>::from_string("apple") == Fruit::apple);
+		CHECK(value_serializer<Fruit>::from_string("banana") == Fruit::banana);
+		CHECK(value_serializer<Fruit>::from_string("cherry") == Fruit::cherry);
+	}
+
+	SECTION("to_string throws for unregistered value")
+	{
+		CHECK_THROWS_AS(value_serializer<Fruit>::to_string(static_cast<Fruit>(99)), std::out_of_range);
+	}
+
+	SECTION("from_string throws for invalid string")
+	{
+		CHECK_THROWS_AS(value_serializer<Fruit>::from_string("orange"), std::invalid_argument);
+		CHECK_THROWS_AS(value_serializer<Fruit>::from_string(""), std::invalid_argument);
+		CHECK_THROWS_AS(value_serializer<Fruit>::from_string("APPLE"), std::invalid_argument);
+	}
+
+	SECTION("values returns all registered strings")
+	{
+		auto vals = value_serializer<Fruit>::instance().values();
+		REQUIRE(vals.size() == 3);
+		CHECK(vals[0] == "apple");
+		CHECK(vals[1] == "banana");
+		CHECK(vals[2] == "cherry");
+	}
+
+	SECTION("operator() chaining with (value, name)")
+	{
+		value_serializer<Priority>::instance()(Priority::low, "low")(Priority::medium, "medium")(Priority::high, "high");
+
+		CHECK(value_serializer<Priority>::to_string(Priority::low) == "low");
+		CHECK(value_serializer<Priority>::to_string(Priority::medium) == "medium");
+		CHECK(value_serializer<Priority>::to_string(Priority::high) == "high");
+
+		CHECK(value_serializer<Priority>::from_string("low") == Priority::low);
+		CHECK(value_serializer<Priority>::from_string("medium") == Priority::medium);
+		CHECK(value_serializer<Priority>::from_string("high") == Priority::high);
+	}
+
+	SECTION("operator() chaining with (name, value)")
+	{
+		value_serializer<Priority>::instance("prio")
+			("negative", Priority::low)
+			("zero", Priority::medium)
+			("positive", Priority::high);
+
+		CHECK(value_serializer<Priority>::to_string(Priority::low) == "negative");
+		CHECK(value_serializer<Priority>::from_string("positive") == Priority::high);
+	}
+
+	SECTION("round-trip via to_xml and from_xml")
+	{
+		using namespace zeem::literals;
+
+		element e("test");
+		to_xml(e, "fruit", Fruit::banana);
+
+		Fruit result = Fruit::apple;
+		from_xml(e, "fruit", result);
+		CHECK(result == Fruit::banana);
+
+		CHECK((std::ostringstream() << e).str() == "<test><fruit>banana</fruit></test>");
+	}
+
+	SECTION("round-trip vector of enums")
+	{
+		std::vector<Fruit> input = { Fruit::cherry, Fruit::apple, Fruit::banana };
+
+		element e("test");
+		serializer sr(e);
+		sr.serialize_element("fruits", input);
+
+		std::vector<Fruit> output;
+		deserializer dsr(e);
+		dsr.deserialize_element("fruits", output);
+
+		CHECK(input == output);
+	}
 }

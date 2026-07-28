@@ -41,9 +41,9 @@ int main()
 			/* Iterate over the __element__ nodes inside the person __element__ */
 			for (const auto& name : *person)
 			{
-				if (name.name() == "firstname")
+				if (name.get_local_name() == "firstname")
 					firstname = name.str();
-				if (name.name() == "lastname")
+				if (name.get_local_name() == "lastname")
 					lastname = name.str();
 			}
 

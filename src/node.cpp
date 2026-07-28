@@ -149,7 +149,7 @@ std::string node::get_qname() const
 	return "";
 }
 
-std::string node::name() const
+std::string node::get_local_name() const
 {
 	std::string qn = get_qname();
 	std::string::size_type s = qn.find(':');
@@ -525,7 +525,7 @@ bool element::equals(const node *n) const
 	{
 		const auto *e = static_cast<const element *>(n);
 
-		result = name() == e->name() and get_ns() == e->get_ns();
+		result = get_local_name() == e->get_local_name() and get_ns() == e->get_ns();
 
 		auto na = nodes();
 		auto nb = e->nodes();
@@ -687,7 +687,7 @@ std::string element::namespace_for_prefix(std::string_view prefix) const
 		if (not a.is_namespace())
 			continue;
 
-		if (a.name() == "xmlns")
+		if (a.get_local_name() == "xmlns")
 		{
 			if (prefix.empty())
 			{
@@ -697,7 +697,7 @@ std::string element::namespace_for_prefix(std::string_view prefix) const
 			continue;
 		}
 
-		if (a.name() == prefix)
+		if (a.get_local_name() == prefix)
 		{
 			result = a.value();
 			break;
@@ -765,7 +765,7 @@ void element::move_to_name_space(const std::string &prefix, std::string_view uri
 			m_attributes.emplace(prefix.empty() ? "xmlns" : "xmlns:" + prefix, uri);
 	}
 
-	set_qname(prefix, name());
+	set_qname(prefix, get_local_name());
 
 	if (including_attributes)
 	{
@@ -789,13 +789,13 @@ void element::move_to_name_space(const std::string &prefix, std::string_view uri
 			auto ns = attr.get_ns();
 
 			if (ns.empty())
-				attr.set_qname(prefix, attr.name());
+				attr.set_qname(prefix, attr.get_local_name());
 			else
 			{
 				auto nsp = prefix_for_namespace(ns);
 				if (not nsp.second)
 					throw exception("Cannot move element to new namespace, namespace not found: " + ns);
-				attr.set_qname(nsp.first, attr.name());
+				attr.set_qname(nsp.first, attr.get_local_name());
 			}
 		}
 	}
@@ -893,7 +893,7 @@ void fix_namespaces(element &e, const element &source, const element &dest)
 			if (mapped.count(p))
 			{
 				if (mapped[p] != p)
-					n->set_qname(mapped[p], n->name());
+					n->set_qname(mapped[p], n->get_local_name());
 			}
 			else
 			{
@@ -905,7 +905,7 @@ void fix_namespaces(element &e, const element &source, const element &dest)
 				if (dp.second)
 				{
 					mapped[p] = dp.first;
-					n->set_qname(dp.first, n->name());
+					n->set_qname(dp.first, n->get_local_name());
 				}
 				else
 				{
