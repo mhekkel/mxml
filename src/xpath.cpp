@@ -8,23 +8,85 @@
 # include <cctype>
 # include <charconv>
 # include <cmath>
-# include <compare>
 # include <cstddef>
 # include <exception>
 # include <functional>
-# include <iterator>
 # include <map>
 # include <memory>
 # include <optional>
-# include <ranges>
 # include <string>
 # include <system_error>
+# include <unordered_set>
 # include <utility>
 # include <vector>
 #endif
 
 namespace zeem
 {
+
+// --------------------------------------------------------------------
+
+// using node_set = std::vector<node *>;
+
+struct node_set
+{
+	using iterator = typename std::vector<node *>::iterator;
+	using const_iterator = typename std::vector<node *>::const_iterator;
+
+
+	node_set() = default;
+
+	node_set(const node_set &rhs) = default;
+
+	node_set(node_set &&rhs) noexcept
+	{
+		swap(*this, rhs);
+	}
+
+	node_set &operator=(node_set sb) noexcept
+	{
+		swap(*this, sb);
+		return *this;
+	}
+	
+	void emplace(node *n)
+	{
+		const auto &[_, placed] = m_index.emplace(n);
+		if (placed)
+			m_nodes.emplace_back(n);
+	}
+
+	friend void swap(node_set &a, node_set &b) noexcept
+	{
+		std::swap(a.m_nodes, b.m_nodes);
+		std::swap(a.m_index, b.m_index);
+	}
+
+	[[nodiscard]] constexpr bool empty() const { return m_nodes.empty(); }
+	[[nodiscard]] constexpr auto size() const { return m_nodes.size(); }
+
+	auto begin() const { return m_nodes.begin(); }
+	auto end() const { return m_nodes.end(); }
+
+	auto front() const { return m_nodes.front(); }
+	auto back() const { return m_nodes.back(); }
+
+	constexpr auto operator==(const node_set &sb) const
+	{
+		return m_nodes == sb.m_nodes;
+	}
+
+	constexpr auto operator<=>(const node_set &sb) const
+	{
+		return m_nodes <=> sb.m_nodes;
+	}
+
+	std::vector<node *> nodes() const { return m_nodes; }
+
+  private:
+	std::vector<node *> m_nodes;
+	std::unordered_set<node *> m_index;
+};
 
 // --------------------------------------------------------------------
 
@@ -326,7 +388,7 @@ double object::as<double>() const
 			break;
 		}
 		case object_type::boolean: result = m_boolean; break;
-		default: result = 0; break;
+		default: result = std::nan("1"); break;
 	}
 	return result;
 }
@@ -447,10 +509,10 @@ bool object::operator<(const object &o) const
 	{
 		if (m_type == object_type::number or o.m_type == object_type::number)
 			result = as<double>() < o.as<double>();
-		else if (m_type ==object_type::boolean or o.m_type == object_type::boolean)
+		else if (m_type == object_type::boolean or o.m_type == object_type::boolean)
 			result = as<bool>() < o.as<bool>();
 		else
-		 	result = as<std::string>() < o.as<std::string>();
+			result = as<std::string>() < o.as<std::string>();
 	}
 	return result;
 }
@@ -493,6 +555,66 @@ object operator or(const object &lhs, const object &rhs)
 // --------------------------------------------------------------------
 // visiting (or better, collecting) other nodes in the hierarchy is done here.
 
+// template <typename PREDICATE>
+// void iterate_child_elements(element_container *context, node_set &s, bool deep, const PREDICATE &pred)
+// {
+// 	std::stack<element_container *> st;
+// 	st.push(context);
+
+// 	std::unordered_set<node *> result;
+
+// 	while (not st.empty())
+// 	{
+// 		context = st.top();
+// 		st.pop();
+
+// 		for (element &child : *context)
+// 		{
+// 			if (pred(&child))
+// 			{
+// 				const auto &[_, placed] = result.emplace(&child);
+// 				if (not placed)
+// 					continue;
+// 			}
+
+// 			if (deep)
+// 				st.push(&child);
+// 		}
+// 	}
+
+// 	s = node_set{ result.begin(), result.end() };
+// }
+
+// template <typename PREDICATE>
+// void iterate_child_nodes(element_container *context, node_set &s, bool deep, const PREDICATE &pred)
+// {
+// 	std::stack<element_container *> st;
+// 	st.push(context);
+
+// 	std::unordered_set<node *> result;
+
+// 	while (not st.empty())
+// 	{
+// 		context = st.top();
+// 		st.pop();
+
+// 		for (node &child : context->nodes())
+// 		{
+// 			if (pred(&child))
+// 			{
+// 				const auto &[_, placed] = result.emplace(&child);
+// 				if (not placed)
+// 					continue;
+// 			}
+
+// 			if (deep and child.type() == node_type::element)
+// 				st.push(.×static_cast<element_container *>(&child));
+// 		}
+// 	}
+
+// 	s = node_set{ result.begin(), result.end() };
+// }
+
 template <typename PREDICATE>
 void iterate_child_elements(element_container *context, node_set &s, bool deep, const PREDICATE &pred)
 {
@@ -502,7 +624,7 @@ void iterate_child_elements(element_container *context, node_set &s, bool deep, 
 			continue;
 
 		if (pred(&child))
-			s.push_back(&child);
+			s.emplace(&child);
 
 		if (deep)
 			iterate_child_elements(&child, s, true, pred);
@@ -518,7 +640,7 @@ void iterate_child_nodes(element_container *context, node_set &s, bool deep, con
 			continue;
 
 		if (pred(&child))
-			s.push_back(&child);
+			s.emplace(&child);
 
 		if (deep)
 		{
@@ -544,7 +666,7 @@ void iterate_ancestor(element_container *e, node_set &s, const PREDICATE &pred)
 	while (n != nullptr and n->type() != node_type::document)
 	{
 		if (pred(n))
-			s.push_back(n);
+			s.emplace(n);
 		n = n->parent();
 	}
 }
@@ -569,7 +691,7 @@ void iterate_preceding(node *n, node_set &s, bool sibling, const PREDICATE &pred
 			continue;
 
 		if (pred(n))
-			s.push_back(n);
+			s.emplace(n);
 
 		if (sibling == false)
 			iterate_children(static_cast<element *>(n), s, true, pred, elementsOnly);
@@ -596,7 +718,7 @@ void iterate_following(node *n, node_set &s, bool sibling, const PREDICATE &pred
 			continue;
 
 		if (pred(n))
-			s.push_back(n);
+			s.emplace(n);
 
 		if (sibling == false)
 			iterate_children(static_cast<element *>(n), s, true, pred, elementsOnly);
@@ -609,7 +731,7 @@ void iterate_attributes(element *e, node_set &s, const PREDICATE &pred)
 	for (auto &a : e->attributes())
 	{
 		if (pred(&a))
-			s.push_back(&a);
+			s.emplace(&a);
 	}
 }
 
@@ -622,7 +744,7 @@ void iterate_namespaces(element *e, node_set &s, const PREDICATE &pred)
 			continue;
 
 		if (pred(&a))
-			s.push_back(&a);
+			s.emplace(&a);
 	}
 }
 
@@ -736,7 +858,7 @@ object step_expression::evaluate(expression_context &context, const T &pred, boo
 			{
 				auto p = context.m_node->parent();
 				if (p != nullptr and pred(p))
-					result.push_back(p);
+					result.emplace(p);
 				break;
 			}
 
@@ -746,13 +868,13 @@ object step_expression::evaluate(expression_context &context, const T &pred, boo
 
 			case AxisType::AncestorOrSelf:
 				if (pred(context.m_node))
-					result.push_back(context.m_node);
+					result.emplace(context.m_node);
 				iterate_ancestor(context_element, result, pred);
 				break;
 
 			case AxisType::Self:
 				if (pred(context.m_node))
-					result.push_back(context.m_node);
+					result.emplace(context.m_node);
 				break;
 
 			case AxisType::Child:
@@ -765,7 +887,7 @@ object step_expression::evaluate(expression_context &context, const T &pred, boo
 
 			case AxisType::DescendantOrSelf:
 				if (pred(context.m_node))
-					result.push_back(context.m_node);
+					result.emplace(context.m_node);
 				iterate_children(context_element, result, true, pred, elementsOnly);
 				break;
 
@@ -886,7 +1008,7 @@ class root_expression : public expression
 object root_expression::evaluate(expression_context &context)
 {
 	node_set result;
-	result.push_back(context.m_node->root());
+	result.emplace(context.m_node->root());
 	return result;
 }
 
@@ -1004,7 +1126,7 @@ object operator_expression<Token::OperatorMod>::evaluate(expression_context &con
 	object v1 = m_lhs->evaluate(context);
 	object v2 = m_rhs->evaluate(context);
 
-	return static_cast<double>(v1.as<int>() % v2.as<int>());
+	return std::fmod(v1.as<double>(), v2.as<double>());
 }
 
 template <>
@@ -1077,7 +1199,8 @@ object path_expression::evaluate(expression_context &context)
 
 		node_set s = m_rhs->evaluate(ctxt).as<const node_set &>();
 
-		std::ranges::copy(s, back_inserter(result));
+		for (auto n : s)
+			result.emplace(n);
 	}
 
 	return result;
@@ -1115,10 +1238,10 @@ object predicate_expression::evaluate(expression_context &context)
 		if (test.type() == object_type::number)
 		{
 			if (static_cast<double>(ctxt.position()) == test.as<double>())
-				result.push_back(n);
+				result.emplace(n);
 		}
 		else if (test.as<bool>())
-			result.push_back(n);
+			result.emplace(n);
 	}
 
 	return result;
@@ -1273,7 +1396,7 @@ object core_function_expression<CoreFunction::Id>::evaluate(expression_context &
 
 		if (auto en = dynamic_cast<element_container *>(context.m_node); en != nullptr and not ids.empty())
 		{
-			iterate_child_nodes(en, result, false, [&ids](const node *n)
+			iterate_child_nodes(en, result, true, [&ids](const node *n)
 				{
 					auto e = dynamic_cast<const element *>(n);
 					return e != nullptr and std::ranges::contains(ids, e->id()); });
@@ -1300,7 +1423,7 @@ object core_function_expression<CoreFunction::LocalName>::evaluate(expression_co
 	if (n == nullptr)
 		throw exception("argument is not an element in function 'local-name'");
 
-	return n->name();
+	return n->name(); // name() returns the local-name part of the expanded-name of a node
 }
 
 template <>
@@ -1636,8 +1759,14 @@ object core_function_expression<CoreFunction::Sum>::evaluate(expression_context 
 		auto s = n->str();
 		double v;
 		auto [p, e] = from_chars(s.data(), s.data() + s.length(), v);
-		if (e == std::errc{})
+		if (e == std::errc{} and p == s.data() + s.length())
+		{
 			sum += v;
+			continue;
+		}
+
+		sum = std::nan("1");
+		break;
 	}
 	return sum;
 }
@@ -1691,7 +1820,8 @@ object union_expression::evaluate(expression_context &context)
 	node_set s1 = v1.as<const node_set &>();
 	node_set s2 = v2.as<const node_set &>();
 
-	std::ranges::copy(s2, back_inserter(s1));
+	for (auto n : s2)
+		s1.emplace(n);
 
 	return s1;
 }
@@ -2653,17 +2783,17 @@ xpath::xpath(std::string_view path)
 }
 
 template <>
-node_set xpath::evaluate<node>(const node &root, const context &ctxt) const
+std::vector<node *> xpath::evaluate<node>(const node &root, const context &ctxt) const
 {
 	node_set empty;
 	expression_context context(*ctxt.m_impl, &root, empty);
-	return m_impl->evaluate(context).as<const node_set &>();
+	return m_impl->evaluate(context).as<const node_set &>().nodes();
 }
 
 template <>
-element_set xpath::evaluate<element>(const node &root, const context &ctxt) const
+std::vector<element *> xpath::evaluate<element>(const node &root, const context &ctxt) const
 {
-	element_set result;
+	std::vector<element *> result;
 
 	for (node *n : evaluate<node>(root, ctxt))
 	{

@@ -38,9 +38,6 @@ ZEEM_EXPORT class node;
 ZEEM_EXPORT class text;
 ZEEM_EXPORT class xpath;
 
-using node_set = std::vector<node *>;
-using element_set = std::vector<element *>;
-
 ZEEM_EXPORT template <typename T>
 concept NodeType = std::is_base_of_v<zeem::node, std::remove_cvref_t<T>>;
 
@@ -157,7 +154,7 @@ class node
 		set_qname(prefix.empty() ? std::move(name) : prefix + ':' + name);
 	}
 
-	[[nodiscard]] virtual std::string name() const;       ///< The name for the node as parsed from the qname.
+	[[nodiscard]] virtual std::string name() const;       ///< The local-name for the node as parsed from the qname.
 	[[nodiscard]] virtual std::string get_prefix() const; ///< The prefix for the node as parsed from the qname.
 	[[nodiscard]] virtual std::string get_ns() const;     ///< Returns the namespace URI for the node, if it can be resolved.
 
@@ -481,7 +478,7 @@ class iterator_impl
 	{
 		if constexpr (std::is_same_v<std::remove_cv_t<value_type>, element>)
 		{
-			while (m_current->type() != node_type::element and m_current->type() != node_type::header)
+			while (m_current != nullptr and m_current->type() != node_type::element and m_current->type() != node_type::header)
 				m_current = m_current->next();
 		}
 	}
@@ -798,7 +795,7 @@ ZEEM_EXPORT class element_container : public node, public node_list<element>
 	/// If you need to find other classes than xml::element, of if your XPath
 	/// contains variables, you should create a zeem::xpath object and use
 	/// its evaluate method.
-	[[nodiscard]] element_set find(std::string_view path) const;
+	[[nodiscard]] std::vector<element *> find(std::string_view path) const;
 
 	/// \brief return the first element that matches XPath \a path.
 	///
@@ -811,7 +808,7 @@ ZEEM_EXPORT class element_container : public node, public node_list<element>
 	// With prepared xpaths:
 
 	/// \brief return the elements that match XPath \a path.
-	[[nodiscard]] element_set find(const xpath &path, const context &ctxt) const;
+	[[nodiscard]] std::vector<element *> find(const xpath &path, const context &ctxt) const;
 
 	/// \brief return the first element that matches XPath \a path.
 	[[nodiscard]] iterator find_first(const xpath &path, const context &ctxt);
