@@ -927,10 +927,6 @@ class name_test_step_expression : public step_expression
 		: step_expression(axis)
 		, m_name(name)
 	{
-		m_test = [this](auto &&PH1)
-		{
-			return name_matches(std::forward<decltype(PH1)>(PH1));
-		};
 	}
 
 	object evaluate(expression_context &context) override;
@@ -943,12 +939,12 @@ class name_test_step_expression : public step_expression
 	}
 
 	std::string m_name;
-	std::function<bool(const node *)> m_test;
 };
 
 object name_test_step_expression::evaluate(expression_context &context)
 {
-	return step_expression::evaluate(context, m_test, true);
+	return step_expression::evaluate(context, [this](const node *n)
+		{ return name_matches(n); }, true);
 }
 
 // --------------------------------------------------------------------
