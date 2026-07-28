@@ -73,6 +73,12 @@ bool iequals(std::string_view a, std::string_view b)
 	return equal;
 }
 
+// private isalpha
+constexpr bool isalpha_light(char ch)
+{
+	return (ch >= 'a' and ch <= 'z') or (ch >= 'A' and ch <= 'Z');
+}
+
 bool is_absolute_path(std::string_view s)
 {
 	bool result = false;
@@ -81,10 +87,10 @@ bool is_absolute_path(std::string_view s)
 	{
 		if (s[0] == '/')
 			result = true;
-		else if (std::isalpha(s[0]))
+		else if (isalpha_light(s[0]))
 		{
 			auto ch = s.begin() + 1;
-			while (ch != s.end() and isalpha(*ch))
+			while (ch != s.end() and isalpha_light(*ch))
 				++ch;
 			result = ch != s.end() and *ch == ':';
 		}
@@ -98,7 +104,7 @@ bool is_valid_url(std::string_view url)
 	// The rules for url in namespaces are a bit different from the URI requirements in RFC3986
 	auto cp = url.find(':');
 
-	return cp > 1 and cp != std::string::npos and std::isalpha(url[0]);
+	return cp > 1 and cp != std::string::npos and isalpha_light(url[0]);
 }
 
 // parsing XML is somewhat like macro processing,
