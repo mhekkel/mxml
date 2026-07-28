@@ -57,7 +57,18 @@ bool iequals(std::string_view a, std::string_view b)
 	bool equal = a.length() == b.length();
 
 	for (std::string::size_type i = 0; equal and i < a.length(); ++i)
-		equal = std::toupper(a[i]) == std::toupper(b[i]);
+	{
+		char ca = a[i];
+		char cb = b[i];
+
+		if (ca >= 'a' and ca <= 'z')
+			ca &= ~0x0020;
+
+		if (cb >= 'a' and cb <= 'z')
+			cb &= ~0x0020;
+		
+		equal = ca == cb;
+	}
 
 	return equal;
 }
@@ -2835,7 +2846,8 @@ void parser_imp::attlist_decl()
 				s(true);
 
 				std::string token_value = m_token;
-				normalize_attribute_value(token_value, attribute->get_type() == doctype::attribute_type::CDATA);
+				// Only normalize to see if the content is valid
+				(void)normalize_attribute_value(token_value, attribute->get_type() == doctype::attribute_type::CDATA);
 				if (not token_value.empty() and not attribute->validate_value(token_value, m_general_entities))
 				{
 					not_valid(std::format("default value '{}' for attribute '{}' is not valid", token_value, name));
@@ -2855,7 +2867,8 @@ void parser_imp::attlist_decl()
 					not_valid("Document cannot be standalone since there is a default value for an attribute");
 
 				std::string token_value = m_token;
-				normalize_attribute_value(token_value, attribute->get_type() == doctype::attribute_type::CDATA);
+				// Only normalize to see if the content is valid
+				(void)normalize_attribute_value(token_value, attribute->get_type() == doctype::attribute_type::CDATA);
 				collapse_spaces(token_value);
 				if (not token_value.empty() and not attribute->validate_value(token_value, m_general_entities))
 				{
