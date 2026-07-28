@@ -188,27 +188,28 @@ struct value_serializer<T>
 	std::string m_type_name;
 	value_map_type m_value_map;
 
-	value_serializer(std::string name)
+	value_serializer(std::string name, value_map_type values)
 		: m_type_name(std::move(name))
+		, m_value_map(std::move(values))
 	{
 	}
 
   public:
 	/// \brief Initialize a new instance of value_serializer for this enum, with name and a set of name/value pairs
-	static void init(std::string_view name, std::initializer_list<value_map_value_type> values)
+	static void init(std::string_view name, value_map_type values)
 	{
-		instance(std::string{ name }).m_value_map = value_map_type(values);
+		instance(std::string{ name }, std::move(values));
 	}
 
 	/// \brief Initialize a new anonymous instance of value_serializer for this enum with a set of name/value pairs
-	static void init(std::initializer_list<value_map_value_type> values)
+	static void init(value_map_type values)
 	{
-		instance().m_value_map = value_map_type(values);
+		instance("", std::move(values));
 	}
 
-	static value_serializer &instance(std::string name = {})
+	static value_serializer &instance(std::string name = {}, value_map_type values = {})
 	{
-		static value_serializer s_instance(std::move(name));
+		static value_serializer s_instance(std::move(name), std::move(values));
 		return s_instance;
 	}
 
@@ -316,9 +317,9 @@ struct value_serializer<std::chrono::system_clock::time_point>
 		else
 			date::from_stream(is, "%FT%T", result);
 
-		if (not m[2].matched)
+		if (auto zone = date::current_zone(); not m[2].matched and zone)
 		{
-			auto info = date::current_zone()->get_info(result);
+			auto info = zone->get_info(result);
 			result -= info.offset;
 		}
 #else
@@ -329,9 +330,9 @@ struct value_serializer<std::chrono::system_clock::time_point>
 		else
 			std::chrono::from_stream(is, "%FT%T", result);
 
-		if (not m[2].matched)
+		if (auto zone = std::chrono::current_zone(); not m[2].matched and zone)
 		{
-			auto info = std::chrono::current_zone()->get_info(result);
+			auto info = zone->get_info(result);
 			result -= info.offset;
 		}
 #endif
