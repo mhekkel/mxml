@@ -36,7 +36,7 @@ ZEEM_EXPORT enum class encoding_type {
 	UTF8,    ///< UTF-8
 	UTF16BE, ///< UTF-16 Big Endian
 	UTF16LE, ///< UTF 16 Little Endian
-	ISO88591 ///< Default single byte encoding, is a subset of utf-8
+	ISO88591 ///< Default single byte encoding
 };
 
 /// \brief Append a single unicode character to an utf-8 string
