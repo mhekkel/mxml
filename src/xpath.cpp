@@ -109,7 +109,7 @@ enum class Token
 
 	OperatorUnion,
 	OperatorAdd,
-	OperatorSubstract,
+	OperatorSubtract,
 	OperatorEqual,
 	OperatorNotEqual,
 	OperatorLess,
@@ -1040,7 +1040,7 @@ object operator_expression<Token::OperatorAdd>::evaluate(expression_context &con
 }
 
 template <>
-object operator_expression<Token::OperatorSubstract>::evaluate(expression_context &context)
+object operator_expression<Token::OperatorSubtract>::evaluate(expression_context &context)
 {
 	object v1 = m_lhs->evaluate(context);
 	object v2 = m_rhs->evaluate(context);
@@ -2032,7 +2032,7 @@ std::string xpath_parser::describe_token(Token token)
 		case Token::NodeType: result = "node type specification"; break;
 		case Token::OperatorUnion: result = "union operator"; break;
 		case Token::OperatorAdd: result = "addition operator"; break;
-		case Token::OperatorSubstract: result = "subtraction operator"; break;
+		case Token::OperatorSubtract: result = "subtraction operator"; break;
 		case Token::OperatorEqual: result = "equals operator"; break;
 		case Token::OperatorNotEqual: result = "not-equals operator"; break;
 		case Token::OperatorLess: result = "less operator"; break;
@@ -2102,7 +2102,7 @@ Token xpath_parser::get_next_token()
 					case '/': token = Token::Slash; break;
 					case '|': token = Token::OperatorUnion; break;
 					case '+': token = Token::OperatorAdd; break;
-					case '-': token = Token::OperatorSubstract; break;
+					case '-': token = Token::OperatorSubtract; break;
 					case '=': token = Token::OperatorEqual; break;
 					case '!': state = xps_ExclamationMark; break;
 					case '<': state = xps_LessThan; break;
@@ -2685,14 +2685,14 @@ expression_ptr xpath_parser::additive_expr()
 {
 	expression_ptr result(multiplicative_expr());
 
-	while (m_lookahead == Token::OperatorAdd or m_lookahead == Token::OperatorSubstract)
+	while (m_lookahead == Token::OperatorAdd or m_lookahead == Token::OperatorSubtract)
 	{
 		Token op = m_lookahead;
 		match(m_lookahead);
 		if (op == Token::OperatorAdd)
 			result = std::make_shared<operator_expression<Token::OperatorAdd>>(result, multiplicative_expr());
 		else
-			result = std::make_shared<operator_expression<Token::OperatorSubstract>>(result, multiplicative_expr());
+			result = std::make_shared<operator_expression<Token::OperatorSubtract>>(result, multiplicative_expr());
 	}
 
 	return result;
@@ -2735,9 +2735,9 @@ expression_ptr xpath_parser::unary_expr()
 {
 	expression_ptr result;
 
-	if (m_lookahead == Token::OperatorSubstract)
+	if (m_lookahead == Token::OperatorSubtract)
 	{
-		match(Token::OperatorSubstract);
+		match(Token::OperatorSubtract);
 		result = std::make_shared<negate_expression>(unary_expr());
 	}
 	else
