@@ -3108,8 +3108,8 @@ void parser_imp::parse_parameter_entity_declaration(std::string &s)
 				break;
 
 			case 3:
-				if (c >= '0' and c <= '9')
-					charref = charref * 10 + (c - '0');
+				if (auto ch = charref * 10ULL + (c - '0'); c >= '0' and c <= '9' and std::cmp_less(ch, std::numeric_limits<uint32_t>::max()))
+					charref = static_cast<char32_t>(ch);
 				else if (c == ';')
 				{
 					if (not is_referrable_char(charref))
@@ -3143,13 +3143,13 @@ void parser_imp::parse_parameter_entity_declaration(std::string &s)
 				break;
 
 			case 5:
-				if (c >= 'a' and c <= 'f')
+				if (charref < 0x01000000 and c >= 'a' and c <= 'f')
 					charref = (charref << 4) + (c - 'a' + 10);
-				else if (c >= 'A' and c <= 'F')
+				else if (charref < 0x01000000 and c >= 'A' and c <= 'F')
 					charref = (charref << 4) + (c - 'A' + 10);
-				else if (c >= '0' and c <= '9')
+				else if (charref < 0x01000000 and c >= '0' and c <= '9')
 					charref = (charref << 4) + (c - '0');
-				else if (c == ';')
+				else if (charref < 0x01000000 and c == ';')
 				{
 					if (not is_referrable_char(charref))
 						not_well_formed("Illegal character referenced: '" + to_hex(charref) + '\'');
@@ -3251,8 +3251,8 @@ void parser_imp::parse_general_entity_declaration(std::string &s)
 				break;
 
 			case 3:
-				if (c >= '0' and c <= '9')
-					charref = charref * 10 + (c - '0');
+				if (auto ch = charref * 10ULL + (c - '0'); c >= '0' and c <= '9' and std::cmp_less(ch, std::numeric_limits<uint32_t>::max()))
+					charref = static_cast<char32_t>(ch);
 				else if (c == ';')
 				{
 					if (not is_referrable_char(charref))
@@ -3286,13 +3286,13 @@ void parser_imp::parse_general_entity_declaration(std::string &s)
 				break;
 
 			case 5:
-				if (c >= 'a' and c <= 'f')
+				if (charref < 0x01000000 and c >= 'a' and c <= 'f')
 					charref = (charref << 4) + (c - 'a' + 10);
-				else if (c >= 'A' and c <= 'F')
+				else if (charref < 0x01000000 and c >= 'A' and c <= 'F')
 					charref = (charref << 4) + (c - 'A' + 10);
-				else if (c >= '0' and c <= '9')
+				else if (charref < 0x01000000 and c >= '0' and c <= '9')
 					charref = (charref << 4) + (c - '0');
-				else if (c == ';')
+				else if (charref < 0x01000000 and c == ';')
 				{
 					if (not is_referrable_char(charref))
 						not_well_formed("Illegal character referenced: '" + to_hex(charref) + '\'');
@@ -3410,8 +3410,8 @@ std::string parser_imp::normalize_attribute_value()
 				break;
 
 			case state_DecCharReference:
-				if (c >= '0' and c <= '9')
-					charref = charref * 10 + (c - '0');
+				if (auto ch = charref * 10ULL + (c - '0'); c >= '0' and c <= '9' and std::cmp_less(ch, std::numeric_limits<uint32_t>::max()))
+					charref = static_cast<char32_t>(ch);
 				else if (c == ';')
 				{
 					if (not is_referrable_char(charref))
@@ -3445,13 +3445,13 @@ std::string parser_imp::normalize_attribute_value()
 				break;
 
 			case state_HexCharReference2:
-				if (c >= 'a' and c <= 'f')
+				if (charref < 0x01000000 and c >= 'a' and c <= 'f')
 					charref = (charref << 4) + (c - 'a' + 10);
-				else if (c >= 'A' and c <= 'F')
+				else if (charref < 0x01000000 and c >= 'A' and c <= 'F')
 					charref = (charref << 4) + (c - 'A' + 10);
-				else if (c >= '0' and c <= '9')
+				else if (charref < 0x01000000 and c >= '0' and c <= '9')
 					charref = (charref << 4) + (c - '0');
-				else if (c == ';')
+				else if (charref < 0x01000000 and c == ';')
 				{
 					if (not is_referrable_char(charref))
 						not_well_formed("Illegal character referenced: '" + to_hex(charref) + '\'');
