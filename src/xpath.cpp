@@ -399,7 +399,7 @@ int object::as<int>() const
 	int result = 0;
 	switch (m_type)
 	{
-		case object_type::number: result = std::round(m_number); break;
+		case object_type::number: result = std::ceil(m_number - 0.5); break;
 		case object_type::node_set:
 		{
 			if (not m_node_set.empty())
@@ -620,9 +620,6 @@ void iterate_child_elements(element_container *context, node_set &s, bool deep, 
 {
 	for (element &child : *context)
 	{
-		if (std::ranges::find(s, &child) != s.end())
-			continue;
-
 		if (pred(&child))
 			s.emplace(&child);
 
@@ -636,9 +633,6 @@ void iterate_child_nodes(element_container *context, node_set &s, bool deep, con
 {
 	for (node &child : context->nodes())
 	{
-		if (std::ranges::find(s, &child) != s.end())
-			continue;
-
 		if (pred(&child))
 			s.emplace(&child);
 
@@ -1789,7 +1783,7 @@ template <>
 object core_function_expression<CoreFunction::Round>::evaluate(expression_context &context)
 {
 	object v = m_args.front()->evaluate(context);
-	return std::round(v.as<double>());
+	return std::ceil(v.as<double>() - 0.5);
 }
 
 // --------------------------------------------------------------------
