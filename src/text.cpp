@@ -195,56 +195,50 @@ char32_t pop_front_char(std::string_view::const_iterator &ptr, std::string_view:
 	char32_t result = static_cast<unsigned char>(*ptr);
 	++ptr;
 
-	if (result > 0x07f)
+	if (result & 0x080)
 	{
-		unsigned char ch[3];
+		char8_t ch[3];
 
-		if ((result & 0x0E0U) == 0x0C0U)
+		if ((result & 0x0E0) == 0x0C0)
 		{
-			if (ptr >= end)
+			ch[0] = static_cast<unsigned char>(*ptr++);
+			if ((ch[0] & 0x0c0) != 0x080)
 				throw zeem::exception("Invalid utf-8");
+			result = ((result & 0x01F) << 6) | (ch[0] & 0x03F);
 
-			ch[0] = static_cast<unsigned char>(*ptr);
-			++ptr;
-
-			if ((ch[0] & 0x0c0U) != 0x080U)
-				throw zeem::exception("Invalid utf-8");
-
-			result = ((result & 0x01FU) << 6) | (ch[0] & 0x03FU);
+			if (result < 0x0080)
+				throw zeem::exception("invalid utf-8 character (overlong)");
 		}
-		else if ((result & 0x0F0U) == 0x0E0U)
+		else if ((result & 0x0F0) == 0x0E0)
 		{
-			if (ptr + 1 >= end)
+			ch[0] = static_cast<unsigned char>(*ptr++);
+			ch[1] = static_cast<unsigned char>(*ptr++);
+			if ((ch[0] & 0x0c0) != 0x080 or (ch[1] & 0x0c0) != 0x080)
 				throw zeem::exception("Invalid utf-8");
+			result = ((result & 0x00F) << 12) | ((ch[0] & 0x03F) << 6) | (ch[1] & 0x03F);
 
-			ch[0] = static_cast<unsigned char>(*ptr);
-			++ptr;
-			ch[1] = static_cast<unsigned char>(*ptr);
-			++ptr;
-
-			if ((ch[0] & 0x0c0U) != 0x080U or (ch[1] & 0x0c0U) != 0x080U)
-				throw zeem::exception("Invalid utf-8");
-
-			result = ((result & 0x00FU) << 12) | ((ch[0] & 0x03FU) << 6) | (ch[1] & 0x03FU);
+			if (result < 0x0800)
+				throw zeem::exception("invalid utf-8 character (overlong)");
 		}
-		else if ((result & 0x0F8U) == 0x0F0U)
+		else if ((result & 0x0F8) == 0x0F0)
 		{
-			if (ptr + 2 >= end)
+			ch[0] = static_cast<unsigned char>(*ptr++);
+			ch[1] = static_cast<unsigned char>(*ptr++);
+			ch[2] = static_cast<unsigned char>(*ptr++);
+			if ((ch[0] & 0x0c0) != 0x080 or (ch[1] & 0x0c0) != 0x080 or (ch[2] & 0x0c0) != 0x080)
 				throw zeem::exception("Invalid utf-8");
+			result = ((result & 0x007) << 18) | ((ch[0] & 0x03F) << 12) | ((ch[1] & 0x03F) << 6) | (ch[2] & 0x03F);
 
-			ch[0] = static_cast<unsigned char>(*ptr);
-			++ptr;
-			ch[1] = static_cast<unsigned char>(*ptr);
-			++ptr;
-			ch[2] = static_cast<unsigned char>(*ptr);
-			++ptr;
+			if (result < 0x010000)
+				throw zeem::exception("invalid utf-8 character (overlong)");
 
-			if ((ch[0] & 0x0c0U) != 0x080U or (ch[1] & 0x0c0U) != 0x080U or (ch[2] & 0x0c0U) != 0x080U)
-				throw zeem::exception("Invalid utf-8");
-
-			result = ((result & 0x007U) << 18) | ((ch[0] & 0x03FU) << 12) | ((ch[1] & 0x03FU) << 6) | (ch[2] & 0x03FU);
+			if (result > 0x10ffff)
+				throw zeem::exception("invalid utf-8 character (out of range)");
 		}
 	}
+
+	if (result >= 0x0D800 and result <= 0x0DFFF)
+		throw zeem::exception("invalid utf-8 character, surrogate");
 
 	return result;
 }
