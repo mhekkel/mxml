@@ -8,16 +8,12 @@
  * definition of the serializer classes used to (de-)serialize XML data.
  */
 
-#include "zeem/parser.hpp"
-#include "zeem/xpath.hpp"
-
-#include <exception>
-#include <stdexcept>
-#include <type_traits>
 #ifndef ZEEM_CXX_MODULE
 # include "zeem/config.hpp"
 # include "zeem/detail/charconv.hpp"
 # include "zeem/node.hpp"
+# include "zeem/parser.hpp"
+# include "zeem/xpath.hpp"
 
 # if ZEEM_USE_DATE_H
 #  include <date/date.h>
@@ -27,12 +23,15 @@
 # include <algorithm>
 # include <charconv>
 # include <chrono>
+# include <exception>
 # include <map>
 # include <optional>
 # include <regex>
 # include <source_location>
+# include <stdexcept>
 # include <string>
 # include <system_error>
+# include <type_traits>
 #endif
 
 namespace zeem
