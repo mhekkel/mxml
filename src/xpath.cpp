@@ -149,21 +149,22 @@ enum class AxisType
 	AxisTypeCount
 };
 
-const char *kAxisNames[static_cast<std::size_t>(AxisType::AxisTypeCount)] = {
-	"ancestor",
-	"ancestor-or-self",
-	"attribute",
-	"child",
-	"descendant",
-	"descendant-or-self",
-	"following",
-	"following-sibling",
-	"namespace",
-	"parent",
-	"preceding",
-	"preceding-sibling",
-	"self"
-};
+const std::array<const char *, static_cast<std::size_t>(AxisType::AxisTypeCount)>
+	kAxisNames{
+		"ancestor",
+		"ancestor-or-self",
+		"attribute",
+		"child",
+		"descendant",
+		"descendant-or-self",
+		"following",
+		"following-sibling",
+		"namespace",
+		"parent",
+		"preceding",
+		"preceding-sibling",
+		"self"
+	};
 
 enum class CoreFunction
 {
@@ -1618,7 +1619,7 @@ object core_function_expression<CoreFunction::NormalizeSpace>::evaluate(expressi
 
 	for (char c : s)
 	{
-		if (std::isspace(c))
+		if (std::isspace(static_cast<unsigned char>(c)))
 		{
 			if (not space)
 				result += ' ';
@@ -2257,17 +2258,15 @@ Token xpath_parser::get_next_token()
 			// look forward and see what's ahead
 			for (std::u32string::const_iterator c = m_next; c != m_end; ++c)
 			{
-				if (std::isspace(static_cast<int>(*c)))
+				if (std::isspace(static_cast<unsigned char>(*c)))
 					continue;
 
 				if (*c == ':' and *(c + 1) == ':') // it must be an axis specifier
 				{
 					token = Token::AxisSpec;
 
-					const int kAxisNameCount = sizeof(kAxisNames) / sizeof(const char *);
-					const char **a = find(kAxisNames, kAxisNames + kAxisNameCount, m_token_string);
-					if (*a != nullptr)
-						m_token_axis = AxisType(a - kAxisNames);
+					if (auto a = std::ranges::find(kAxisNames, m_token_string); a != kAxisNames.end())
+						m_token_axis = AxisType(a - kAxisNames.begin());
 					else
 						throw exception("invalid axis specification " + m_token_string);
 
