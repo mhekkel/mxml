@@ -192,8 +192,14 @@ char32_t pop_back_char(std::string &s)
 /// \brief return the first unicode and the advanced pointer from a string
 char32_t pop_front_char(std::string_view::const_iterator &ptr, std::string_view::const_iterator end)
 {
-	char32_t result = static_cast<unsigned char>(*ptr);
-	++ptr;
+	auto get_char = [&]
+	{
+		if (ptr == end)
+			throw zeem::exception("invalid utf-8 character, truncated?");
+		return static_cast<unsigned char>(*ptr++);
+	};
+
+	char32_t result = get_char();
 
 	if (result & 0x080)
 	{
@@ -201,7 +207,7 @@ char32_t pop_front_char(std::string_view::const_iterator &ptr, std::string_view:
 
 		if ((result & 0x0E0) == 0x0C0)
 		{
-			ch[0] = static_cast<unsigned char>(*ptr++);
+			ch[0] = get_char();
 			if ((ch[0] & 0x0c0) != 0x080)
 				throw zeem::exception("Invalid utf-8");
 			result = ((result & 0x01F) << 6) | (ch[0] & 0x03F);
@@ -211,8 +217,8 @@ char32_t pop_front_char(std::string_view::const_iterator &ptr, std::string_view:
 		}
 		else if ((result & 0x0F0) == 0x0E0)
 		{
-			ch[0] = static_cast<unsigned char>(*ptr++);
-			ch[1] = static_cast<unsigned char>(*ptr++);
+			ch[0] = get_char();
+			ch[1] = get_char();
 			if ((ch[0] & 0x0c0) != 0x080 or (ch[1] & 0x0c0) != 0x080)
 				throw zeem::exception("Invalid utf-8");
 			result = ((result & 0x00F) << 12) | ((ch[0] & 0x03F) << 6) | (ch[1] & 0x03F);
@@ -222,9 +228,9 @@ char32_t pop_front_char(std::string_view::const_iterator &ptr, std::string_view:
 		}
 		else if ((result & 0x0F8) == 0x0F0)
 		{
-			ch[0] = static_cast<unsigned char>(*ptr++);
-			ch[1] = static_cast<unsigned char>(*ptr++);
-			ch[2] = static_cast<unsigned char>(*ptr++);
+			ch[0] = get_char();
+			ch[1] = get_char();
+			ch[2] = get_char();
 			if ((ch[0] & 0x0c0) != 0x080 or (ch[1] & 0x0c0) != 0x080 or (ch[2] & 0x0c0) != 0x080)
 				throw zeem::exception("Invalid utf-8");
 			result = ((result & 0x007) << 18) | ((ch[0] & 0x03F) << 12) | ((ch[1] & 0x03F) << 6) | (ch[2] & 0x03F);
