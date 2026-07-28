@@ -170,21 +170,14 @@ class istream_data_source : public data_source
   public:
 	explicit istream_data_source(std::istream &data)
 		: m_data(&data)
-		, m_owns_data(false)
 	{
 		guess_encoding();
 	}
 
-	explicit istream_data_source(std::istream *data)
-		: m_data(data)
+	explicit istream_data_source(std::unique_ptr<std::istream> data)
+		: istream_data_source(*data)
 	{
-		guess_encoding();
-	}
-
-	~istream_data_source() override
-	{
-		if (m_owns_data)
-			delete m_data;
+		m_ptr = std::move(data);
 	}
 
 	bool has_bom() override { return m_has_bom; }
@@ -212,7 +205,7 @@ class istream_data_source : public data_source
 	}
 
 	std::istream *m_data;
-	bool m_owns_data = true;
+	std::unique_ptr<std::istream> m_ptr;
 	char32_t m_char_buffer = 0; // used in detecting \r\n algorithm
 
 	using next_func = char32_t (istream_data_source::*)();
@@ -957,7 +950,6 @@ parser_imp::parser_imp(std::istream &data, parser &parser)
 	m_general_entities.push_back(std::make_shared<doctype::general_entity>("apos", "&#39;"));
 	m_general_entities.push_back(std::make_shared<doctype::general_entity>("quot", "&#34;"));
 
-	// m_xmlSpaceAttr.reset(new doctype::attribute("xml:space", doctype::attribute_type::Enumerated, { "preserve", "default" }));
 	m_xmlSpaceAttr = std::make_shared<doctype::attribute>("xml:space", doctype::attribute_type::Enumerated, std::vector<std::string>{ "preserve", "default" });
 }
 
@@ -2956,7 +2948,7 @@ data_source *parser_imp::get_data_source(std::string_view pubid, std::string uri
 	auto is = m_parser.external_entity_ref(m_source.top()->base(), pubid, uri);
 	if (is != nullptr)
 	{
-		result = new istream_data_source(is.release());
+		result = new istream_data_source(std::move(is));
 
 		std::string::size_type s = uri.rfind('/');
 		if (s == std::string::npos)
@@ -4142,10 +4134,17 @@ parser::parser(std::istream &data)
 {
 }
 
-parser::~parser()
+parser::~parser() = default;
+
+parser::parser(parser &&rhs) noexcept
+	: m_impl(std::move(rhs.m_impl))
 {
-	delete m_impl;
-	delete m_istream;
+}
+
+parser &parser::operator=(parser &&rhs) noexcept
+{
+	std::swap(m_impl, rhs.m_impl);
+	return *this;
 }
 
 void parser::parse(bool validate, bool validate_ns)

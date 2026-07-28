@@ -90,20 +90,11 @@ ZEEM_EXPORT class parser
 	parser(const parser &) = delete;
 
 	// Move constructor
-	parser(parser &&rhs) noexcept
-		: m_impl(std::exchange(rhs.m_impl, nullptr))
-		, m_istream(std::exchange(rhs.m_istream, nullptr))
-	{
-	}
+	parser(parser &&rhs) noexcept;
 
 	// Assignment operators
 	parser &operator=(const parser &) = delete;
-	parser &operator=(parser &&rhs) noexcept
-	{
-		std::swap(m_impl, rhs.m_impl);
-		std::swap(m_istream, rhs.m_istream);
-		return *this;
-	}
+	parser &operator=(parser &&rhs) noexcept;
 
 	/// @brief destructor
 	virtual ~parser();
@@ -166,8 +157,7 @@ ZEEM_EXPORT class parser
 		std::string_view pubid, std::string_view uri);
 
   private:
-	struct parser_imp *m_impl;
-	std::istream *m_istream = nullptr;
+	std::unique_ptr<struct parser_imp> m_impl;
 
 	/** @endcond */
 };
