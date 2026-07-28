@@ -290,7 +290,6 @@ class element
 		: m_name(std::move(name))
 		, m_allowed(nullptr)
 		, m_declared(declared)
-	// , m_external(external)
 	{
 	}
 
@@ -311,7 +310,7 @@ class element
 	std::string m_name;
 	attribute_list m_attlist;
 	content_spec_base_ptr m_allowed;
-	bool m_declared /* , m_external */;
+	bool m_declared;
 };
 
 // --------------------------------------------------------------------
