@@ -422,7 +422,6 @@ std::tuple<bool, bool> state_choice::allow(std::string_view name)
 
 bool state_choice::allow_empty()
 {
-	using namespace std::placeholders;
 	return m_mixed or
 	       std::ranges::find_if(m_states, [](auto &&s)
 			   { return s->allow_empty(); }) != m_states.end();
