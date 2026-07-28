@@ -2876,7 +2876,9 @@ void parser_imp::attlist_decl()
 					not_valid("Document cannot be standalone since there is a default value for an attribute");
 
 				std::string token_value = normalize_attribute_value(m_token, attribute->get_type() == doctype::attribute_type::CDATA);
-				collapse_spaces(token_value);
+				if (attribute->get_type() != doctype::attribute_type::CDATA)
+					collapse_spaces(token_value);
+
 				if (not token_value.empty() and not attribute->validate_value(token_value, m_general_entities))
 				{
 					not_valid(std::format("default value '{}' for attribute '{}' is not valid", token_value, name));
