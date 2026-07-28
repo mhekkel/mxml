@@ -533,6 +533,82 @@ class valid_nesting_validator
 };
 
 // --------------------------------------------------------------------
+// State machine to parse charref's
+
+enum class CharRefState
+{
+	start,
+	hex,
+	dec,
+	done,
+	invalid
+};
+
+CharRefState move_charref(char32_t uc, char32_t &charref, CharRefState state)
+{
+	switch (state)
+	{
+		using enum CharRefState;
+
+		case start:
+			if (uc == 'x')
+			{
+				charref = 0;
+				state = hex;
+			}
+			else if (uc >= '0' and uc <= '9')
+			{
+				charref = uc - '0';
+				state = dec;
+			}
+			else
+				state = invalid;
+			break;
+		case hex:
+			if (uc == ';')
+				state = done;
+			else
+			{
+				int v = 0;
+				if (uc >= 'a' and uc <= 'f')
+					v = (uc - 'a' + 10);
+				else if (uc >= 'A' and uc <= 'F')
+					v = (uc - 'A' + 10);
+				else if (uc >= '0' and uc <= '9')
+					v = (uc - '0');
+				else
+					state = invalid;
+
+				if (std::cmp_less((charref << 4) + v, 0x01000000))
+					charref = (charref << 4) + v;
+				else
+					state = invalid;
+				break;
+			}
+		case dec:
+			if (uc == ';')
+				state = done;
+			else if (uc >= '0' and uc <= '9')
+			{
+				int v = uc - '0';
+
+				if (std::cmp_less(charref * 10 + v, 0x01000000))
+					charref = charref * 10 + v;
+				else
+					state = invalid;
+				break;
+			}
+			else
+				state = invalid;
+		default:
+			std::unreachable();
+			break;
+	}
+
+	return state;
+}
+
+// --------------------------------------------------------------------
 
 struct parser_imp
 {
@@ -1423,6 +1499,7 @@ parser_imp::XMLToken parser_imp::get_next_content()
 	XMLToken token = XMLToken::Undef;
 	int state = state_Start;
 	char32_t charref = 0;
+	CharRefState crState = CharRefState::start;
 
 	m_token.clear();
 
@@ -1597,69 +1674,23 @@ parser_imp::XMLToken parser_imp::get_next_content()
 				break;
 
 			case state_Reference + 2:
-				if (uc == 'x')
-					state = state_Reference + 4;
-				else if (uc >= '0' and uc <= '9')
+				crState = move_charref(uc, charref, crState);
+				switch (crState)
 				{
-					charref = uc - '0';
-					state += 1;
-				}
-				else
-					not_well_formed("invalid character reference");
-				break;
+					using enum CharRefState;
+					case invalid:
+						not_well_formed("invalid character reference");
+					case done:
+					{
+						if (not is_referrable_char(charref))
+							not_well_formed("Illegal character reference in content text");
 
-			case state_Reference + 3:
-				if (auto ch = charref * 10ULL + (uc - '0'); uc >= '0' and uc <= '9' and std::cmp_less(ch, std::numeric_limits<uint32_t>::max()))
-					charref = static_cast<char32_t>(ch);
-				else if (uc == ';')
-				{
-					if (not is_referrable_char(charref))
-						not_well_formed("Illegal character in content text");
-					m_token.clear();
-					append(m_token, charref);
-					token = XMLToken::CharRef;
+						m_token.clear();
+						append(m_token, charref);
+						token = XMLToken::CharRef;
+					}
+					default: break;
 				}
-				else
-					not_well_formed("invalid character reference");
-				break;
-
-			case state_Reference + 4:
-				if (uc >= 'a' and uc <= 'f')
-				{
-					charref = uc - 'a' + 10;
-					state += 1;
-				}
-				else if (uc >= 'A' and uc <= 'F')
-				{
-					charref = uc - 'A' + 10;
-					state += 1;
-				}
-				else if (uc >= '0' and uc <= '9')
-				{
-					charref = uc - '0';
-					state += 1;
-				}
-				else
-					not_well_formed("invalid character reference");
-				break;
-
-			case state_Reference + 5:
-				if (charref < 0x01000000 and uc >= 'a' and uc <= 'f')
-					charref = (charref << 4) + (uc - 'a' + 10);
-				else if (charref < 0x01000000 and uc >= 'A' and uc <= 'F')
-					charref = (charref << 4) + (uc - 'A' + 10);
-				else if (charref < 0x01000000 and uc >= '0' and uc <= '9')
-					charref = (charref << 4) + (uc - '0');
-				else if (charref < 0x01000000 and uc == ';')
-				{
-					if (not is_referrable_char(charref))
-						not_well_formed("Illegal character in content text");
-					m_token.clear();
-					append(m_token, charref);
-					token = XMLToken::CharRef;
-				}
-				else
-					not_well_formed("invalid character reference");
 				break;
 
 			// ]]> is illegal
@@ -3037,6 +3068,7 @@ void parser_imp::parse_parameter_entity_declaration(std::string &s)
 
 	int state = 0;
 	char32_t charref = 0;
+	CharRefState crState = CharRefState::start;
 	std::string name;
 	int open = 0;
 
@@ -3085,69 +3117,24 @@ void parser_imp::parse_parameter_entity_declaration(std::string &s)
 				break;
 
 			case 2:
-				if (c == 'x')
-					state = 4;
-				else if (c >= '0' and c <= '9')
+				crState = move_charref(c, charref, crState);
+				switch (crState)
 				{
-					charref = c - '0';
-					state = 3;
-				}
-				else
-					not_well_formed("invalid character reference");
-				break;
+					using enum CharRefState;
+					case invalid:
+						not_well_formed("invalid character reference");
+					case done:
+					{
+						if (not is_referrable_char(charref))
+							not_well_formed("Illegal character reference");
 
-			case 3:
-				if (auto ch = charref * 10ULL + (c - '0'); c >= '0' and c <= '9' and std::cmp_less(ch, std::numeric_limits<uint32_t>::max()))
-					charref = static_cast<char32_t>(ch);
-				else if (c == ';')
-				{
-					if (not is_referrable_char(charref))
-						not_well_formed("Illegal character referenced: " + to_hex(charref) + '\'');
+						append(result, charref);
 
-					append(result, charref);
-					state = 0;
+						state = 0;
+						crState = CharRefState::start;
+					}
+					default: break;
 				}
-				else
-					not_well_formed("invalid character reference");
-				break;
-
-			case 4:
-				if (c >= 'a' and c <= 'f')
-				{
-					charref = c - 'a' + 10;
-					state = 5;
-				}
-				else if (c >= 'A' and c <= 'F')
-				{
-					charref = c - 'A' + 10;
-					state = 5;
-				}
-				else if (c >= '0' and c <= '9')
-				{
-					charref = c - '0';
-					state = 5;
-				}
-				else
-					not_well_formed("invalid character reference");
-				break;
-
-			case 5:
-				if (charref < 0x01000000 and c >= 'a' and c <= 'f')
-					charref = (charref << 4) + (c - 'a' + 10);
-				else if (charref < 0x01000000 and c >= 'A' and c <= 'F')
-					charref = (charref << 4) + (c - 'A' + 10);
-				else if (charref < 0x01000000 and c >= '0' and c <= '9')
-					charref = (charref << 4) + (c - '0');
-				else if (charref < 0x01000000 and c == ';')
-				{
-					if (not is_referrable_char(charref))
-						not_well_formed("Illegal character referenced: '" + to_hex(charref) + '\'');
-
-					append(result, charref);
-					state = 0;
-				}
-				else
-					not_well_formed("invalid character reference");
 				break;
 
 			case 20:
@@ -3186,6 +3173,7 @@ void parser_imp::parse_general_entity_declaration(std::string &s)
 
 	int state = 0;
 	char32_t charref = 0;
+	CharRefState crState = CharRefState::start;
 	std::string name;
 
 	auto sp = s.cbegin();
@@ -3228,69 +3216,24 @@ void parser_imp::parse_general_entity_declaration(std::string &s)
 				break;
 
 			case 2:
-				if (c == 'x')
-					state = 4;
-				else if (c >= '0' and c <= '9')
+				crState = move_charref(c, charref, crState);
+				switch (crState)
 				{
-					charref = c - '0';
-					state = 3;
-				}
-				else
-					not_well_formed("invalid character reference");
-				break;
+					using enum CharRefState;
+					case invalid:
+						not_well_formed("invalid character reference");
+					case done:
+					{
+						if (not is_referrable_char(charref))
+							not_well_formed("Illegal character reference");
 
-			case 3:
-				if (auto ch = charref * 10ULL + (c - '0'); c >= '0' and c <= '9' and std::cmp_less(ch, std::numeric_limits<uint32_t>::max()))
-					charref = static_cast<char32_t>(ch);
-				else if (c == ';')
-				{
-					if (not is_referrable_char(charref))
-						not_well_formed("Illegal character referenced: '" + to_hex(charref) + '\'');
+						append(result, charref);
 
-					append(result, charref);
-					state = 0;
+						state = 0;
+						crState = CharRefState::start;
+					}
+					default: break;
 				}
-				else
-					not_well_formed("invalid character reference");
-				break;
-
-			case 4:
-				if (c >= 'a' and c <= 'f')
-				{
-					charref = c - 'a' + 10;
-					state = 5;
-				}
-				else if (c >= 'A' and c <= 'F')
-				{
-					charref = c - 'A' + 10;
-					state = 5;
-				}
-				else if (c >= '0' and c <= '9')
-				{
-					charref = c - '0';
-					state = 5;
-				}
-				else
-					not_well_formed("invalid character reference");
-				break;
-
-			case 5:
-				if (charref < 0x01000000 and c >= 'a' and c <= 'f')
-					charref = (charref << 4) + (c - 'a' + 10);
-				else if (charref < 0x01000000 and c >= 'A' and c <= 'F')
-					charref = (charref << 4) + (c - 'A' + 10);
-				else if (charref < 0x01000000 and c >= '0' and c <= '9')
-					charref = (charref << 4) + (c - '0');
-				else if (charref < 0x01000000 and c == ';')
-				{
-					if (not is_referrable_char(charref))
-						not_well_formed("Illegal character referenced: '" + to_hex(charref) + '\'');
-
-					append(result, charref);
-					state = 0;
-				}
-				else
-					not_well_formed("invalid character reference");
 				break;
 
 			case 10:
