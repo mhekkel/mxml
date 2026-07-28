@@ -140,7 +140,7 @@ void append(std::string &s, char32_t uc)
 							  static_cast<char>(0x080U | ((uc >> 6U) & 0x3fU)),
 							  static_cast<char>(0x080U | (uc & 0x3fU)) });
 	}
-	else
+	else if (uc < 0x00110000)
 	{
 		s.insert(s.end(), { static_cast<char>(0x0f0U | (uc >> 18U)),
 							  static_cast<char>(0x080U | ((uc >> 12U) & 0x3fU)),
