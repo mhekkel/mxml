@@ -33,7 +33,6 @@ struct node_set
 	using iterator = typename std::vector<node *>::iterator;
 	using const_iterator = typename std::vector<node *>::const_iterator;
 
-
 	node_set() = default;
 
 	node_set(const node_set &rhs) = default;
@@ -48,7 +47,7 @@ struct node_set
 		swap(*this, sb);
 		return *this;
 	}
-	
+
 	void emplace(node *n)
 	{
 		const auto &[_, placed] = m_index.emplace(n);
@@ -1602,13 +1601,27 @@ object core_function_expression<CoreFunction::Substring>::evaluate(expression_co
 
 	auto s = v1.as<std::string>();
 
+	int start = v2.as<int>();
+
 	if (m_args.size() == 3)
 	{
 		object v3 = (*a)->evaluate(context);
-		return s.substr(v2.as<int>(), v3.as<int>());
+
+		int len = v3.as<int>();
+		if (start < 1)
+		{
+			len += start - 1;
+			start = 1;
+		}
+
+		return s.substr(start - 1, len);
 	}
 	else
-		return s.substr(v2.as<int>(), std::string::npos);
+	{
+		if (start < 1)
+			start = 1;
+		return s.substr(start - 1, std::string::npos);
+	}
 }
 
 template <>
