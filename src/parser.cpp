@@ -590,20 +590,7 @@ struct parser_imp
 	void parse_general_entity_declaration(std::string &s);
 
 	// same goes for attribute values
-	std::string normalize_attribute_value(const std::string &s, bool isCDATA)
-	{
-		push_data_source(new string_data_source(s), false);
-
-		std::string result = normalize_attribute_value();
-
-		if (m_standalone and result != s)
-			not_valid("Document cannot be standalone since an attribute was modified");
-
-		if (not isCDATA)
-			collapse_spaces(result);
-
-		return result;
-	}
+	std::string normalize_attribute_value(const std::string &s, bool isCDATA);
 
 	std::string normalize_attribute_value();
 
@@ -666,53 +653,7 @@ struct parser_imp
 	};
 
 	// for debugging and error reporting we have the following describing routine
-	constexpr const char *describe_token(XMLToken token)
-	{
-		switch (token)
-		{
-			case XMLToken::Undef: return "undefined";
-			case XMLToken::Eq: return "=";
-			case XMLToken::QuestionMark: return "?";
-			case XMLToken::GreaterThan: return ">";
-			case XMLToken::OpenBracket: return "[";
-			case XMLToken::CloseBracket: return "]";
-			case XMLToken::OpenParenthesis: return "(";
-			case XMLToken::CloseParenthesis: return ")";
-			case XMLToken::Percent: return "%";
-			case XMLToken::Plus: return "+";
-			case XMLToken::Pipe: return "|";
-			case XMLToken::Asterisk: return "*";
-			case XMLToken::Slash: return "/";
-			case XMLToken::Comma: return ",";
-			case XMLToken::Eof: return "end of file";
-			case XMLToken::Other: return "an invalid character";
-			case XMLToken::XMLDecl: return "'<?xml'";
-			case XMLToken::Space: return "space character";
-			case XMLToken::Comment: return "comment";
-			case XMLToken::Name: return "identifier or name";
-			case XMLToken::NMToken: return "nmtoken";
-			case XMLToken::String: return "quoted string";
-			case XMLToken::PI: return "processing instruction";
-			case XMLToken::STag: return "tag";
-			case XMLToken::ETag: return "end tag";
-			case XMLToken::DocType: return "<!DOCTYPE";
-			case XMLToken::Element: return "<!ELEMENT";
-			case XMLToken::AttList: return "<!ATTLIST";
-			case XMLToken::Entity: return "<!ENTITY";
-			case XMLToken::Notation: return "<!NOTATION";
-			case XMLToken::Required: return "#REQUIRED";
-			case XMLToken::Implied: return "#IMPLIED";
-			case XMLToken::Fixed: return "#FIXED";
-			case XMLToken::PCData: return "#PCData";
-			case XMLToken::PEReference: return "parameter entity reference";
-			case XMLToken::CharRef: return "character reference";
-			case XMLToken::Reference: return "entity reference";
-			case XMLToken::CDSect: return "CDATA section";
-			case XMLToken::Content: return "content";
-			case XMLToken::IncludeIgnore: return "<![ (as in <![INCLUDE[ )";
-			default: assert(false); return "unknown token";
-		}
-	}
+	constexpr const char *describe_token(XMLToken token);
 
 	char32_t get_next_char();
 
@@ -903,22 +844,22 @@ struct parser_imp
 		std::set<std::string> m_unbound;
 	};
 
-	bool is_char(char32_t uc)
+	constexpr bool is_char(char32_t uc)
 	{
 		return m_version == version_type{ 1, 0 } ? is_valid_xml_1_0_char(uc) : is_valid_xml_1_1_char(uc);
 	}
 
-	bool is_space(char32_t uc)
+	constexpr bool is_space(char32_t uc)
 	{
 		return uc == ' ' or uc == '\t' or uc == '\n' or uc == '\r';
 	}
 
-	bool is_space(std::string_view s)
+	constexpr bool is_space(std::string_view s)
 	{
 		return not s.empty() and s.find_first_not_of(" \t\r\n") == std::string_view::npos;
 	}
 
-	bool is_referrable_char(char32_t charref)
+	constexpr bool is_referrable_char(char32_t charref)
 	{
 		return m_version == version_type{ 1, 0 }
 		           ? charref == 0x09 or
@@ -1082,6 +1023,53 @@ const doctype::element_ptr parser_imp::get_element(std::string_view name) const
 	return result;
 }
 
+constexpr const char *parser_imp::describe_token(XMLToken token)
+{
+	switch (token)
+	{
+		case XMLToken::Undef: return "undefined";
+		case XMLToken::Eq: return "=";
+		case XMLToken::QuestionMark: return "?";
+		case XMLToken::GreaterThan: return ">";
+		case XMLToken::OpenBracket: return "[";
+		case XMLToken::CloseBracket: return "]";
+		case XMLToken::OpenParenthesis: return "(";
+		case XMLToken::CloseParenthesis: return ")";
+		case XMLToken::Percent: return "%";
+		case XMLToken::Plus: return "+";
+		case XMLToken::Pipe: return "|";
+		case XMLToken::Asterisk: return "*";
+		case XMLToken::Slash: return "/";
+		case XMLToken::Comma: return ",";
+		case XMLToken::Eof: return "end of file";
+		case XMLToken::Other: return "an invalid character";
+		case XMLToken::XMLDecl: return "'<?xml'";
+		case XMLToken::Space: return "space character";
+		case XMLToken::Comment: return "comment";
+		case XMLToken::Name: return "identifier or name";
+		case XMLToken::NMToken: return "nmtoken";
+		case XMLToken::String: return "quoted string";
+		case XMLToken::PI: return "processing instruction";
+		case XMLToken::STag: return "tag";
+		case XMLToken::ETag: return "end tag";
+		case XMLToken::DocType: return "<!DOCTYPE";
+		case XMLToken::Element: return "<!ELEMENT";
+		case XMLToken::AttList: return "<!ATTLIST";
+		case XMLToken::Entity: return "<!ENTITY";
+		case XMLToken::Notation: return "<!NOTATION";
+		case XMLToken::Required: return "#REQUIRED";
+		case XMLToken::Implied: return "#IMPLIED";
+		case XMLToken::Fixed: return "#FIXED";
+		case XMLToken::PCData: return "#PCData";
+		case XMLToken::PEReference: return "parameter entity reference";
+		case XMLToken::CharRef: return "character reference";
+		case XMLToken::Reference: return "entity reference";
+		case XMLToken::CDSect: return "CDATA section";
+		case XMLToken::Content: return "content";
+		case XMLToken::IncludeIgnore: return "<![ (as in <![INCLUDE[ )";
+		default: assert(false); return "unknown token";
+	}
+}
 char32_t parser_imp::get_next_char()
 {
 	char32_t result = 0;
@@ -3351,6 +3339,20 @@ void parser_imp::parse_general_entity_declaration(std::string &s)
 		not_well_formed("invalid reference");
 
 	swap(s, result);
+}
+std::string parser_imp::normalize_attribute_value(const std::string &s, bool isCDATA)
+{
+	push_data_source(new string_data_source(s), false);
+
+	std::string result = normalize_attribute_value();
+
+	if (m_standalone and result != s)
+		not_valid("Document cannot be standalone since an attribute was modified");
+
+	if (not isCDATA)
+		collapse_spaces(result);
+
+	return result;
 }
 
 std::string parser_imp::normalize_attribute_value()
