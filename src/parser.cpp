@@ -1,6 +1,7 @@
 // Copyright (c) 2024 Maarten L. Hekkelman
 // SPDX-License-Identifier: BSD-2-Clause
 
+#include <limits>
 #ifndef ZEEM_CXX_MODULE
 # include "zeem/zeem.hpp"
 
@@ -1617,8 +1618,8 @@ parser_imp::XMLToken parser_imp::get_next_content()
 				break;
 
 			case state_Reference + 3:
-				if (uc >= '0' and uc <= '9')
-					charref = charref * 10 + (uc - '0');
+				if (auto ch = charref * 10ULL + (uc - '0'); uc >= '0' and uc <= '9' and std::cmp_less(ch, std::numeric_limits<uint32_t>::max()))
+					charref = static_cast<char32_t>(ch);
 				else if (uc == ';')
 				{
 					if (not is_referrable_char(charref))
@@ -1652,13 +1653,13 @@ parser_imp::XMLToken parser_imp::get_next_content()
 				break;
 
 			case state_Reference + 5:
-				if (uc >= 'a' and uc <= 'f')
+				if (charref < 0x01000000 and uc >= 'a' and uc <= 'f')
 					charref = (charref << 4) + (uc - 'a' + 10);
-				else if (uc >= 'A' and uc <= 'F')
+				else if (charref < 0x01000000 and uc >= 'A' and uc <= 'F')
 					charref = (charref << 4) + (uc - 'A' + 10);
-				else if (uc >= '0' and uc <= '9')
+				else if (charref < 0x01000000 and uc >= '0' and uc <= '9')
 					charref = (charref << 4) + (uc - '0');
-				else if (uc == ';')
+				else if (charref < 0x01000000 and uc == ';')
 				{
 					if (not is_referrable_char(charref))
 						not_well_formed("Illegal character in content text");
