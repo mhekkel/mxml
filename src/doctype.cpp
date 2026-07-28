@@ -618,11 +618,11 @@ bool attribute::is_names(std::string &s) const
 			if (c == s.end())
 				break;
 
-			result = isspace(*c) != 0;
+			result = std::isspace(static_cast<unsigned char>(*c)) != 0;
 			++c;
 			t += ' ';
 
-			while (c != s.end() and isspace(*c))
+			while (c != s.end() and std::isspace(static_cast<unsigned char>(*c)))
 				++c;
 		}
 
