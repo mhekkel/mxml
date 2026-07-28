@@ -2340,7 +2340,7 @@ void xpath_parser::match(Token token)
 		std::string found = describe_token(m_lookahead);
 
 		if (m_lookahead != Token::Eof and m_lookahead != Token::Undef)
-			found += " (\"" + m_token_string + "\"";
+			found += " (\"" + m_token_string + "\")";
 
 		std::string expected = describe_token(token);
 
