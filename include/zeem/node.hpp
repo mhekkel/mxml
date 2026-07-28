@@ -1517,22 +1517,16 @@ ZEEM_INLINE auto node_list<node>::insert(const_iterator pos, const value_type &e
 	{
 		case node_type::element:
 			return insert_impl(pos, new element(static_cast<const element &>(e)));
-			break;
 		case node_type::text:
 			return insert_impl(pos, new text(static_cast<const text &>(e)));
-			break;
 		case node_type::attribute:
 			return insert_impl(pos, new attribute(static_cast<const attribute &>(e)));
-			break;
 		case node_type::comment:
 			return insert_impl(pos, new comment(static_cast<const comment &>(e)));
-			break;
 		case node_type::cdata:
 			return insert_impl(pos, new cdata(static_cast<const cdata &>(e)));
-			break;
 		case node_type::processing_instruction:
 			return insert_impl(pos, new processing_instruction(static_cast<const processing_instruction &>(e)));
-			break;
 		default:
 			throw exception("internal error");
 	}
@@ -1546,22 +1540,16 @@ ZEEM_INLINE auto node_list<node>::insert(const_iterator pos, value_type &&e) -> 
 	{
 		case node_type::element:
 			return insert_impl(pos, new element(std::forward<element &&>(static_cast<element &&>(e))));
-			break;
 		case node_type::text:
 			return insert_impl(pos, new text(std::forward<text &&>(static_cast<text &&>(e))));
-			break;
 		case node_type::attribute:
 			return insert_impl(pos, new attribute(std::forward<attribute &&>(static_cast<attribute &&>(e))));
-			break;
 		case node_type::comment:
 			return insert_impl(pos, new comment(std::forward<comment &&>(static_cast<comment &&>(e))));
-			break;
 		case node_type::cdata:
 			return insert_impl(pos, new cdata(std::forward<cdata &&>(static_cast<cdata &&>(e))));
-			break;
 		case node_type::processing_instruction:
 			return insert_impl(pos, new processing_instruction(std::forward<processing_instruction &&>(static_cast<processing_instruction &&>(e))));
-			break;
 		default:
 			throw exception("internal error");
 	}
