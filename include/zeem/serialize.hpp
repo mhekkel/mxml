@@ -203,20 +203,35 @@ struct value_serializer<T>
 	/// \brief Initialize a new instance of value_serializer for this enum, with name and a set of name/value pairs
 	static void init(std::string_view name, value_map_type values)
 	{
-		instance(std::string{ name }, std::move(values));
+		create(std::string{ name }, std::move(values));
 	}
 
 	/// \brief Initialize a new anonymous instance of value_serializer for this enum with a set of name/value pairs
 	static void init(value_map_type values)
 	{
-		instance("", std::move(values));
+		create("", std::move(values));
 	}
 
-	static value_serializer &instance(std::string name = {}, value_map_type values = {})
+	/// \brief Return the singleton instance (must be initialized first via init())
+	static value_serializer &instance()
+	{
+		return create({}, {});
+	}
+
+	/// \brief Return the singleton instance, setting the type name
+	static value_serializer &instance(std::string_view name)
+	{
+		return create(std::string{ name }, {});
+	}
+
+  private:
+	static value_serializer &create(std::string name, value_map_type values)
 	{
 		static value_serializer s_instance(std::move(name), std::move(values));
 		return s_instance;
 	}
+
+  public:
 
 	value_serializer &operator()(T v, std::string_view name)
 	{
