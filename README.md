@@ -9,7 +9,7 @@ zeem
 
 This library is a C++ library implementing a validating XML parser, a DOM tree, XPaths and serialization. It can be built as either a Module library or a traditional library.
 
-Full documentation is available [here](https://mhekkel.github.io/zeem/)
+Full documentation is available [here](https://www.hekkelman.net/docs/libzeem/)
 
 > **NOTE** This library was initially named mxml, but that name was already taken.
 
