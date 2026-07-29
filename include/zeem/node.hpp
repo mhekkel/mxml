@@ -1611,27 +1611,22 @@ ZEEM_EXPORT void fix_namespaces(element &e, const element &source, const element
 // structured binding support
 /** @cond */
 
-namespace std
-{
-
 template <>
-struct tuple_size<::zeem::attribute>
+struct std::tuple_size<::zeem::attribute>
 	: public std::integral_constant<std::size_t, 2>
 {
 };
 
 template <>
-struct tuple_element<0, ::zeem::attribute>
+struct std::tuple_element<0, ::zeem::attribute>
 {
 	using type = decltype(std::declval<::zeem::attribute>().name());
 };
 
 template <>
-struct tuple_element<1, ::zeem::attribute>
+struct std::tuple_element<1, ::zeem::attribute>
 {
 	using type = decltype(std::declval<::zeem::attribute>().value());
 };
 
 /** @endcond */
-
-} // namespace std
