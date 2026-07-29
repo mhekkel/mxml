@@ -18,7 +18,7 @@ The DOM API
 
 ZEEM uses a modern C++ way of accessing and manipulating data. Look at the following code to get an idea how this works.
 
-.. literalinclude:: ../examples/synopsis-xml.cpp
+.. literalinclude:: ../examples/zeem-synopsis.cpp
     :language: c++
     :start-after: //[ synopsis_xml_main
     :end-before: //]
