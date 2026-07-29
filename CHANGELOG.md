@@ -3,6 +3,19 @@ SPDX-FileCopyrightText: 2026 Maarten L. Hekkelman
 SPDX-License-Identifier: BSD-2-Clause
 -->
 
+Version 2.3.0
+- Replaced raw pointer node insertion with std::unique_ptr for exception safety
+- Migrated parser internals from raw pointers to unique_ptr
+- Security: mitigated billion laughs attack
+- Security: added charref overflow and bounds checks
+- Security: reject invalid and overlong UTF-8 sequences
+- Rewrote character reference parsing as a state machine
+- Made value_serializer<enum> thread-safe with explicit init()
+- Enum serializer now throws on invalid values instead of silently defaulting
+- Schema creator now produces valid XSD schemas with namespace support
+- Fixed XPath substring function and name matching
+- Various code quality and cleanup improvements
+
 Version 2.2.0
 - Implemented an automatic schema creator
 - Better hybrid implementation (both traditional as well as module library)
