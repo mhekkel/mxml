@@ -1,4 +1,4 @@
-// Copyright (c) 2024 Maarten L. Hekkelman
+// Copyright (c) 2024-2026 Maarten L. Hekkelman
 // SPDX-License-Identifier: BSD-2-Clause
 
 #include <limits>
