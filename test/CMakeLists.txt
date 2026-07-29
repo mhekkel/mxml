@@ -75,6 +75,8 @@ foreach(TEST IN LISTS ZEEM_TESTS)
         set(ZEEM_TEST_ARGS "")
     endif()
 
+    list(APPEND ZEEM_TEST_ARGS "--data-dir=${CMAKE_CURRENT_SOURCE_DIR}")
+
     create_test(${ZEEM_TEST} ${ZEEM_TEST_SOURCE} "${ZEEM_TEST_ARGS}" OFF)
 
     if(ZEEM_BUILD_CXX_MODULE)
