@@ -67,7 +67,7 @@ struct value_serializer<std::string>
 };
 
 /// @ref value_serializer implementation for numbers
-ZEEM_EXPORT template <typename T>
+template <typename T>
 struct char_conv_serializer
 {
 	using value_type = T;
@@ -650,10 +650,9 @@ ZEEM_EXPORT struct schema_creator
 	{
 	}
 
-	void set_ns(std::string ns, std::string prefix = "ns")
+	void set_ns_prefix(std::string ns_prefix)
 	{
-		m_ns = std::move(ns);
-		m_ns_prefix = std::move(prefix);
+		m_ns_prefix = std::move(ns_prefix);
 	}
 
 	template <typename T>
@@ -704,11 +703,19 @@ ZEEM_EXPORT struct schema_creator
 	element &m_schema;
 	type_map &m_types;
 
-	std::string m_ns;
 	std::string m_ns_prefix;
 };
 
 // --------------------------------------------------------------------
+
+/// \brief Return a prefixed type name
+inline std::string get_prefixed_type_name(const std::string &prefix, std::string type_name)
+{
+	if (prefix.empty() or type_name.find(':') != std::string::npos)
+		return type_name;
+	else
+	 	return prefix + ':' + type_name;
+}
 
 /**
  * @brief Type serializer objects can serialize various types,
@@ -759,7 +766,7 @@ struct type_serializer<T[N]>
 			"xsd:element",
 			{ //
 				{ "name", name },
-				{ "type", prefix + type_serializer_type::type_name() },
+				{ "type", get_prefixed_type_name(prefix, type_serializer_type::type_name()) },
 				{ "minOccurs", std::to_string(N) },
 				{ "maxOccurs", std::to_string(N) } }
 		};
@@ -825,7 +832,7 @@ struct type_serializer<T>
 			"xsd:element",
 			{ //
 				{ "name", name },
-				{ "type", prefix + value_serializer_type::type_name() },
+				{ "type", get_prefixed_type_name(prefix, value_serializer_type::type_name()) },
 				{ "minOccurs", "1" },
 				{ "maxOccurs", "1" } }
 		};
@@ -917,7 +924,7 @@ struct type_serializer<T>
 			"xsd:element",
 			{ //
 				{ "name", name },
-				{ "type", prefix + value_type::type_name() },
+				{ "type", get_prefixed_type_name(prefix, value_type::type_name()) },
 				{ "minOccurs", "1" },
 				{ "maxOccurs", "1" } }
 		};
@@ -932,6 +939,7 @@ struct type_serializer<T>
 		element sequence("xsd:sequence");
 		using archive = struct_serializer<schema_creator, value_type>;
 		schema_creator schema(types, sequence);
+		schema.set_ns_prefix(prefix);
 
 		value_type v;
 		archive::serialize(schema, v);
@@ -976,7 +984,7 @@ struct type_serializer<std::optional<T>>
 			"xsd:element",
 			{ //
 				{ "name", name },
-				{ "type", prefix + type_serializer_type::type_name() },
+				{ "type", get_prefixed_type_name(prefix, type_serializer_type::type_name()) },
 				{ "minOccurs", "0" },
 				{ "maxOccurs", "1" } }
 		};
@@ -1082,7 +1090,7 @@ struct type_serializer<T>
 			"xsd:element",
 			{ //
 				{ "name", name },
-				{ "type", prefix + type_serializer_type::type_name() },
+				{ "type", get_prefixed_type_name(prefix, type_serializer_type::type_name()) },
 				{ "minOccurs", std::to_string(N) },
 				{ "maxOccurs", std::to_string(N) } }
 		};
@@ -1095,7 +1103,7 @@ struct type_serializer<T>
 			"xsd:element",
 			{ //
 				{ "name", name },
-				{ "type", prefix + type_serializer_type::type_name() },
+				{ "type", get_prefixed_type_name(prefix, type_serializer_type::type_name()) },
 				{ "minOccurs", "0" },
 				{ "maxOccurs", "unbounded" } }
 		};
@@ -1164,7 +1172,7 @@ struct type_serializer
 		return element{
 			"xsd:element",
 			{ { "name", name },
-				{ "type", prefix + value_serializer_type::type_name() },
+				{ "type", get_prefixed_type_name(prefix, value_serializer_type::type_name()) },
 				{ "minOccurs", "1" },
 				{ "maxOccurs", "1" } }
 		};

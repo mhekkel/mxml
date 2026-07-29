@@ -943,10 +943,12 @@ class name_test_step_expression : public step_expression
   protected:
 	bool name_matches(const node *n)
 	{
-		bool result = m_name == "*" or n->get_qname() == m_name;
-		if (result and not m_ns.empty())
-			result = m_ns == n->get_prefix();
-		return result;
+		if (m_ns == "*")
+			return m_name == "*" or n->get_local_name() == m_name;
+		else if (m_ns.empty())
+			return m_name == "*" or n->get_qname() == m_name;
+		else
+			return n->get_prefix() == m_ns and (m_name == "*" or n->get_local_name() == m_name);
 	}
 
 	std::string m_ns, m_name;
@@ -2392,8 +2394,16 @@ expression_ptr xpath_parser::node_test(AxisType axis)
 
 	if (m_lookahead == Token::Asterisk)
 	{
-		result = std::make_unique<name_test_step_expression>(axis, m_token_string);
 		match(Token::Asterisk);
+
+		if (m_lookahead == Token::Colon)
+		{
+			match(Token::Colon);
+			result = std::make_unique<name_test_step_expression>(axis, "*", m_token_string);
+			match(Token::Name);
+		}
+		else
+			result = std::make_unique<name_test_step_expression>(axis, "*");
 	}
 	else if (m_lookahead == Token::NodeType)
 	{
