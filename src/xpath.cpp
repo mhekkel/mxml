@@ -925,6 +925,13 @@ object step_expression::evaluate(expression_context &context, const T &pred, boo
 class name_test_step_expression : public step_expression
 {
   public:
+	name_test_step_expression(AxisType axis, std::string_view ns, std::string_view name)
+		: step_expression(axis)
+		, m_ns(ns)
+		, m_name(name)
+	{
+	}
+
 	name_test_step_expression(AxisType axis, std::string_view name)
 		: step_expression(axis)
 		, m_name(name)
@@ -936,11 +943,13 @@ class name_test_step_expression : public step_expression
   protected:
 	bool name_matches(const node *n)
 	{
-		bool result = m_name == "*" or n->get_local_name() == m_name;
+		bool result = m_name == "*" or n->get_qname() == m_name;
+		if (result and not m_ns.empty())
+			result = m_ns == n->get_prefix();
 		return result;
 	}
 
-	std::string m_name;
+	std::string m_ns, m_name;
 };
 
 object name_test_step_expression::evaluate(expression_context &context)
@@ -2416,8 +2425,17 @@ expression_ptr xpath_parser::node_test(AxisType axis)
 		result = function_call();
 	else
 	{
-		result = std::make_unique<name_test_step_expression>(axis, m_token_string);
+		auto name = m_token_string;
 		match(Token::Name);
+
+		if (m_lookahead == Token::Colon)
+		{
+			match(Token::Colon);
+			result = std::make_unique<name_test_step_expression>(axis, name, m_token_string);
+			match(Token::Name);
+		}
+		else
+			result = std::make_unique<name_test_step_expression>(axis, name);
 	}
 
 	return result;

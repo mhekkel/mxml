@@ -141,8 +141,8 @@ SPDX-License-Identifier: CC0-1.0
 		test-name="test" test-attr="1" />
 
 	<xpath-test data="data-012.xml"
-		xpath=" /Envelope[namespace-uri()='http://schemas.xmlsoap.org/soap/envelope/']
-				/Body[namespace-uri()='http://schemas.xmlsoap.org/soap/envelope/']" expected-size="1"
+		xpath=" /*[namespace-uri()='http://schemas.xmlsoap.org/soap/envelope/' and local-name() = 'Envelope']
+				/*[namespace-uri()='http://schemas.xmlsoap.org/soap/envelope/' and local-name() = 'Body']" expected-size="1"
 		 />
 
 	<xpath-test data="data-013.xml"
