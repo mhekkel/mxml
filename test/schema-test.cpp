@@ -107,11 +107,18 @@ TEST_CASE("schema-1")
 		std::vector<std::string> s;
 		sc.add_element("three", s);
 
-		auto test = R"(<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema">
-			<xsd:element name="one" type="xsd:int" minOccurs="1" maxOccurs="1"/>
-			<xsd:element name="two" type="xsd:float" minOccurs="2" maxOccurs="2"/>
-			<xsd:element name="three" type="xsd:string" minOccurs="0" maxOccurs="unbounded"/>
-		</xsd:schema>)"_xml;
+		auto test = R"(
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <xsd:element name="doc">
+    <xsd:complexType>
+      <xsd:sequence>
+        <xsd:element name="one" type="xsd:int" minOccurs="1" maxOccurs="1"/>
+        <xsd:element name="two" type="xsd:float" minOccurs="2" maxOccurs="2"/>
+        <xsd:element name="three" type="xsd:string" minOccurs="0" maxOccurs="unbounded"/>
+      </xsd:sequence>
+    </xsd:complexType>
+  </xsd:element>
+</xsd:schema>)"_xml;
 
 		auto xsd = sc.schema("doc");
 		std::cout << std::setw(2) << xsd << '\n'; 
@@ -125,16 +132,22 @@ TEST_CASE("schema-1")
 		sc.add_element("one", e);
 
 		auto test = R"(
-		<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema">
-			<xsd:element name="one" type="E" minOccurs="1" maxOccurs="1"/>
-			<xsd:simpleType name="E">
-				<xsd:restriction base="xsd:string">
-					<xsd:enumeration value="one"/>
-					<xsd:enumeration value="two"/>
-					<xsd:enumeration value="three"/>
-				</xsd:restriction>
-			</xsd:simpleType>
-		</xsd:schema>)"_xml;
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <xsd:element name="doc">
+    <xsd:complexType>
+      <xsd:sequence>
+        <xsd:element name="one" type="E" minOccurs="1" maxOccurs="1"/>
+      </xsd:sequence>
+    </xsd:complexType>
+  </xsd:element>
+  <xsd:simpleType name="E">
+    <xsd:restriction base="xsd:string">
+      <xsd:enumeration value="one"/>
+      <xsd:enumeration value="two"/>
+      <xsd:enumeration value="three"/>
+    </xsd:restriction>
+  </xsd:simpleType>
+</xsd:schema>)"_xml;
 
 		auto xsd = sc.schema("doc");
 		std::cout << std::setw(2) << xsd << '\n'; 
@@ -149,22 +162,35 @@ TEST_CASE("schema-1")
 		sc.add_element("s", s);
 
 		auto test = R"(
-		<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema">
-			<xsd:element name="s" type="S" minOccurs="1" maxOccurs="1"/>
-			<xsd:complexType name="S">
-				<xsd:sequence>
-					<xsd:element name="a" type="xsd:int" minOccurs="1" maxOccurs="1"/>
-					<xsd:element name="b" type="xsd:float" minOccurs="1" maxOccurs="1"/>
-					<xsd:element name="c" type="xsd:double" minOccurs="1" maxOccurs="1"/>
-					<xsd:element name="d" type="xsd:boolean" minOccurs="1" maxOccurs="1"/>
-					<xsd:element name="e" type="xsd:string" minOccurs="1" maxOccurs="1"/>
-					<xsd:element name="f" type="xsd:int" minOccurs="0" maxOccurs="1"/>
-					<xsd:element name="g" type="xsd:double" minOccurs="0" maxOccurs="unbounded"/>
-					<xsd:element name="h" type="E" minOccurs="1" maxOccurs="1"/>
-					<xsd:element name="i" type="xsd:short" minOccurs="4" maxOccurs="4"/>
-				</xsd:sequence>
-			</xsd:complexType>
-		</xsd:schema>)"_xml;
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <xsd:element name="doc">
+    <xsd:complexType>
+      <xsd:sequence>
+        <xsd:element name="s" type="S" minOccurs="1" maxOccurs="1"/>
+      </xsd:sequence>
+    </xsd:complexType>
+  </xsd:element>
+  <xsd:simpleType name="E">
+    <xsd:restriction base="xsd:string">
+      <xsd:enumeration value="one"/>
+      <xsd:enumeration value="two"/>
+      <xsd:enumeration value="three"/>
+    </xsd:restriction>
+  </xsd:simpleType>
+  <xsd:complexType name="S">
+    <xsd:sequence>
+      <xsd:element name="a" type="xsd:int" minOccurs="1" maxOccurs="1"/>
+      <xsd:element name="b" type="xsd:float" minOccurs="1" maxOccurs="1"/>
+      <xsd:element name="c" type="xsd:double" minOccurs="1" maxOccurs="1"/>
+      <xsd:element name="d" type="xsd:boolean" minOccurs="1" maxOccurs="1"/>
+      <xsd:element name="e" type="xsd:string" minOccurs="1" maxOccurs="1"/>
+      <xsd:element name="f" type="xsd:int" minOccurs="0" maxOccurs="1"/>
+      <xsd:element name="g" type="xsd:double" minOccurs="0" maxOccurs="unbounded"/>
+      <xsd:element name="h" type="E" minOccurs="1" maxOccurs="1"/>
+      <xsd:element name="i" type="xsd:short" minOccurs="4" maxOccurs="4"/>
+    </xsd:sequence>
+  </xsd:complexType>
+</xsd:schema>)"_xml;
 
 		auto xsd = sc.schema("doc");
 		std::cout << std::setw(2) << xsd << '\n'; 
