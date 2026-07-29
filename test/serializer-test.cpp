@@ -539,34 +539,6 @@ struct st_2
 	}
 };
 
-// TEST_CASE("test_s_7")
-// {
-// 	st_2 s1;
-// 	s1.s.push_back("aap");
-// 	s1.s.push_back("noot");
-
-// 	xml::document doc;
-// 	doc.serialize("st2", s1);
-
-// 	stringstream s;
-// 	s << doc;
-
-// 	CHECK(s.str(), "<st2><s>aap</s><s>noot</s></st2>");
-
-// 	st_2 s2;
-// 	doc.deserialize("st2", s2);
-
-// 	CHECK(s1.s == s2.s);
-// }
-
-// TEST_CASE("type-1")
-// {
-// 	using namespace zeem;
-
-// 	type_map types;
-// 	schema_creator sc(types, )
-// }
-
 // --------------------------------------------------------------------
 // Negative / error-path tests
 
@@ -851,27 +823,27 @@ TEST_CASE("ser_err_deser_attribute_missing")
 	CHECK(val == -1);
 }
 
-// TEST_CASE("ser_err_schema_attribute")
-// {
-// 	using namespace zeem;
-// 	using namespace zeem::literals;
+TEST_CASE("ser_err_schema_attribute")
+{
+	using namespace zeem;
+	using namespace zeem::literals;
 
-// 	// schema_creator with an attribute nvp: verify it doesn't crash
-// 	// when used on an element whose parent exists
-// 	auto doc = "<root><child></child></root>"_xml;
-// 	auto &child = *doc.child()->begin();
+	// schema_creator with an attribute nvp: verify it doesn't crash
+	// when used on an element whose parent exists
+	auto doc = "<root><child></child></root>"_xml;
+	auto &child = *doc.child()->begin();
 
-// 	zeem::type_map types;
-// 	zeem::element seq("xsd:sequence");
-// 	child.nodes().emplace_back(std::move(seq));
+	zeem::type_map types;
+	zeem::element seq("xsd:sequence");
+	child.nodes().emplace_back(std::move(seq));
 
-// 	zeem::type_map types2;
-// 	auto &seq3 = static_cast<zeem::element &>(*std::prev(child.nodes().end()));
-// 	zeem::schema_creator sc(types2, seq3);
+	zeem::type_map types2;
+	auto &seq3 = static_cast<zeem::element &>(*std::prev(child.nodes().end()));
+	zeem::schema_creator sc(types2, seq3);
 
-// 	int32_t dummy{};
-// 	sc & zeem::make_attribute_nvp("x", dummy);
-// }
+	int32_t dummy{};
+	sc & zeem::make_attribute_nvp("x", dummy);
+}
 
 TEST_CASE("ser_err_roundtrip_int8_overflow")
 {

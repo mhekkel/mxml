@@ -3,6 +3,7 @@
 
 #define CATCH_CONFIG_RUNNER
 
+#include <array>
 #include <cassert>
 #include <catch2/catch_session.hpp>
 #include <catch2/catch_test_macros.hpp>
@@ -121,7 +122,7 @@ TEST_CASE("schema-1")
 </xsd:schema>)"_xml;
 
 		auto xsd = sc.schema("doc");
-		std::cout << std::setw(2) << xsd << '\n'; 
+		// std::cout << std::setw(2) << xsd << '\n'; 
 
 		CHECK(xsd == test);
 	}
@@ -150,7 +151,7 @@ TEST_CASE("schema-1")
 </xsd:schema>)"_xml;
 
 		auto xsd = sc.schema("doc");
-		std::cout << std::setw(2) << xsd << '\n'; 
+		// std::cout << std::setw(2) << xsd << '\n'; 
 
 		CHECK(xsd == test);
 	}
@@ -193,7 +194,7 @@ TEST_CASE("schema-1")
 </xsd:schema>)"_xml;
 
 		auto xsd = sc.schema("doc");
-		std::cout << std::setw(2) << xsd << '\n'; 
+		// std::cout << std::setw(2) << xsd << '\n'; 
 
 		CHECK(xsd == test);
 	}
