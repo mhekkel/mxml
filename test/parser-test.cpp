@@ -375,7 +375,9 @@ int main(int argc, char *argv[])
 		mcfp::make_option<std::string>("single", "Test a single XML file"),
 		mcfp::make_option<std::string>("dump", "Dump the structure of a single XML file"),
 		mcfp::make_option("print-ids", "Print the ID's of failed tests"),
-		mcfp::make_option<std::string>("conf", "Configuration file"));
+		mcfp::make_option<std::string>("conf", "Configuration file"),
+		mcfp::make_option<std::string>("data-dir", "Working directory to use")
+	);
 
 	std::error_code ec;
 	config.parse(argc, argv, ec);
@@ -395,6 +397,16 @@ int main(int argc, char *argv[])
 	TRACE = config.count("trace");
 
 	fs::path savedwd = fs::current_path();
+
+	if (config.has("data-dir"))
+	{
+		fs::current_path(config.get("data-dir"), ec);
+		if (ec)
+		{
+			std::clog << "Unable to change directory: " << ec.message() << '\n';
+			return 1;
+		}
+	}
 
 	try
 	{
