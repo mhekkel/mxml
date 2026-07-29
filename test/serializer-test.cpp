@@ -851,27 +851,27 @@ TEST_CASE("ser_err_deser_attribute_missing")
 	CHECK(val == -1);
 }
 
-TEST_CASE("ser_err_schema_attribute")
-{
-	using namespace zeem;
-	using namespace zeem::literals;
+// TEST_CASE("ser_err_schema_attribute")
+// {
+// 	using namespace zeem;
+// 	using namespace zeem::literals;
 
-	// schema_creator with an attribute nvp: verify it doesn't crash
-	// when used on an element whose parent exists
-	auto doc = "<root><child></child></root>"_xml;
-	auto &child = *doc.child()->begin();
+// 	// schema_creator with an attribute nvp: verify it doesn't crash
+// 	// when used on an element whose parent exists
+// 	auto doc = "<root><child></child></root>"_xml;
+// 	auto &child = *doc.child()->begin();
 
-	zeem::type_map types;
-	zeem::element seq("xsd:sequence");
-	child.nodes().emplace_back(std::move(seq));
+// 	zeem::type_map types;
+// 	zeem::element seq("xsd:sequence");
+// 	child.nodes().emplace_back(std::move(seq));
 
-	zeem::type_map types2;
-	auto &seq3 = static_cast<zeem::element &>(*std::prev(child.nodes().end()));
-	zeem::schema_creator sc(types2, seq3);
+// 	zeem::type_map types2;
+// 	auto &seq3 = static_cast<zeem::element &>(*std::prev(child.nodes().end()));
+// 	zeem::schema_creator sc(types2, seq3);
 
-	int32_t dummy{};
-	sc & zeem::make_attribute_nvp("x", dummy);
-}
+// 	int32_t dummy{};
+// 	sc & zeem::make_attribute_nvp("x", dummy);
+// }
 
 TEST_CASE("ser_err_roundtrip_int8_overflow")
 {

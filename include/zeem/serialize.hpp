@@ -623,10 +623,21 @@ ZEEM_EXPORT using type_map = std::map<std::string, element>;
 
 ZEEM_EXPORT struct schema_creator
 {
-	schema_creator(type_map &types, element &node)
-		: m_node(node)
+	schema_creator()
+		: schema_creator(std::make_unique<type_map>(), std::make_unique<element>(element{ "xsd:schema", { { "xmlns:xsd", "http://www.w3.org/2001/XMLSchema" } } }))
+	{
+	}
+
+	schema_creator(type_map &types, element &schema)
+		: m_schema(schema)
 		, m_types(types)
 	{
+	}
+
+	void set_ns(std::string ns, std::string prefix = "ns")
+	{
+		m_ns = std::move(ns);
+		m_ns_prefix = std::move(prefix);
 	}
 
 	template <typename T>
@@ -647,9 +658,38 @@ ZEEM_EXPORT struct schema_creator
 	template <typename T>
 	schema_creator &add_attribute(std::string_view name, const T &value);
 
+	document schema(std::string name) const
+	{
+		document doc(R"(<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema"/>)");
+		auto e = doc.child()->emplace_back(element{ "xsd:element", { { "name", name } } });
+		auto t = e->emplace_back("xsd:complexType");
+		auto s = t->emplace_back("xsd:sequence");
+
+		for (auto &e : m_schema)
+			s->emplace_back(e);
+
+		for (const auto &[_, type] : m_types)
+			doc.child()->emplace_back(type);
+
+		return doc;
+	}
+
   private:
-	element &m_node;
+	schema_creator(std::unique_ptr<type_map> types, std::unique_ptr<element> schema)
+		: schema_creator(*types, *schema)
+	{
+		m_schema_store = std::move(schema);
+		m_types_store = std::move(types);
+	}
+
+	std::unique_ptr<element> m_schema_store;
+	std::unique_ptr<type_map> m_types_store;
+
+	element &m_schema;
 	type_map &m_types;
+
+	std::string m_ns;
+	std::string m_ns_prefix;
 };
 
 // --------------------------------------------------------------------
@@ -697,21 +737,21 @@ struct type_serializer<T[N]>
 		}
 	}
 
-	static element schema(std::string_view name)
+	static element schema(std::string_view name, std::string prefix)
 	{
 		return element{
 			"xsd:element",
 			{ //
 				{ "name", name },
-				{ "type", type_serializer_type::type_name() },
+				{ "type", prefix + type_serializer_type::type_name() },
 				{ "minOccurs", std::to_string(N) },
 				{ "maxOccurs", std::to_string(N) } }
 		};
 	}
 
-	static void register_type(type_map &types)
+	static void register_type(type_map &types, std::string prefix)
 	{
-		type_serializer_type::register_type(types);
+		type_serializer_type::register_type(types, prefix);
 	}
 };
 
@@ -763,19 +803,19 @@ struct type_serializer<T>
 		}
 	}
 
-	static element schema(std::string_view name)
+	static element schema(std::string_view name, std::string prefix)
 	{
 		return element{
 			"xsd:element",
 			{ //
 				{ "name", name },
-				{ "type", value_serializer_type::type_name() },
+				{ "type", prefix + value_serializer_type::type_name() },
 				{ "minOccurs", "1" },
 				{ "maxOccurs", "1" } }
 		};
 	}
 
-	static void register_type(type_map &types)
+	static void register_type(type_map &types, std::string prefix)
 	{
 		element n("xsd:simpleType", { { "name", value_serializer_type::type_name() } });
 
@@ -815,7 +855,7 @@ struct type_serializer<T>
 
 	static type_serializer &instance()
 	{
-		static type_serializer s_instance{ "ns:" + value_type::type_name() };
+		static type_serializer s_instance{ value_type::type_name() };
 		return s_instance;
 	}
 
@@ -855,19 +895,19 @@ struct type_serializer<T>
 		}
 	}
 
-	static element schema(std::string_view name)
+	static element schema(std::string_view name, std::string prefix)
 	{
 		return element{
 			"xsd:element",
 			{ //
 				{ "name", name },
-				{ "type", "ns:" + value_type::type_name() },
+				{ "type", prefix + value_type::type_name() },
 				{ "minOccurs", "1" },
 				{ "maxOccurs", "1" } }
 		};
 	}
 
-	static void register_type(type_map &types)
+	static void register_type(type_map &types, std::string prefix)
 	{
 		auto name = value_type::type_name();
 
@@ -914,21 +954,21 @@ struct type_serializer<std::optional<T>>
 		}
 	}
 
-	static element schema(std::string_view name)
+	static element schema(std::string_view name, std::string prefix)
 	{
 		return element{
 			"xsd:element",
 			{ //
 				{ "name", name },
-				{ "type", type_serializer_type::type_name() },
+				{ "type", prefix + type_serializer_type::type_name() },
 				{ "minOccurs", "0" },
 				{ "maxOccurs", "1" } }
 		};
 	}
 
-	static void register_type(type_map &types)
+	static void register_type(type_map &types, std::string prefix)
 	{
-		type_serializer_type::register_type(types);
+		type_serializer_type::register_type(types, prefix);
 	}
 };
 
@@ -1019,39 +1059,40 @@ struct type_serializer<T>
 	}
 
 	template <std::size_t N>
-	static element schema_array(std::string_view name,
+	static element schema_array(std::string_view name, std::string prefix,
 		[[maybe_unused]] const std::array<value_type, N> &value, [[maybe_unused]] priority_tag<1> pt)
 	{
 		return element{
 			"xsd:element",
 			{ //
 				{ "name", name },
-				{ "type", type_serializer_type::type_name() },
+				{ "type", prefix + type_serializer_type::type_name() },
 				{ "minOccurs", std::to_string(N) },
 				{ "maxOccurs", std::to_string(N) } }
 		};
 	}
 
-	static element schema_array(std::string_view name, [[maybe_unused]] const container_type &arr, [[maybe_unused]] priority_tag<0> pt)
+	static element schema_array(std::string_view name, std::string prefix,
+		[[maybe_unused]] const container_type &arr, [[maybe_unused]] priority_tag<0> pt)
 	{
 		return element{
 			"xsd:element",
 			{ //
 				{ "name", name },
-				{ "type", type_serializer_type::type_name() },
+				{ "type", prefix + type_serializer_type::type_name() },
 				{ "minOccurs", "0" },
 				{ "maxOccurs", "unbounded" } }
 		};
 	}
 
-	static element schema(std::string_view name)
+	static element schema(std::string_view name, std::string prefix)
 	{
-		return schema_array(name, container_type{}, priority_tag<1>());
+		return schema_array(name, prefix, container_type{}, priority_tag<1>());
 	}
 
-	static void register_type(type_map &types)
+	static void register_type(type_map &types, std::string prefix)
 	{
-		type_serializer_type::register_type(types);
+		type_serializer_type::register_type(types, prefix);
 	}
 };
 
@@ -1102,18 +1143,18 @@ struct type_serializer
 		}
 	}
 
-	static element schema(std::string_view name)
+	static element schema(std::string_view name, std::string prefix)
 	{
 		return element{
 			"xsd:element",
 			{ { "name", name },
-				{ "type", value_serializer_type::type_name() },
+				{ "type", prefix + value_serializer_type::type_name() },
 				{ "minOccurs", "1" },
 				{ "maxOccurs", "1" } }
 		};
 	}
 
-	static void register_type(type_map & /* types */)
+	static void register_type(type_map &, std::string_view)
 	{
 	}
 };
@@ -1198,13 +1239,13 @@ schema_creator &schema_creator::add_element(std::string_view name, const T & /* 
 	using value_type = std::remove_cv_t<T>;
 	using type_serializer = type_serializer<value_type>;
 
-	m_node.emplace_back(type_serializer::schema(name));
+	m_schema.emplace_back(type_serializer::schema(name, m_ns_prefix));
 
 	std::string type_name = type_serializer::type_name();
 
 	// we might be known already
 	if (m_types.find(type_name) == m_types.end())
-		type_serializer::register_type(m_types);
+		type_serializer::register_type(m_types, m_ns_prefix);
 
 	return *this;
 }
@@ -1223,11 +1264,11 @@ schema_creator &schema_creator::add_attribute(std::string_view name, const T & /
 	n.set_attribute("type", type_name);
 
 	if (m_types.find(type_name) == m_types.end())
-		type_serializer::register_type(m_types);
+		type_serializer::register_type(m_types, m_ns_prefix);
 
-	assert(m_node.parent() != nullptr);
-	if (m_node.parent() != nullptr)
-		m_node.parent()->emplace_back(std::move(n));
+	assert(m_schema.parent() != nullptr);
+	if (m_schema.parent() != nullptr)
+		m_schema.parent()->emplace_back(std::move(n));
 
 	return *this;
 }
@@ -1286,13 +1327,6 @@ namespace detail
 		}
 	};
 
-	// taken from ranges-v3
-	template <typename T>
-	struct static_const
-	{
-		static inline constexpr T value{};
-	};
-
 	/** @endcond */
 
 	/**
@@ -1343,10 +1377,10 @@ namespace detail
 
 } // namespace detail
 
-// namespace
-// {
-ZEEM_EXPORT inline constexpr const auto &to_xml = detail::static_const<detail::to_xml_fn>::value;
-ZEEM_EXPORT inline constexpr const auto &from_xml = detail::static_const<detail::from_xml_fn>::value;
-// } // namespace
+/// @brief The customization point object for to_xml
+ZEEM_EXPORT inline constexpr detail::to_xml_fn to_xml{};
+
+/// @brief The customization point object for from_xml
+ZEEM_EXPORT inline constexpr detail::from_xml_fn from_xml{};
 
 } // namespace zeem
