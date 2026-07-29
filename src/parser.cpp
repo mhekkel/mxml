@@ -589,8 +589,8 @@ CharRefState move_charref(char32_t uc, char32_t &charref, CharRefState state)
 					charref = (charref << 4) + v;
 				else
 					state = invalid;
-				break;
 			}
+			break;
 		case dec:
 			if (uc == ';')
 				state = done;
@@ -606,6 +606,7 @@ CharRefState move_charref(char32_t uc, char32_t &charref, CharRefState state)
 			}
 			else
 				state = invalid;
+			break;
 		default:
 			std::unreachable();
 			break;
