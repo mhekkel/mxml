@@ -313,7 +313,7 @@ std::tuple<bool, bool> state_seq::allow(std::string_view name)
 				break;
 			}
 			m_state = State::Element;
-			// fall through
+			[[fallthrough]];
 
 		case State::Element:
 			std::tie(result, done) = (*m_next)->allow(name);
