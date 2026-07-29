@@ -551,8 +551,8 @@ class node_list : public basic_node_list
 	[[nodiscard]] iterator begin() { return iterator(m_header->m_next); }
 	[[nodiscard]] iterator end() { return iterator(m_header); }
 
-	[[nodiscard]] const_iterator cbegin() { return const_iterator(m_header->m_next); }
-	[[nodiscard]] const_iterator cend() { return const_iterator(m_header); }
+	[[nodiscard]] const_iterator cbegin() const { return const_iterator(m_header->m_next); }
+	[[nodiscard]] const_iterator cend() const { return const_iterator(m_header); }
 
 	[[nodiscard]] const_iterator begin() const { return const_iterator(m_header->m_next); }
 	[[nodiscard]] const_iterator end() const { return const_iterator(m_header); }
@@ -1272,7 +1272,7 @@ ZEEM_EXPORT class attribute_set : public node_list<attribute>
 	template <typename... Args>
 	std::pair<iterator, bool> emplace(Args &&...args)
 	{
-		return emplace(value_type{ std::forward<decltype(args)>(args)... });
+		return emplace(value_type{ std::forward<Args>(args)... });
 	}
 
 	/// \brief emplace an attribute move constructed from \a a
