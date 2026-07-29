@@ -18,6 +18,7 @@
 # include <initializer_list>
 # include <iosfwd>
 # include <iterator>
+# include <memory>
 # include <string>
 # include <string_view>
 # include <type_traits>
@@ -139,7 +140,7 @@ class node
 	 *
 	 * @param qn
 	 */
-	virtual void set_qname([[maybe_unused]] std::string qn) {} // NOLINT(performance-unnecessary-value-param)
+	virtual void set_qname([[maybe_unused]] std::string qn) noexcept {} // NOLINT(performance-unnecessary-value-param)
 
 	/**
 	 * \brief set the qname with two parameters, if \a prefix is empty the qname will be simply \a name
@@ -336,7 +337,7 @@ class basic_node_list
   protected:
 	// proxy methods for every insertion
 
-	virtual node *insert_impl(const node *p, node *n);
+	virtual node *insert_impl(const node *p, std::unique_ptr<node> n);
 
 	node *erase_impl(node *n);
 };
@@ -584,7 +585,7 @@ class node_list : public basic_node_list
 	iterator insert(const_iterator p, Args &&...args)
 		requires(sizeof...(Args) > 1 or not std::is_base_of_v<node, std::remove_cvref_t<Args>...>)
 	{
-		return insert_impl(p, new value_type(std::forward<Args>(args)...));
+		return insert_impl(p, std::make_unique<value_type>(std::forward<Args>(args)...));
 	}
 
 	iterator insert(const_iterator pos, std::size_t count, const value_type &n)
@@ -709,9 +710,9 @@ class node_list : public basic_node_list
   protected:
 	using basic_node_list::insert_impl;
 
-	node *insert_impl(const_iterator pos, node *n)
+	node *insert_impl(const_iterator pos, std::unique_ptr<node> n)
 	{
-		return insert_impl(&*pos, n);
+		return insert_impl(&*pos, std::move(n));
 	}
 
 	using basic_node_list::erase_impl;
@@ -1158,7 +1159,7 @@ class attribute final : public node
 	[[nodiscard]] std::string get_qname() const override { return m_qname; }
 
 	/// @brief Set the qualified name to \a qn
-	void set_qname(std::string qn) override { m_qname = std::move(qn); }
+	void set_qname(std::string qn) noexcept override { m_qname = std::move(qn); }
 
 	using node::set_qname;
 
@@ -1288,7 +1289,7 @@ ZEEM_EXPORT class attribute_set : public node_list<attribute>
 			*i = std::forward<value_type>(a); // move assign value of a
 		else
 		{
-			i = iterator{ node_list::insert_impl(node_list::end(), new attribute(std::forward<value_type>(a))) };
+			i = iterator{ node_list::insert_impl(node_list::end(), std::make_unique<attribute>(std::forward<value_type>(a))) };
 			inserted = true;
 		}
 
@@ -1394,7 +1395,7 @@ class element final : public element_container
 	[[nodiscard]] std::string get_qname() const override { return m_qname; }
 
 	/// @brief Set the qualified name to \a qn
-	void set_qname(std::string qn) override { m_qname = std::move(qn); }
+	void set_qname(std::string qn) noexcept override { m_qname = std::move(qn); }
 
 	/// \brief content of a xml:lang attribute of this element, or its nearest ancestor
 	[[nodiscard]] std::string lang() const override;
@@ -1493,27 +1494,27 @@ node_list<T>::node_list(element_container *e)
 template <>
 ZEEM_INLINE auto node_list<element>::insert(const_iterator pos, const element &e) -> iterator
 {
-	return iterator{ insert_impl(pos, new element(e)) };
+	return iterator{ insert_impl(pos, std::make_unique<element>(e)) };
 }
 
 /// \brief insert a copy of \a e at position \a pos, moving its data
 template <>
 ZEEM_INLINE auto node_list<element>::insert(const_iterator pos, element &&e) -> iterator
 {
-	return iterator{ insert_impl(pos, new element(std::forward<value_type>(e))) };
+	return iterator{ insert_impl(pos, std::make_unique<element>(std::forward<value_type>(e))) };
 }
 
 template <>
 ZEEM_INLINE auto node_list<attribute>::insert(const_iterator pos, const attribute &e) -> iterator
 {
-	return iterator{ insert_impl(pos, new attribute(e)) };
+	return iterator{ insert_impl(pos, std::make_unique<attribute>(e)) };
 }
 
 /// \brief insert a copy of \a e at position \a pos, moving its data
 template <>
 ZEEM_INLINE auto node_list<attribute>::insert(const_iterator pos, attribute &&e) -> iterator
 {
-	return iterator{ insert_impl(pos, new attribute(std::forward<value_type>(e))) };
+	return iterator{ insert_impl(pos, std::make_unique<attribute>(std::forward<value_type>(e))) };
 }
 
 // NOLINTBEGIN(cppcoreguidelines-owning-memory,cppcoreguidelines-pro-type-static-cast-downcast)
@@ -1523,17 +1524,17 @@ ZEEM_INLINE auto node_list<node>::insert(const_iterator pos, const value_type &e
 	switch (e.type())
 	{
 		case node_type::element:
-			return insert_impl(pos, new element(static_cast<const element &>(e)));
+			return insert_impl(pos, std::make_unique<element>(static_cast<const element &>(e)));
 		case node_type::text:
-			return insert_impl(pos, new text(static_cast<const text &>(e)));
+			return insert_impl(pos, std::make_unique<text>(static_cast<const text &>(e)));
 		case node_type::attribute:
-			return insert_impl(pos, new attribute(static_cast<const attribute &>(e)));
+			return insert_impl(pos, std::make_unique<attribute>(static_cast<const attribute &>(e)));
 		case node_type::comment:
-			return insert_impl(pos, new comment(static_cast<const comment &>(e)));
+			return insert_impl(pos, std::make_unique<comment>(static_cast<const comment &>(e)));
 		case node_type::cdata:
-			return insert_impl(pos, new cdata(static_cast<const cdata &>(e)));
+			return insert_impl(pos, std::make_unique<cdata>(static_cast<const cdata &>(e)));
 		case node_type::processing_instruction:
-			return insert_impl(pos, new processing_instruction(static_cast<const processing_instruction &>(e)));
+			return insert_impl(pos, std::make_unique<processing_instruction>(static_cast<const processing_instruction &>(e)));
 		default:
 			throw exception("internal error");
 	}
@@ -1546,17 +1547,17 @@ ZEEM_INLINE auto node_list<node>::insert(const_iterator pos, value_type &&e) -> 
 	switch (e.type())
 	{
 		case node_type::element:
-			return insert_impl(pos, new element(std::forward<element &&>(static_cast<element &&>(e))));
+			return insert_impl(pos, std::make_unique<element>(std::forward<element &&>(static_cast<element &&>(e))));
 		case node_type::text:
-			return insert_impl(pos, new text(std::forward<text &&>(static_cast<text &&>(e))));
+			return insert_impl(pos, std::make_unique<text>(std::forward<text &&>(static_cast<text &&>(e))));
 		case node_type::attribute:
-			return insert_impl(pos, new attribute(std::forward<attribute &&>(static_cast<attribute &&>(e))));
+			return insert_impl(pos, std::make_unique<attribute>(std::forward<attribute &&>(static_cast<attribute &&>(e))));
 		case node_type::comment:
-			return insert_impl(pos, new comment(std::forward<comment &&>(static_cast<comment &&>(e))));
+			return insert_impl(pos, std::make_unique<comment>(std::forward<comment &&>(static_cast<comment &&>(e))));
 		case node_type::cdata:
-			return insert_impl(pos, new cdata(std::forward<cdata &&>(static_cast<cdata &&>(e))));
+			return insert_impl(pos, std::make_unique<cdata>(std::forward<cdata &&>(static_cast<cdata &&>(e))));
 		case node_type::processing_instruction:
-			return insert_impl(pos, new processing_instruction(std::forward<processing_instruction &&>(static_cast<processing_instruction &&>(e))));
+			return insert_impl(pos, std::make_unique<processing_instruction>(std::forward<processing_instruction &&>(static_cast<processing_instruction &&>(e))));
 		default:
 			throw exception("internal error");
 	}

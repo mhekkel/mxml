@@ -218,14 +218,11 @@ void document::write(std::ostream &os, format_info fmt) const
 
 // --------------------------------------------------------------------
 
-node *document::insert_impl(const node *p, node *n)
+node *document::insert_impl(const node *p, std::unique_ptr<node> n)
 {
 	if (child() != nullptr)
-	{
-		delete n;
 		throw exception("Only one child element is allowed in a document");
-	}
-	return element_container::insert_impl(p, n);
+	return element_container::insert_impl(p, std::move(n));
 }
 
 // --------------------------------------------------------------------

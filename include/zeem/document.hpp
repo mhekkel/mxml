@@ -250,7 +250,7 @@ ZEEM_EXPORT class document final : public element_container
 	void write(std::ostream &os, format_info fmt) const override;
 
   protected:
-	node *insert_impl(const node *p, node *n) override;
+	node *insert_impl(const node *p, std::unique_ptr<node> n) override;
 
   private:
 	void XmlDeclHandler(encoding_type encoding, bool standalone, version_type version);

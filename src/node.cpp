@@ -29,7 +29,6 @@ struct my_set : std::set<std::string>
 	catch (...)
 	{
 		std::clog << "Error initializing set of html elements\n";
-		std::terminate();
 	}
 };
 
@@ -253,26 +252,26 @@ void basic_node_list::clear()
 	}
 }
 
-node *basic_node_list::insert_impl(const node *p, node *n)
+node *basic_node_list::insert_impl(const node *p, std::unique_ptr<node> n)
 {
 	assert(n != nullptr);
-	assert(n->next() == n);
-	assert(n->prev() == n);
+	assert(n->next() == n.get());
+	assert(n->prev() == n.get());
 
 	if (n == nullptr)
 		throw exception("Invalid pointer passed to insert");
 
-	if (n->parent() != nullptr or n->next() != n or n->prev() != n)
+	if (n->parent() != nullptr or n->next() != n.get() or n->prev() != n.get())
 		throw exception("attempt to add a node that already has a parent or siblings");
 
 	n->parent(m_header->m_parent);
 
 	n->prev(const_cast<node *>(p->prev()));
-	n->prev()->next(n);
+	n->prev()->next(n.get());
 	n->next(const_cast<node *>(p));
-	n->next()->prev(n);
+	n->next()->prev(n.get());
 
-	return n;
+	return n.release();
 }
 
 node *basic_node_list::erase_impl(node *n)
