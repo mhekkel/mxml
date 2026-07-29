@@ -3307,6 +3307,8 @@ std::string parser_imp::normalize_attribute_value()
 	std::string result;
 
 	char32_t charref = 0;
+	CharRefState crState = CharRefState::start;
+
 	std::string name;
 
 	enum State
@@ -3358,69 +3360,24 @@ std::string parser_imp::normalize_attribute_value()
 					break;
 
 				case state_CharReferenceStart:
-					if (c == 'x')
-						state = state_HexCharReference;
-					else if (c >= '0' and c <= '9')
+					crState = move_charref(c, charref, crState);
+					switch (crState)
 					{
-						charref = c - '0';
-						state = state_DecCharReference;
-					}
-					else
-						not_well_formed("invalid character reference");
-					break;
+						using enum CharRefState;
+						case invalid:
+							not_well_formed("invalid character reference");
+						case done:
+						{
+							if (not is_referrable_char(charref))
+								not_well_formed("Illegal character reference");
 
-				case state_DecCharReference:
-					if (auto ch = charref * 10ULL + (c - '0'); c >= '0' and c <= '9' and std::cmp_less(ch, std::numeric_limits<uint32_t>::max()))
-						charref = static_cast<char32_t>(ch);
-					else if (c == ';')
-					{
-						if (not is_referrable_char(charref))
-							not_well_formed("Illegal character referenced: '" + to_hex(charref) + '\'');
+							append(result, charref);
 
-						append(result, charref);
-						state = state_Start;
+							state = state_Start;
+							crState = CharRefState::start;
+						}
+						default: break;
 					}
-					else
-						not_well_formed("invalid character reference");
-					break;
-
-				case state_HexCharReference:
-					if (c >= 'a' and c <= 'f')
-					{
-						charref = c - 'a' + 10;
-						state = state_HexCharReference2;
-					}
-					else if (c >= 'A' and c <= 'F')
-					{
-						charref = c - 'A' + 10;
-						state = state_HexCharReference2;
-					}
-					else if (c >= '0' and c <= '9')
-					{
-						charref = c - '0';
-						state = state_HexCharReference2;
-					}
-					else
-						not_well_formed("invalid character reference");
-					break;
-
-				case state_HexCharReference2:
-					if (charref < 0x01000000 and c >= 'a' and c <= 'f')
-						charref = (charref << 4) + (c - 'a' + 10);
-					else if (charref < 0x01000000 and c >= 'A' and c <= 'F')
-						charref = (charref << 4) + (c - 'A' + 10);
-					else if (charref < 0x01000000 and c >= '0' and c <= '9')
-						charref = (charref << 4) + (c - '0');
-					else if (charref < 0x01000000 and c == ';')
-					{
-						if (not is_referrable_char(charref))
-							not_well_formed("Illegal character referenced: '" + to_hex(charref) + '\'');
-
-						append(result, charref);
-						state = state_Start;
-					}
-					else
-						not_well_formed("invalid character reference");
 					break;
 
 				case state_EntityReference:
