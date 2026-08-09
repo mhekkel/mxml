@@ -1,7 +1,6 @@
 // Copyright (c) 2024-2026 Maarten L. Hekkelman
 // SPDX-License-Identifier: BSD-2-Clause
 
-#include <limits>
 #ifndef ZEEM_CXX_MODULE
 # include "zeem/zeem.hpp"
 
@@ -13,6 +12,7 @@
 # include <cstddef>
 # include <cstdint>
 # include <format>
+# include <limits>
 # include <map>
 # include <memory>
 # include <ranges>
