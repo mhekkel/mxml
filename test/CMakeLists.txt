@@ -29,7 +29,8 @@ list(APPEND ZEEM_TESTS
     parser
     schema
     serializer
-    xpath)
+    xpath
+    fuzz)
 
 function(create_test ZEEM_TEST ZEEM_TEST_SOURCE ZEEM_TEST_ARGS MODULE)
     add_executable(${ZEEM_TEST} ${ZEEM_TEST_SOURCE})
@@ -78,6 +79,11 @@ foreach(TEST IN LISTS ZEEM_TESTS)
     list(APPEND ZEEM_TEST_ARGS "--data-dir=${CMAKE_CURRENT_SOURCE_DIR}")
 
     create_test(${ZEEM_TEST} ${ZEEM_TEST_SOURCE} "${ZEEM_TEST_ARGS}" OFF)
+
+	# if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+	# 	target_compile_options("${ZEEM_TEST}" PRIVATE -fsanitize=address)
+	# 	target_link_options("${ZEEM_TEST}" PRIVATE -fsanitize=address)
+	# endif()
 
     if(ZEEM_BUILD_CXX_MODULE)
         create_test("${ZEEM_TEST}-m" ${ZEEM_TEST_SOURCE} "${ZEEM_TEST_ARGS}" ON)
