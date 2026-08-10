@@ -8,21 +8,17 @@
 # include <array>
 # include <cassert>
 # include <cctype>
-# include <compare>
 # include <cstddef>
 # include <cstdint>
 # include <format>
-# include <limits>
 # include <map>
 # include <memory>
-# include <ranges>
 # include <set>
 # include <sstream>
 # include <stack>
 # include <string>
 # include <tuple>
 # include <utility>
-# include <variant>
 # include <vector>
 #endif
 
@@ -783,9 +779,9 @@ struct parser_imp
 
 	struct source_state
 	{
-		source_state(parser_imp *impl, data_source *source, bool insert)
+		source_state(parser_imp *impl, std::unique_ptr<data_source> source, bool insert)
 			: m_impl(*impl)
-			, m_source(source)
+			, m_source(std::move(source))
 			, m_buffer_offset(m_impl.m_buffer_ptr - m_impl.m_buffer.begin())
 			, m_lookahead(m_impl.m_lookahead)
 			, m_inserted(insert)
@@ -801,16 +797,15 @@ struct parser_imp
 			std::swap(m_buffer, m_impl.m_buffer);
 			m_impl.m_buffer_ptr = m_impl.m_buffer.begin() + m_buffer_offset;
 			m_impl.m_lookahead = m_lookahead;
-			delete m_source;
 		}
 
-		data_source *operator->() const { return m_source; }
+		data_source *operator->() const { return m_source.get(); }
 		data_source &operator*() const { return *m_source; }
 
 		[[nodiscard]] bool inserted() const { return m_inserted; }
 
 		parser_imp &m_impl;
-		data_source *m_source;
+		std::unique_ptr<data_source> m_source;
 		std::array<char32_t, 4> m_buffer{};
 		std::ptrdiff_t m_buffer_offset;
 		XMLToken m_lookahead;
@@ -818,13 +813,13 @@ struct parser_imp
 		bool m_inserted;
 	};
 
-	void push_data_source(data_source *source, bool insert)
+	void push_data_source(std::unique_ptr<data_source> source, bool insert)
 	{
 		if (m_source.size() >= m_max_source_stack_size)
 			not_well_formed("Reached the maximum recursion level for entity expansion");
 
 		source->version(m_version);
-		m_source.emplace(this, source, insert);
+		m_source.emplace(this, std::move(source), insert);
 	}
 
 	void pop_data_source()
@@ -1026,7 +1021,7 @@ parser_imp::parser_imp(std::istream &data, parser &parser)
 	: m_parser(parser)
 	, m_encoding(encoding_type::ASCII)
 {
-	push_data_source(new istream_data_source(data), false);
+	push_data_source(std::make_unique<istream_data_source>(data), false);
 
 	m_encoding = m_source.top()->encoding();
 
@@ -2063,7 +2058,7 @@ void parser_imp::doctypedecl()
 	// if the external subset is defined, include it here.
 	if (dtd.get() != nullptr)
 	{
-		push_data_source(dtd.release(), false);
+		push_data_source(std::move(dtd), false);
 
 		m_external_subset = true;
 		m_in_external_dtd = true;
@@ -2111,7 +2106,7 @@ void parser_imp::pereference()
 {
 	const doctype::entity &e = get_parameter_entity(m_token);
 
-	push_data_source(new parameter_entity_data_source(e.get_replacement(), e.get_path()), true);
+	push_data_source(std::make_unique<parameter_entity_data_source>(e.get_replacement(), e.get_path()), true);
 
 	match(XMLToken::PEReference);
 }
@@ -2163,7 +2158,7 @@ void parser_imp::declsep()
 
 			match(XMLToken::PEReference);
 
-			push_data_source(new parameter_entity_data_source(e.get_replacement(), e.get_path()), false);
+			push_data_source(std::make_unique<parameter_entity_data_source>(e.get_replacement(), e.get_path()), false);
 
 			m_lookahead = get_next_token();
 			extsubset();
@@ -3050,7 +3045,7 @@ std::tuple<std::string, std::string> parser_imp::read_external_id()
 
 	if (data)
 	{
-		push_data_source(data.release(), false);
+		push_data_source(std::move(data), false);
 
 		path = m_source.top()->base();
 
@@ -3290,7 +3285,7 @@ void parser_imp::parse_general_entity_declaration(std::string &s)
 }
 std::string parser_imp::normalize_attribute_value(const std::string &s, bool isCDATA)
 {
-	push_data_source(new string_data_source(s), false);
+	push_data_source(std::make_unique<string_data_source>(s), false);
 
 	std::string result = normalize_attribute_value();
 
@@ -3397,7 +3392,7 @@ std::string parser_imp::normalize_attribute_value()
 						if (e.is_externally_defined() and m_standalone)
 							not_well_formed("document marked as standalone but an external entity is referenced");
 
-						push_data_source(new entity_data_source(e.get_replacement(), m_source.top()->base()), false);
+						push_data_source(std::make_unique<entity_data_source>(e.get_replacement(), m_source.top()->base()), false);
 
 						std::string replacement = normalize_attribute_value();
 						result += replacement;
@@ -3824,7 +3819,7 @@ void parser_imp::content(doctype::validator &valid)
 				if (not e.is_parsed())
 					not_well_formed("content has a general entity reference to an unparsed entity");
 
-				push_data_source(new entity_data_source(e.get_replacement(), m_source.top()->base()), false);
+				push_data_source(std::make_unique<entity_data_source>(e.get_replacement(), m_source.top()->base()), false);
 
 				m_lookahead = get_next_content();
 
