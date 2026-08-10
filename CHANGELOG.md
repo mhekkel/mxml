@@ -3,6 +3,17 @@ SPDX-FileCopyrightText: 2026 Maarten L. Hekkelman
 SPDX-License-Identifier: BSD-2-Clause
 -->
 
+Version 2.3.1
+- Fixed memory leak in the parser when throwing during exception handling,
+  data sources are now owned by std::unique_ptr
+- Added a fuzz test
+- Refactored is_detected, removed the experimental::type_traits fallback
+- Fixed namespace issues in schema_creator and xpath
+- Do not open namespace std
+- Fixed incorrectly placed breaks in the parser
+- Fixed running tests
+- Documentation, copyright and URL fixes
+
 Version 2.3.0
 - Replaced raw pointer node insertion with std::unique_ptr for exception safety
 - Migrated parser internals from raw pointers to unique_ptr
