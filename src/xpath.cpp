@@ -1748,9 +1748,9 @@ object core_function_expression<CoreFunction::Number>::evaluate(expression_conte
 template <>
 object core_function_expression<CoreFunction::Sum>::evaluate(expression_context &context)
 {
-	object v = m_args.front()->evaluate(context);
+	object val = m_args.front()->evaluate(context);
 	double sum = 0;
-	for (auto &n : v.as<const node_set &>())
+	for (auto &n : val.as<const node_set &>())
 	{
 		auto s = n->str();
 		double v;

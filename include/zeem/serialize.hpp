@@ -680,8 +680,8 @@ ZEEM_EXPORT struct schema_creator
 		auto t = e->emplace_back("xsd:complexType");
 		auto s = t->emplace_back("xsd:sequence");
 
-		for (auto &e : m_schema)
-			s->emplace_back(e);
+		for (auto &e2 : m_schema)
+			s->emplace_back(e2);
 
 		for (const auto &[_, type] : m_types)
 			doc.child()->emplace_back(type);
@@ -838,7 +838,7 @@ struct type_serializer<T>
 		};
 	}
 
-	static void register_type(type_map &types, std::string prefix)
+	static void register_type(type_map &types, [[maybe_unused]] std::string prefix)
 	{
 		element n("xsd:simpleType", { { "name", value_serializer_type::type_name() } });
 
