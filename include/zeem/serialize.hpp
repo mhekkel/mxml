@@ -414,7 +414,7 @@ template <typename T, typename Archive>
 	requires(std::is_class_v<T>)
 struct has_serialize<T, Archive>
 {
-	static constexpr bool value = is_detected_v<serialize_function, T, Archive>;
+	static constexpr bool value = detail::is_detected_v<serialize_function, T, Archive>;
 };
 
 ZEEM_EXPORT template <typename T, typename S>
@@ -440,7 +440,7 @@ struct is_serializable_type
 {
 	using value_type = std::remove_cvref_t<T>;
 	static constexpr bool value =
-		is_detected_v<serialize_value_t, value_type> or
+		detail::is_detected_v<serialize_value_t, value_type> or
 		has_serialize_v<value_type, S>;
 };
 
@@ -449,9 +449,9 @@ ZEEM_INLINE constexpr bool is_serializable_type_v = is_serializable_type<T, S>::
 
 template <typename T, typename S>
 	requires(
-		is_detected_v<value_type_t, T> and
-		is_detected_v<iterator_t, T> and
-		not is_detected_v<std_string_npos_t, T>)
+		detail::is_detected_v<value_type_t, T> and
+		detail::is_detected_v<iterator_t, T> and
+		not detail::is_detected_v<std_string_npos_t, T>)
 struct is_serializable_array_type<T, S>
 {
 	static constexpr bool value = is_serializable_type_v<typename T::value_type, S>;
