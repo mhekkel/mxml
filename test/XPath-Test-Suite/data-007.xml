@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2026 Maarten L. Hekkelman
+
+SPDX-License-Identifier: CC0-1.0
+-->
+
 <AAA un-3="1">
   <BBB un-1="1" un-2="1" un-3="1"/>
   <CCC un-1="1"/>

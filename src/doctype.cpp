@@ -1,42 +1,18 @@
-/*-
- * SPDX-License-Identifier: BSD-2-Clause
- *
- * Copyright (c) 2024 Maarten L. Hekkelman
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *
- * 1. Redistributions of source code must retain the above copyright notice, this
- *    list of conditions and the following disclaimer
- * 2. Redistributions in binary form must reproduce the above copyright notice,
- *    this list of conditions and the following disclaimer in the documentation
- *    and/or other materials provided with the distribution.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
- * ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- */
+// Copyright (c) 2024-2026 Maarten L. Hekkelman
+// SPDX-License-Identifier: BSD-2-Clause
 
-#include "zeem/doctype.hpp"
+#ifndef ZEEM_CXX_MODULE
+# include "zeem/zeem.hpp"
 
-#include "zeem/error.hpp"
-#include "zeem/text.hpp"
-
-#include <cassert>
-#include <cctype>
-#include <functional>
-#include <memory>
-#include <ranges>
-#include <string_view>
-#include <tuple>
-#include <vector>
+# include <cassert>
+# include <cctype>
+# include <functional>
+# include <memory>
+# include <ranges>
+# include <string_view>
+# include <tuple>
+# include <vector>
+#endif
 
 namespace zeem::doctype
 {
@@ -337,7 +313,7 @@ std::tuple<bool, bool> state_seq::allow(std::string_view name)
 				break;
 			}
 			m_state = State::Element;
-			// fall through
+			[[fallthrough]];
 
 		case State::Element:
 			std::tie(result, done) = (*m_next)->allow(name);
@@ -446,7 +422,6 @@ std::tuple<bool, bool> state_choice::allow(std::string_view name)
 
 bool state_choice::allow_empty()
 {
-	using namespace std::placeholders;
 	return m_mixed or
 	       std::ranges::find_if(m_states, [](auto &&s)
 			   { return s->allow_empty(); }) != m_states.end();
@@ -643,11 +618,11 @@ bool attribute::is_names(std::string &s) const
 			if (c == s.end())
 				break;
 
-			result = isspace(*c) != 0;
+			result = std::isspace(static_cast<unsigned char>(*c)) != 0;
 			++c;
 			t += ' ';
 
-			while (c != s.end() and isspace(*c))
+			while (c != s.end() and std::isspace(static_cast<unsigned char>(*c)))
 				++c;
 		}
 
@@ -664,8 +639,8 @@ bool attribute::is_nmtoken(std::string &s) const
 	bool result = not s.empty();
 
 	std::string::iterator c = s.begin();
-	while (result and ++c != s.end())
-		result = is_name_char(*c);
+	while (result and c != s.end())
+		result = is_name_char(*c++);
 
 	return result;
 }

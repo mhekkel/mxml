@@ -1,30 +1,5 @@
-/*-
- * SPDX-License-Identifier: BSD-2-Clause
- *
- * Copyright (c) 2026 Maarten L. Hekkelman
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *
- * 1. Redistributions of source code must retain the above copyright notice, this
- *    list of conditions and the following disclaimer
- * 2. Redistributions in binary form must reproduce the above copyright notice,
- *    this list of conditions and the following disclaimer in the documentation
- *    and/or other materials provided with the distribution.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
- * ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- */
-
-#include "zeem.hpp"
+// Copyright (c) 2026 Maarten L. Hekkelman
+// SPDX-License-Identifier: BSD-2-Clause
 
 #include <algorithm>
 #include <cstdlib>
@@ -33,8 +8,7 @@
 #include <fstream>
 #include <iostream>
 #include <iterator>
-#include <mcfp/mcfp.hpp>
-#include <ranges>
+#include <memory>
 #include <regex>
 #include <set>
 #include <sstream>
@@ -46,6 +20,18 @@
 #if defined(_WIN32)
 # include <conio.h>
 # include <ctype.h>
+#endif
+
+#if ZEEM_CXX_MODULE
+import zeem;
+#else
+#include "zeem/zeem.hpp"
+#endif
+
+#if MCFP_CXX_MODULE
+import mcfp;
+#else
+#include "mcfp/mcfp.hpp"
 #endif
 
 namespace fs = std::filesystem;
@@ -389,14 +375,16 @@ int main(int argc, char *argv[])
 		mcfp::make_option<std::string>("single", "Test a single XML file"),
 		mcfp::make_option<std::string>("dump", "Dump the structure of a single XML file"),
 		mcfp::make_option("print-ids", "Print the ID's of failed tests"),
-		mcfp::make_option<std::string>("conf", "Configuration file"));
+		mcfp::make_option<std::string>("conf", "Configuration file"),
+		mcfp::make_option<std::string>("data-dir", "Working directory to use")
+	);
 
 	std::error_code ec;
 	config.parse(argc, argv, ec);
 	if (ec)
 	{
 		std::clog << "error parsing arguments: " << ec.message() << '\n';
-		exit(1);
+		return 1;
 	}
 
 	if (config.count("help"))
@@ -409,6 +397,16 @@ int main(int argc, char *argv[])
 	TRACE = config.count("trace");
 
 	fs::path savedwd = fs::current_path();
+
+	if (config.has("data-dir"))
+	{
+		fs::current_path(config.get("data-dir"), ec);
+		if (ec)
+		{
+			std::clog << "Unable to change directory: " << ec.message() << '\n';
+			return 1;
+		}
+	}
 
 	try
 	{

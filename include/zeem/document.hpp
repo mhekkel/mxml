@@ -1,28 +1,5 @@
-/*-
- * SPDX-License-Identifier: BSD-2-Clause
- *
- * Copyright (c) 2024 Maarten L. Hekkelman
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *
- * 1. Redistributions of source code must retain the above copyright notice, this
- *    list of conditions and the following disclaimer
- * 2. Redistributions in binary form must reproduce the above copyright notice,
- *    this list of conditions and the following disclaimer in the documentation
- *    and/or other materials provided with the distribution.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
- * ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- */
+// Copyright (c) 2024-2026 Maarten L. Hekkelman
+// SPDX-License-Identifier: BSD-2-Clause
 
 #pragma once
 
@@ -31,20 +8,22 @@
  * definition of the zeem::document class
  */
 
-#include "zeem/node.hpp"
-#include "zeem/parser.hpp"
-#include "zeem/text.hpp"
-#include "zeem/version.hpp"
+#ifndef ZEEM_CXX_MODULE
+# include "zeem/node.hpp"
+# include "zeem/parser.hpp"
+# include "zeem/text.hpp"
+# include "zeem/version.hpp"
 
-#include <cstddef>
-#include <functional>
-#include <iosfwd>
-#include <memory>
-#include <string>
-#include <string_view>
-#include <type_traits>
-#include <utility>
-#include <vector>
+# include <cstddef>
+# include <functional>
+# include <iosfwd>
+# include <memory>
+# include <string>
+# include <string_view>
+# include <type_traits>
+# include <utility>
+# include <vector>
+#endif
 
 namespace zeem
 {
@@ -83,7 +62,7 @@ struct doc_type
  * so-called root-node.
  */
 
-class document final : public element_container
+ZEEM_EXPORT class document final : public element_container
 {
   public:
 	/// \brief node_type of a document
@@ -271,7 +250,7 @@ class document final : public element_container
 	void write(std::ostream &os, format_info fmt) const override;
 
   protected:
-	node *insert_impl(const node *p, node *n) override;
+	node *insert_impl(const node *p, std::unique_ptr<node> n) override;
 
   private:
 	void XmlDeclHandler(encoding_type encoding, bool standalone, version_type version);
@@ -321,12 +300,12 @@ class document final : public element_container
 	cdata *m_cdata = nullptr;           // only defined in a CDATA section
 	std::vector<std::pair<std::string, std::string>> m_namespaces;
 	std::vector<notation> m_notations;
-	size_t m_root_size_at_first_notation = 0; // for processing instructions that occur before a notation
+	std::size_t m_root_size_at_first_notation = 0; // for processing instructions that occur before a notation
 
 	/** @endcond */
 };
 
-namespace literals
+ZEEM_EXPORT namespace literals
 {
 	/**
 	 * @brief This operator allows you to construct static XML
@@ -338,7 +317,7 @@ namespace literals
 	 * zeem::document doc = "<text>Hello, world!</text>"_xml;"
 	 * @endcode
 	 */
-	document operator""_xml(const char *text, size_t length);
+	document operator""_xml(const char *text, std::size_t length);
 } // namespace literals
 
 } // namespace zeem

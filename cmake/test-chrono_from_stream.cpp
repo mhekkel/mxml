@@ -1,36 +1,24 @@
+// SPDX-FileCopyrightText: 2026 Maarten L. Hekkelman
+// SPDX-License-Identifier: BSD-2-Clause
+
+#include <cassert>
 #include <chrono>
 
 int main()
 {
-	std::chrono::time_point<std::chrono::system_clock> t;
+	std::istringstream is{ "2026-04-27T07:57" };
 
-	// std::chrono::from_stream(std::cin, "%F", t);
+	std::chrono::time_point<std::chrono::system_clock> t1;
+	std::chrono::from_stream(is, "%FT%H:%M", t1);
 
-	for (size_t ix = 0; const char *s : {
-							"01-01-2025T00:00:00.00001Z",
-							"01-01-2025T00:00:00.00001+01:00",
-							"01-01-2025T00:00:00.00001" })
-	{
-		std::stringstream is{ s };
+	using namespace std::chrono_literals;
 
-		switch (ix)
-		{
-			case 0:
-				std::chrono::from_stream(is, "%FT%TZ", t);
-				break;
+	std::chrono::time_point<std::chrono::system_clock> t2;
+	t2 = std::chrono::sys_days{2026y / 04 / 27} + 7h + 57min;
+	assert(t1 == t2);
 
-			case 1:
-				std::chrono::from_stream(is, "%FT%T%0z", t);
-				break;
-
-			case 2:
-				std::chrono::from_stream(is, "%FT%T", t);
-				break;
-		}
-
-		if (is.bad() or is.fail())
-			exit(-1);
-	}
-
+	auto info = std::chrono::current_zone()->get_info(t1);
+	t1 -= info.offset;
+	
 	return 0;
 }

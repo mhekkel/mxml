@@ -1,11 +1,12 @@
-cmake_minimum_required(VERSION 3.23)
+# SPDX-FileCopyrightText: 2026 Maarten L. Hekkelman
+# SPDX-License-Identifier: BSD-2-Clause
+
+cmake_minimum_required(VERSION 3.28)
 
 project(zeem-examples LANGUAGES CXX)
 
 # Only try to find package if we're not included from the main zeem CMakeLists.txt
-get_property(PARENT_DIRECTORY DIRECTORY "${CMAKE_CURRENT_LIST_DIR}" PROPERTY PARENT_DIRECTORY)
-
-if("${PARENT_DIRECTORY}" STREQUAL "")
+if(NOT TARGET zeem)
 	find_package(zeem REQUIRED)
 endif()
 

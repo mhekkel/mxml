@@ -1,28 +1,5 @@
-/*-
- * SPDX-License-Identifier: BSD-2-Clause
- *
- * Copyright (c) 2024 Maarten L. Hekkelman
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *
- * 1. Redistributions of source code must retain the above copyright notice, this
- *    list of conditions and the following disclaimer
- * 2. Redistributions in binary form must reproduce the above copyright notice,
- *    this list of conditions and the following disclaimer in the documentation
- *    and/or other materials provided with the distribution.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
- * ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- */
+// Copyright (c) 2024-2026 Maarten L. Hekkelman
+// SPDX-License-Identifier: BSD-2-Clause
 
 #pragma once
 
@@ -31,23 +8,32 @@
  * definition of the serializer classes used to (de-)serialize XML data.
  */
 
-#include "zeem/config.hpp"
-#include "zeem/detail/charconv.hpp"
-#include "zeem/node.hpp"
+#ifndef ZEEM_CXX_MODULE
+# include "zeem/config.hpp"
+# include "zeem/detail/charconv.hpp"
+# include "zeem/node.hpp"
+# include "zeem/parser.hpp"
+# include "zeem/xpath.hpp"
 
-#if ZEEM_USE_DATE_H
-# include <date/date.h>
+# if ZEEM_USE_DATE_H
+#  include <date/date.h>
+#  include <date/tz.h>
+# endif
+
+# include <algorithm>
+# include <array>
+# include <charconv>
+# include <chrono>
+# include <exception>
+# include <map>
+# include <optional>
+# include <regex>
+# include <source_location>
+# include <stdexcept>
+# include <string>
+# include <system_error>
+# include <type_traits>
 #endif
-
-#include <algorithm>
-#include <charconv>
-#include <chrono>
-#include <map>
-#include <optional>
-#include <regex>
-#include <source_location>
-#include <string>
-#include <system_error>
 
 namespace zeem
 {
@@ -59,7 +45,7 @@ namespace zeem
 /// Each specialization should provide a static to_string and a from_string
 /// method
 
-template <typename T>
+ZEEM_EXPORT template <typename T>
 struct value_serializer;
 
 /// @ref value_serializer implementation for booleans
@@ -207,26 +193,45 @@ struct value_serializer<T>
 	std::string m_type_name;
 	value_map_type m_value_map;
 
+	value_serializer(std::string name, value_map_type values)
+		: m_type_name(std::move(name))
+		, m_value_map(std::move(values))
+	{
+	}
+
   public:
 	/// \brief Initialize a new instance of value_serializer for this enum, with name and a set of name/value pairs
-	static void init(std::string_view name, std::initializer_list<value_map_value_type> values)
+	static void init(std::string_view name, value_map_type values)
 	{
-		instance(std::string{ name }).m_value_map = value_map_type(values);
+		create(std::string{ name }, std::move(values));
 	}
 
 	/// \brief Initialize a new anonymous instance of value_serializer for this enum with a set of name/value pairs
-	static void init(std::initializer_list<value_map_value_type> values)
+	static void init(value_map_type values)
 	{
-		instance().m_value_map = value_map_type(values);
+		create("", std::move(values));
 	}
 
-	static value_serializer &instance(std::string name = {})
+	/// \brief Return the singleton instance (must be initialized first via init())
+	static value_serializer &instance()
 	{
-		static value_serializer s_instance;
-		if (not name.empty() and s_instance.m_type_name.empty())
-			s_instance.m_type_name = std::move(name);
+		return create({}, {});
+	}
+
+	/// \brief Return the singleton instance, setting the type name
+	static value_serializer &instance(std::string_view name)
+	{
+		return create(std::string{ name }, {});
+	}
+
+  private:
+	static value_serializer &create(std::string name, value_map_type values)
+	{
+		static value_serializer s_instance(std::move(name), std::move(values));
 		return s_instance;
 	}
+
+  public:
 
 	value_serializer &operator()(T v, std::string_view name)
 	{
@@ -247,24 +252,30 @@ struct value_serializer<T>
 
 	static std::string to_string(T value)
 	{
-		return instance().m_value_map[value];
+		return instance().m_value_map.at(value);
 	}
 
 	static T from_string(std::string_view value)
 	{
-		T result = {};
 		for (auto &t : instance().m_value_map)
+		{
 			if (t.second == value)
-			{
-				result = t.first;
-				break;
-			}
-		return result;
+				return t.first;
+		}
+		throw std::invalid_argument(std::format("{} is not valid for enum {}", value, type_name()));
 	}
 
 	static bool empty()
 	{
 		return instance().m_value_map.empty();
+	}
+
+	std::vector<std::string> values() const
+	{
+		std::vector<std::string> result;
+		for (const auto &[_, value] : m_value_map)
+			result.emplace_back(value);
+		return result;
 	}
 };
 
@@ -292,41 +303,56 @@ struct value_serializer<std::chrono::system_clock::time_point>
 
 	/// from_string according to ISO8601 rules.
 	/// If Zulu time is specified, then the parsed xsd:dateTime is returned.
-	/// If an UTC offset is present, then the offset is subtracted from the xsd:dateTime, this yields UTC.
+	/// If an UTC offset is present, then the offset is added to the xsd:dateTime, this yields UTC.
 	/// If no UTC offset is present, then the xsd:dateTime is assumed to be local time and converted to UTC.
 	static time_type from_string(std::string_view s)
 	{
 		time_type result;
 
-		std::regex kRX(R"(^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?(Z|[-+]\d{2}:\d{2})?)");
+		static const std::regex kRX(R"(^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?)(Z|([-+]\d{2})(?::(\d{2}))?)?)");
 		std::cmatch m;
 
 		if (not std::regex_match(s.data(), s.data() + s.length(), m, kRX))
 			throw std::runtime_error("Invalid date format");
 
-		std::stringstream is;
-		is << s;
+		// std::istringstream is{ m[1] };
+
+		struct membuf : public std::streambuf
+		{
+			membuf(std::string_view s)
+			{
+				auto text = const_cast<char *>(s.data());
+				this->setg(text, text, text + s.size());
+			}
+		} buffer(s);
+		std::istream is(&buffer);
 
 #if ZEEM_USE_DATE_H
-		if (m[1].matched)
-		{
-			if (m[1] == "Z")
-				date::from_stream(is, "%FT%TZ", result);
-			else
-				date::from_stream(is, "%FT%T%Ez", result);
-		}
+		if (m[1].length() == 16)
+			date::from_stream(is, "%FT%H:%M", result);
+		else if (m[2].matched and m[2] != "Z")
+			date::from_stream(is, "%FT%T%z", result);
 		else
 			date::from_stream(is, "%FT%T", result);
-#else
-		if (m[1].matched)
+
+		if (auto zone = date::current_zone(); not m[2].matched and zone)
 		{
-			if (m[1] == "Z")
-				std::from_stream(is, "%FT%TZ", result);
-			else
-				std::from_stream(is, "%FT%T%Ez", result);
+			auto info = zone->get_info(result);
+			result -= info.offset;
 		}
+#else
+		if (m[1].length() == 16)
+			std::chrono::from_stream(is, "%FT%H:%M", result);
+		else if (m[2].matched and m[2] != "Z")
+			std::chrono::from_stream(is, "%FT%T%z", result);
 		else
-			std::from_stream(is, "%FT%T", result);
+			std::chrono::from_stream(is, "%FT%T", result);
+
+		if (auto zone = std::chrono::current_zone(); not m[2].matched and zone)
+		{
+			auto info = zone->get_info(result);
+			result -= info.offset;
+		}
 #endif
 
 		if (is.bad() or is.fail())
@@ -361,7 +387,7 @@ struct value_serializer<std::chrono::sys_days>
 #if ZEEM_USE_DATE_H
 		date::from_stream(is, "%F", result);
 #else
-		std::from_stream(is, "%F", result);
+		std::chrono::from_stream(is, "%F", result);
 #endif
 
 		if (is.bad() or is.fail())
@@ -373,13 +399,13 @@ struct value_serializer<std::chrono::sys_days>
 
 /** @cond */
 
-template <typename T>
+ZEEM_EXPORT template <typename T>
 using serialize_value_t = decltype(std::declval<value_serializer<T> &>().from_string(std::declval<std::string_view>()));
 
-template <typename T, typename Archive>
+ZEEM_EXPORT template <typename T, typename Archive>
 using serialize_function = decltype(std::declval<T &>().serialize(std::declval<Archive &>(), std::declval<uint64_t>()));
 
-template <typename T, typename Archive, typename = void>
+ZEEM_EXPORT template <typename T, typename Archive, typename = void>
 struct has_serialize : std::false_type
 {
 };
@@ -388,62 +414,62 @@ template <typename T, typename Archive>
 	requires(std::is_class_v<T>)
 struct has_serialize<T, Archive>
 {
-	static constexpr bool value = detail::is_detected_v<serialize_function, T, Archive>;
+	static constexpr bool value = is_detected_v<serialize_function, T, Archive>;
 };
 
-template <typename T, typename S>
-inline constexpr bool has_serialize_v = has_serialize<T, S>::value;
+ZEEM_EXPORT template <typename T, typename S>
+ZEEM_INLINE constexpr bool has_serialize_v = has_serialize<T, S>::value;
 
-template <typename T, typename S, typename = void>
+ZEEM_EXPORT template <typename T, typename S, typename = void>
 struct is_serializable_array_type : std::false_type
 {
 };
 
-template <typename T>
+ZEEM_EXPORT template <typename T>
 using value_type_t = typename T::value_type;
 
-template <typename T>
+ZEEM_EXPORT template <typename T>
 using iterator_t = typename T::iterator;
 
-template <typename T>
+ZEEM_EXPORT template <typename T>
 using std_string_npos_t = decltype(T::npos);
 
 /// Struct used to detect whether type \a T is serializable
-template <typename T, typename S>
+ZEEM_EXPORT template <typename T, typename S>
 struct is_serializable_type
 {
 	using value_type = std::remove_cvref_t<T>;
 	static constexpr bool value =
-		detail::is_detected_v<serialize_value_t, value_type> or
+		is_detected_v<serialize_value_t, value_type> or
 		has_serialize_v<value_type, S>;
 };
 
-template <typename T, typename S>
-inline constexpr bool is_serializable_type_v = is_serializable_type<T, S>::value;
+ZEEM_EXPORT template <typename T, typename S>
+ZEEM_INLINE constexpr bool is_serializable_type_v = is_serializable_type<T, S>::value;
 
 template <typename T, typename S>
 	requires(
-		detail::is_detected_v<value_type_t, T> and
-		detail::is_detected_v<iterator_t, T> and
-		not detail::is_detected_v<std_string_npos_t, T>)
+		is_detected_v<value_type_t, T> and
+		is_detected_v<iterator_t, T> and
+		not is_detected_v<std_string_npos_t, T>)
 struct is_serializable_array_type<T, S>
 {
 	static constexpr bool value = is_serializable_type_v<typename T::value_type, S>;
 };
 
-template <typename T, typename S>
-inline constexpr bool is_serializable_array_type_v = is_serializable_array_type<T, S>::value;
+ZEEM_EXPORT template <typename T, typename S>
+ZEEM_INLINE constexpr bool is_serializable_array_type_v = is_serializable_array_type<T, S>::value;
 
 /** @endcond */
 // --------------------------------------------------------------------
 
-struct serializer;
-struct deserializer;
+ZEEM_EXPORT struct serializer;
+ZEEM_EXPORT struct deserializer;
 
 /**
  * @brief base struct to capture named values in a structure for serializing
  */
-template <typename T>
+ZEEM_EXPORT template <typename T>
 class name_value_pair
 {
   public:
@@ -472,7 +498,7 @@ class name_value_pair
 };
 
 /// @brief name value pair to create elements
-template <typename T>
+ZEEM_EXPORT template <typename T>
 class element_nvp : public name_value_pair<T>
 {
   public:
@@ -483,7 +509,7 @@ class element_nvp : public name_value_pair<T>
 };
 
 /// @brief name value pair to create attributes
-template <typename T>
+ZEEM_EXPORT template <typename T>
 class attribute_nvp : public name_value_pair<T>
 {
   public:
@@ -496,7 +522,7 @@ class attribute_nvp : public name_value_pair<T>
 /**
  * @brief Create a name/value pair for serializing to and from an XML element
  */
-template <typename T>
+ZEEM_EXPORT template <typename T>
 constexpr attribute_nvp<T> make_attribute_nvp(std::string name, T &value)
 {
 	return attribute_nvp(std::move(name), value);
@@ -505,7 +531,7 @@ constexpr attribute_nvp<T> make_attribute_nvp(std::string name, T &value)
 /**
  * @brief Create a name/value pair for serializing to and from an XML attribute
  */
-template <typename T>
+ZEEM_EXPORT template <typename T>
 constexpr element_nvp<T> make_element_nvp(std::string name, T &value)
 {
 	return element_nvp(std::move(name), value);
@@ -601,19 +627,107 @@ struct deserializer
 	/** @endcond */
 };
 
+/**
+ * @brief This type_map contains the complex types collected by the @ref schema_creator
+ */
+
+ZEEM_EXPORT using type_map = std::map<std::string, element>;
+
+/**
+ * @brief schema creator is used to create XML Schema's for data that is serialized or deserialized.
+ */
+
+ZEEM_EXPORT struct schema_creator
+{
+	schema_creator()
+		: schema_creator(std::make_unique<type_map>(), std::make_unique<element>(element{ "xsd:schema", { { "xmlns:xsd", "http://www.w3.org/2001/XMLSchema" } } }))
+	{
+	}
+
+	schema_creator(type_map &types, element &schema)
+		: m_schema(schema)
+		, m_types(types)
+	{
+	}
+
+	void set_ns_prefix(std::string ns_prefix)
+	{
+		m_ns_prefix = std::move(ns_prefix);
+	}
+
+	template <typename T>
+	schema_creator &operator&(const element_nvp<T> &rhs)
+	{
+		return add_element(rhs.name(), rhs.value());
+	}
+
+	template <typename T>
+	schema_creator &operator&(const attribute_nvp<T> &rhs)
+	{
+		return add_attribute(rhs.name(), rhs.value());
+	}
+
+	template <typename T>
+	schema_creator &add_element(std::string_view name, const T &value);
+
+	template <typename T>
+	schema_creator &add_attribute(std::string_view name, const T &value);
+
+	document schema(std::string name) const
+	{
+		document doc(R"(<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema"/>)");
+		auto e = doc.child()->emplace_back(element{ "xsd:element", { { "name", name } } });
+		auto t = e->emplace_back("xsd:complexType");
+		auto s = t->emplace_back("xsd:sequence");
+
+		for (auto &e : m_schema)
+			s->emplace_back(e);
+
+		for (const auto &[_, type] : m_types)
+			doc.child()->emplace_back(type);
+
+		return doc;
+	}
+
+  private:
+	schema_creator(std::unique_ptr<type_map> types, std::unique_ptr<element> schema)
+		: schema_creator(*types, *schema)
+	{
+		m_schema_store = std::move(schema);
+		m_types_store = std::move(types);
+	}
+
+	std::unique_ptr<element> m_schema_store;
+	std::unique_ptr<type_map> m_types_store;
+
+	element &m_schema;
+	type_map &m_types;
+
+	std::string m_ns_prefix;
+};
+
 // --------------------------------------------------------------------
+
+/// \brief Return a prefixed type name
+inline std::string get_prefixed_type_name(const std::string &prefix, std::string type_name)
+{
+	if (prefix.empty() or type_name.find(':') != std::string::npos)
+		return type_name;
+	else
+	 	return prefix + ':' + type_name;
+}
 
 /**
  * @brief Type serializer objects can serialize various types,
  * each has its own template specialization.
  */
 
-template <typename T>
+ZEEM_EXPORT template <typename T>
 struct type_serializer;
 
 /** @cond */
 
-template <typename T, size_t N>
+template <typename T, std::size_t N>
 struct type_serializer<T[N]>
 {
 	using value_type = std::remove_cvref_t<T>;
@@ -629,7 +743,7 @@ struct type_serializer<T[N]>
 
 	static void deserialize_child(const element_container &n, std::string_view name, value_type (&value)[N])
 	{
-		size_t ix = 0;
+		std::size_t ix = 0;
 		for (auto &e : n)
 		{
 			if (e.name() != name)
@@ -644,6 +758,23 @@ struct type_serializer<T[N]>
 			if (ix >= N)
 				break;
 		}
+	}
+
+	static element schema(std::string_view name, std::string prefix)
+	{
+		return element{
+			"xsd:element",
+			{ //
+				{ "name", name },
+				{ "type", get_prefixed_type_name(prefix, type_serializer_type::type_name()) },
+				{ "minOccurs", std::to_string(N) },
+				{ "maxOccurs", std::to_string(N) } }
+		};
+	}
+
+	static void register_type(type_map &types, std::string prefix)
+	{
+		type_serializer_type::register_type(types, prefix);
 	}
 };
 
@@ -694,6 +825,43 @@ struct type_serializer<T>
 				value = value_serializer_type::from_string(e->get_content());
 		}
 	}
+
+	static element schema(std::string_view name, std::string prefix)
+	{
+		return element{
+			"xsd:element",
+			{ //
+				{ "name", name },
+				{ "type", get_prefixed_type_name(prefix, value_serializer_type::type_name()) },
+				{ "minOccurs", "1" },
+				{ "maxOccurs", "1" } }
+		};
+	}
+
+	static void register_type(type_map &types, std::string prefix)
+	{
+		element n("xsd:simpleType", { { "name", value_serializer_type::type_name() } });
+
+		element restriction("xsd:restriction", { { "base", "xsd:string" } });
+
+		for (std::string v : value_serializer_type::instance().values())
+			restriction.emplace_back(element{ "xsd:enumeration", { { "value", v } } });
+
+		n.emplace_back(std::move(restriction));
+		types[type_name()] = std::move(n);
+	}
+};
+
+// code to serialize structs.
+// struct_serializer_archive is a helper class to be used as Archive
+
+template <typename Archive, typename T>
+struct struct_serializer
+{
+	static void serialize(Archive &stream, T &data)
+	{
+		data.serialize(stream, 0U);
+	}
 };
 
 template <typename T>
@@ -705,12 +873,12 @@ struct type_serializer<T>
 	// the name of this type
 	std::string m_type_name;
 
-	static std::string type_name() { return instance().m_type_name.c_str(); }
+	static std::string type_name() { return instance().m_type_name; }
 	void type_name(std::string_view name) { m_type_name = name; }
 
 	static type_serializer &instance()
 	{
-		static type_serializer s_instance{ std::source_location::current().function_name() };
+		static type_serializer s_instance{ value_type::type_name() };
 		return s_instance;
 	}
 
@@ -749,6 +917,37 @@ struct type_serializer<T>
 			}
 		}
 	}
+
+	static element schema(std::string_view name, std::string prefix)
+	{
+		return element{
+			"xsd:element",
+			{ //
+				{ "name", name },
+				{ "type", get_prefixed_type_name(prefix, value_type::type_name()) },
+				{ "minOccurs", "1" },
+				{ "maxOccurs", "1" } }
+		};
+	}
+
+	static void register_type(type_map &types, std::string prefix)
+	{
+		auto name = value_type::type_name();
+
+		element n("xsd:complexType", { { "name", name } });
+
+		element sequence("xsd:sequence");
+		using archive = struct_serializer<schema_creator, value_type>;
+		schema_creator schema(types, sequence);
+		schema.set_ns_prefix(prefix);
+
+		value_type v;
+		archive::serialize(schema, v);
+
+		n.emplace_back(std::move(sequence));
+
+		types[name] = std::move(n);
+	}
 };
 
 template <typename T>
@@ -777,6 +976,23 @@ struct type_serializer<std::optional<T>>
 			type_serializer_type::deserialize_child(e, ".", v);
 			value.emplace(std::move(v));
 		}
+	}
+
+	static element schema(std::string_view name, std::string prefix)
+	{
+		return element{
+			"xsd:element",
+			{ //
+				{ "name", name },
+				{ "type", get_prefixed_type_name(prefix, type_serializer_type::type_name()) },
+				{ "minOccurs", "0" },
+				{ "maxOccurs", "1" } }
+		};
+	}
+
+	static void register_type(type_map &types, std::string prefix)
+	{
+		type_serializer_type::register_type(types, prefix);
 	}
 };
 
@@ -807,11 +1023,11 @@ struct type_serializer<T>
 			type_serializer_type::serialize_child(n, name, v);
 	}
 
-	template <size_t N>
+	template <std::size_t N>
 	static auto deserialize_array(const element_container &n, std::string_view name,
 		std::array<value_type, N> &value, [[maybe_unused]] priority_tag<2> pt)
 	{
-		size_t ix = 0;
+		std::size_t ix = 0;
 		for (auto &e : n)
 		{
 			if (e.name() != name)
@@ -865,6 +1081,43 @@ struct type_serializer<T>
 	{
 		type_serializer::deserialize_array(n, name, value, priority_tag<2>{});
 	}
+
+	template <std::size_t N>
+	static element schema_array(std::string_view name, std::string prefix,
+		[[maybe_unused]] const std::array<value_type, N> &value, [[maybe_unused]] priority_tag<1> pt)
+	{
+		return element{
+			"xsd:element",
+			{ //
+				{ "name", name },
+				{ "type", get_prefixed_type_name(prefix, type_serializer_type::type_name()) },
+				{ "minOccurs", std::to_string(N) },
+				{ "maxOccurs", std::to_string(N) } }
+		};
+	}
+
+	static element schema_array(std::string_view name, std::string prefix,
+		[[maybe_unused]] const container_type &arr, [[maybe_unused]] priority_tag<0> pt)
+	{
+		return element{
+			"xsd:element",
+			{ //
+				{ "name", name },
+				{ "type", get_prefixed_type_name(prefix, type_serializer_type::type_name()) },
+				{ "minOccurs", "0" },
+				{ "maxOccurs", "unbounded" } }
+		};
+	}
+
+	static element schema(std::string_view name, std::string prefix)
+	{
+		return schema_array(name, prefix, container_type{}, priority_tag<1>());
+	}
+
+	static void register_type(type_map &types, std::string prefix)
+	{
+		type_serializer_type::register_type(types, prefix);
+	}
 };
 
 template <typename T>
@@ -912,6 +1165,21 @@ struct type_serializer
 			if (e != n.end())
 				value = value_serializer_type::from_string(e->get_content());
 		}
+	}
+
+	static element schema(std::string_view name, std::string prefix)
+	{
+		return element{
+			"xsd:element",
+			{ { "name", name },
+				{ "type", get_prefixed_type_name(prefix, value_serializer_type::type_name()) },
+				{ "minOccurs", "1" },
+				{ "maxOccurs", "1" } }
+		};
+	}
+
+	static void register_type(type_map &, std::string_view)
+	{
 	}
 };
 
@@ -988,55 +1256,155 @@ deserializer &deserializer::deserialize_attribute(std::string_view name, T &valu
 	return *this;
 }
 
+// Schema creation
+template <typename T>
+schema_creator &schema_creator::add_element(std::string_view name, const T & /* value */)
+{
+	using value_type = std::remove_cv_t<T>;
+	using type_serializer = type_serializer<value_type>;
+
+	m_schema.emplace_back(type_serializer::schema(name, m_ns_prefix));
+
+	std::string type_name = type_serializer::type_name();
+
+	// we might be known already
+	if (m_types.find(type_name) == m_types.end())
+		type_serializer::register_type(m_types, m_ns_prefix);
+
+	return *this;
+}
+
+template <typename T>
+schema_creator &schema_creator::add_attribute(std::string_view name, const T & /* value */)
+{
+	using value_type = std::remove_cv_t<T>;
+	using type_serializer = type_serializer<value_type>;
+
+	element n("xsd:attribute");
+
+	std::string type_name = type_serializer::type_name();
+
+	n.set_attribute("name", name);
+	n.set_attribute("type", type_name);
+
+	if (m_types.find(type_name) == m_types.end())
+		type_serializer::register_type(m_types, m_ns_prefix);
+
+	assert(m_schema.parent() != nullptr);
+	if (m_schema.parent() != nullptr)
+		m_schema.parent()->emplace_back(std::move(n));
+
+	return *this;
+}
+
 /** @endcond */
 
 // --------------------------------------------------------------------
 // Convenience routines
 
-/**
- * @brief Write out \a value into XML into document or element \a e
- */
-
-template <typename T>
-void to_xml(zeem::element_container &e, const T &value)
+namespace detail
 {
-	serializer sr(e);
-	sr.serialize_element(value);
-}
+	ZEEM_EXPORT template <typename T>
+	concept ElementContainer = std::is_base_of_v<zeem::element_container, T>;
 
-/**
- * @brief Write out \a value into XML into document or element \a e
- * using \a name as name for the element to create.
- */
+	/**
+	 * @brief Write out \a value into XML into document or element \a e
+	 */
+	ZEEM_EXPORT template <typename T>
+	void to_xml(zeem::element_container &e, const T &value)
+	{
+		serializer sr(e);
+		sr.serialize_element(value);
+	}
 
-template <typename T>
-void to_xml(zeem::element_container &e, std::string_view name, const T &value)
-{
-	serializer sr(e);
-	sr.serialize_element(name, value);
-}
+	/**
+	 * @brief Write out \a value into XML into document or element \a e
+	 * using \a name as name for the element to create.
+	 */
 
-/**
- * @brief Read in \a value from the XML in document or element \a e
- */
+	ZEEM_EXPORT template <typename T>
+	void to_xml(zeem::element_container &e, std::string_view name, const T &value)
+	{
+		serializer sr(e);
+		sr.serialize_element(name, value);
+	}
 
-template <typename T>
-void from_xml(const zeem::element_container &e, T &value)
-{
-	deserializer dsr(e);
-	dsr.deserialize_element(value);
-}
+	// Using customization point objects
+	/** @cond */
 
-/**
- * @brief Read in \a value from the XML in document or element \a e
- * using \a name as name for the element to use.
- */
+	struct to_xml_fn
+	{
+		template <typename T>
+		auto operator()(ElementContainer auto &e, T &&val) const
+			noexcept(noexcept(to_xml(e, std::forward<T>(val))))
+				-> decltype(to_xml(e, std::forward<T>(val)))
+		{
+			return to_xml(e, std::forward<T>(val));
+		}
 
-template <typename T>
-void from_xml(const zeem::element_container &e, std::string_view name, T &value)
-{
-	deserializer dsr(e);
-	dsr.deserialize_element(name, value);
-}
+		template <typename T>
+		auto operator()(ElementContainer auto &e, std::string_view name, T &&val) const
+			noexcept(noexcept(to_xml(e, name, std::forward<T>(val))))
+				-> decltype(to_xml(e, name, std::forward<T>(val)))
+		{
+			return to_xml(e, name, std::forward<T>(val));
+		}
+	};
+
+	/** @endcond */
+
+	/**
+	 * @brief Read in \a value from the XML in document or element \a e
+	 */
+
+	ZEEM_EXPORT template <typename T>
+	void from_xml(const zeem::element_container &e, T &value)
+	{
+		deserializer dsr(e);
+		dsr.deserialize_element(value);
+	}
+
+	/**
+	 * @brief Read in \a value from the XML in document or element \a e
+	 * using \a name as name for the element to use.
+	 */
+
+	ZEEM_EXPORT template <typename T>
+	void from_xml(const zeem::element_container &e, std::string_view name, T &value)
+	{
+		deserializer dsr(e);
+		dsr.deserialize_element(name, value);
+	}
+
+	/** @cond */
+
+	struct from_xml_fn
+	{
+		template <typename T>
+		auto operator()(const ElementContainer auto &e, T &&val) const
+			noexcept(noexcept(from_xml(e, std::forward<T>(val))))
+				-> decltype(from_xml(e, std::forward<T>(val)))
+		{
+			return from_xml(e, std::forward<T>(val));
+		}
+
+		template <typename T>
+		auto operator()(const ElementContainer auto &e, std::string_view name, T &&val) const
+			noexcept(noexcept(from_xml(e, name, std::forward<T>(val))))
+				-> decltype(from_xml(e, name, std::forward<T>(val)))
+		{
+			return from_xml(e, name, std::forward<T>(val));
+		}
+	};
+
+	/** @endcond */
+
+} // namespace detail
+
+/// @brief The customization point object for to_xml
+ZEEM_EXPORT inline constexpr detail::to_xml_fn to_xml{};
+
+/// @brief The customization point object for from_xml
+ZEEM_EXPORT inline constexpr detail::from_xml_fn from_xml{};
 
 } // namespace zeem

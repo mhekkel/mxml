@@ -1,54 +1,26 @@
-/*-
- * SPDX-License-Identifier: BSD-2-Clause
- *
- * Copyright (c) 2024 Maarten L. Hekkelman
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *
- * 1. Redistributions of source code must retain the above copyright notice, this
- *    list of conditions and the following disclaimer
- * 2. Redistributions in binary form must reproduce the above copyright notice,
- *    this list of conditions and the following disclaimer in the documentation
- *    and/or other materials provided with the distribution.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
- * ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- */
+// Copyright (c) 2024-2026 Maarten L. Hekkelman
+// SPDX-License-Identifier: BSD-2-Clause
 
-#include "zeem/parser.hpp"
+#ifndef ZEEM_CXX_MODULE
+# include "zeem/zeem.hpp"
 
-#include "zeem/doctype.hpp"
-#include "zeem/text.hpp"
-#include "zeem/version.hpp"
-
-#include <algorithm>
-#include <array>
-#include <cassert>
-#include <cctype>
-#include <compare>
-#include <cstddef>
-#include <cstdint>
-#include <format>
-#include <map>
-#include <memory>
-#include <ranges>
-#include <set>
-#include <sstream>
-#include <stack>
-#include <string>
-#include <tuple>
-#include <utility>
-#include <variant>
-#include <vector>
+# include <algorithm>
+# include <array>
+# include <cassert>
+# include <cctype>
+# include <cstddef>
+# include <cstdint>
+# include <format>
+# include <map>
+# include <memory>
+# include <set>
+# include <sstream>
+# include <stack>
+# include <string>
+# include <tuple>
+# include <utility>
+# include <vector>
+#endif
 
 namespace zeem
 {
@@ -81,9 +53,26 @@ bool iequals(std::string_view a, std::string_view b)
 	bool equal = a.length() == b.length();
 
 	for (std::string::size_type i = 0; equal and i < a.length(); ++i)
-		equal = std::toupper(a[i]) == std::toupper(b[i]);
+	{
+		char ca = a[i];
+		char cb = b[i];
+
+		if (ca >= 'a' and ca <= 'z')
+			ca &= ~0x0020;
+
+		if (cb >= 'a' and cb <= 'z')
+			cb &= ~0x0020;
+
+		equal = ca == cb;
+	}
 
 	return equal;
+}
+
+// private isalpha
+constexpr bool isalpha_light(char ch)
+{
+	return (ch >= 'a' and ch <= 'z') or (ch >= 'A' and ch <= 'Z');
 }
 
 bool is_absolute_path(std::string_view s)
@@ -94,10 +83,10 @@ bool is_absolute_path(std::string_view s)
 	{
 		if (s[0] == '/')
 			result = true;
-		else if (isalpha(s[0]))
+		else if (isalpha_light(s[0]))
 		{
 			auto ch = s.begin() + 1;
-			while (ch != s.end() and isalpha(*ch))
+			while (ch != s.end() and isalpha_light(*ch))
 				++ch;
 			result = ch != s.end() and *ch == ':';
 		}
@@ -111,7 +100,7 @@ bool is_valid_url(std::string_view url)
 	// The rules for url in namespaces are a bit different from the URI requirements in RFC3986
 	auto cp = url.find(':');
 
-	return cp > 1 and cp != std::string::npos and std::isalpha(url[0]);
+	return cp > 1 and cp != std::string::npos and isalpha_light(url[0]);
 }
 
 // parsing XML is somewhat like macro processing,
@@ -183,21 +172,14 @@ class istream_data_source : public data_source
   public:
 	explicit istream_data_source(std::istream &data)
 		: m_data(&data)
-		, m_owns_data(false)
 	{
 		guess_encoding();
 	}
 
-	explicit istream_data_source(std::istream *data)
-		: m_data(data)
+	explicit istream_data_source(std::unique_ptr<std::istream> data)
+		: istream_data_source(*data)
 	{
-		guess_encoding();
-	}
-
-	~istream_data_source() override
-	{
-		if (m_owns_data)
-			delete m_data;
+		m_ptr = std::move(data);
 	}
 
 	bool has_bom() override { return m_has_bom; }
@@ -225,7 +207,7 @@ class istream_data_source : public data_source
 	}
 
 	std::istream *m_data;
-	bool m_owns_data = true;
+	std::unique_ptr<std::istream> m_ptr;
 	char32_t m_char_buffer = 0; // used in detecting \r\n algorithm
 
 	using next_func = char32_t (istream_data_source::*)();
@@ -345,6 +327,9 @@ char32_t istream_data_source::next_utf8_char()
 			if ((ch[0] & 0x0c0) != 0x080)
 				throw source_exception("Invalid utf-8");
 			result = ((result & 0x01F) << 6) | (ch[0] & 0x03F);
+
+			if (result < 0x0080)
+				throw source_exception("invalid utf-8 character (overlong)");
 		}
 		else if ((result & 0x0F0) == 0x0E0)
 		{
@@ -353,6 +338,9 @@ char32_t istream_data_source::next_utf8_char()
 			if ((ch[0] & 0x0c0) != 0x080 or (ch[1] & 0x0c0) != 0x080)
 				throw source_exception("Invalid utf-8");
 			result = ((result & 0x00F) << 12) | ((ch[0] & 0x03F) << 6) | (ch[1] & 0x03F);
+
+			if (result < 0x0800)
+				throw source_exception("invalid utf-8 character (overlong)");
 		}
 		else if ((result & 0x0F8) == 0x0F0)
 		{
@@ -363,10 +351,16 @@ char32_t istream_data_source::next_utf8_char()
 				throw source_exception("Invalid utf-8");
 			result = ((result & 0x007) << 18) | ((ch[0] & 0x03F) << 12) | ((ch[1] & 0x03F) << 6) | (ch[2] & 0x03F);
 
+			if (result < 0x010000)
+				throw source_exception("invalid utf-8 character (overlong)");
+
 			if (result > 0x10ffff)
 				throw source_exception("invalid utf-8 character (out of range)");
 		}
 	}
+
+	if (result >= 0x0D800 and result <= 0x0DFFF)
+		throw source_exception("invalid utf-8 character, surrogate");
 
 	return result;
 }
@@ -541,6 +535,83 @@ class valid_nesting_validator
 };
 
 // --------------------------------------------------------------------
+// State machine to parse charref's
+
+enum class CharRefState
+{
+	start,
+	hex,
+	dec,
+	done,
+	invalid
+};
+
+CharRefState move_charref(char32_t uc, char32_t &charref, CharRefState state)
+{
+	switch (state)
+	{
+		using enum CharRefState;
+
+		case start:
+			if (uc == 'x')
+			{
+				charref = 0;
+				state = hex;
+			}
+			else if (uc >= '0' and uc <= '9')
+			{
+				charref = uc - '0';
+				state = dec;
+			}
+			else
+				state = invalid;
+			break;
+		case hex:
+			if (uc == ';')
+				state = done;
+			else
+			{
+				int v = 0;
+				if (uc >= 'a' and uc <= 'f')
+					v = (uc - 'a' + 10);
+				else if (uc >= 'A' and uc <= 'F')
+					v = (uc - 'A' + 10);
+				else if (uc >= '0' and uc <= '9')
+					v = (uc - '0');
+				else
+					state = invalid;
+
+				if (std::cmp_less((charref << 4) + v, 0x01000000))
+					charref = (charref << 4) + v;
+				else
+					state = invalid;
+			}
+			break;
+		case dec:
+			if (uc == ';')
+				state = done;
+			else if (uc >= '0' and uc <= '9')
+			{
+				int v = uc - '0';
+
+				if (std::cmp_less(charref * 10 + v, 0x01000000))
+					charref = charref * 10 + v;
+				else
+					state = invalid;
+				break;
+			}
+			else
+				state = invalid;
+			break;
+		default:
+			std::unreachable();
+			break;
+	}
+
+	return state;
+}
+
+// --------------------------------------------------------------------
 
 struct parser_imp
 {
@@ -591,20 +662,7 @@ struct parser_imp
 	void parse_general_entity_declaration(std::string &s);
 
 	// same goes for attribute values
-	std::string normalize_attribute_value(const std::string &s, bool isCDATA)
-	{
-		push_data_source(new string_data_source(s), false);
-
-		std::string result = normalize_attribute_value();
-
-		if (m_standalone and result != s)
-			not_valid("Document cannot be standalone since an attribute was modified");
-
-		if (not isCDATA)
-			collapse_spaces(result);
-
-		return result;
-	}
+	std::string normalize_attribute_value(const std::string &s, bool isCDATA);
 
 	std::string normalize_attribute_value();
 
@@ -667,53 +725,7 @@ struct parser_imp
 	};
 
 	// for debugging and error reporting we have the following describing routine
-	constexpr const char *describe_token(XMLToken token)
-	{
-		switch (token)
-		{
-			case XMLToken::Undef: return "undefined";
-			case XMLToken::Eq: return "=";
-			case XMLToken::QuestionMark: return "?";
-			case XMLToken::GreaterThan: return ">";
-			case XMLToken::OpenBracket: return "[";
-			case XMLToken::CloseBracket: return "]";
-			case XMLToken::OpenParenthesis: return "(";
-			case XMLToken::CloseParenthesis: return ")";
-			case XMLToken::Percent: return "%";
-			case XMLToken::Plus: return "+";
-			case XMLToken::Pipe: return "|";
-			case XMLToken::Asterisk: return "*";
-			case XMLToken::Slash: return "/";
-			case XMLToken::Comma: return ",";
-			case XMLToken::Eof: return "end of file";
-			case XMLToken::Other: return "an invalid character";
-			case XMLToken::XMLDecl: return "'<?xml'";
-			case XMLToken::Space: return "space character";
-			case XMLToken::Comment: return "comment";
-			case XMLToken::Name: return "identifier or name";
-			case XMLToken::NMToken: return "nmtoken";
-			case XMLToken::String: return "quoted string";
-			case XMLToken::PI: return "processing instruction";
-			case XMLToken::STag: return "tag";
-			case XMLToken::ETag: return "end tag";
-			case XMLToken::DocType: return "<!DOCTYPE";
-			case XMLToken::Element: return "<!ELEMENT";
-			case XMLToken::AttList: return "<!ATTLIST";
-			case XMLToken::Entity: return "<!ENTITY";
-			case XMLToken::Notation: return "<!NOTATION";
-			case XMLToken::Required: return "#REQUIRED";
-			case XMLToken::Implied: return "#IMPLIED";
-			case XMLToken::Fixed: return "#FIXED";
-			case XMLToken::PCData: return "#PCData";
-			case XMLToken::PEReference: return "parameter entity reference";
-			case XMLToken::CharRef: return "character reference";
-			case XMLToken::Reference: return "entity reference";
-			case XMLToken::CDSect: return "CDATA section";
-			case XMLToken::Content: return "content";
-			case XMLToken::IncludeIgnore: return "<![ (as in <![INCLUDE[ )";
-			default: assert(false); return "unknown token";
-		}
-	}
+	constexpr const char *describe_token(XMLToken token);
 
 	char32_t get_next_char();
 
@@ -767,9 +779,9 @@ struct parser_imp
 
 	struct source_state
 	{
-		source_state(parser_imp *impl, data_source *source, bool insert)
+		source_state(parser_imp *impl, std::unique_ptr<data_source> source, bool insert)
 			: m_impl(*impl)
-			, m_source(source)
+			, m_source(std::move(source))
 			, m_buffer_offset(m_impl.m_buffer_ptr - m_impl.m_buffer.begin())
 			, m_lookahead(m_impl.m_lookahead)
 			, m_inserted(insert)
@@ -785,16 +797,15 @@ struct parser_imp
 			std::swap(m_buffer, m_impl.m_buffer);
 			m_impl.m_buffer_ptr = m_impl.m_buffer.begin() + m_buffer_offset;
 			m_impl.m_lookahead = m_lookahead;
-			delete m_source;
 		}
 
-		data_source *operator->() const { return m_source; }
+		data_source *operator->() const { return m_source.get(); }
 		data_source &operator*() const { return *m_source; }
 
 		[[nodiscard]] bool inserted() const { return m_inserted; }
 
 		parser_imp &m_impl;
-		data_source *m_source;
+		std::unique_ptr<data_source> m_source;
 		std::array<char32_t, 4> m_buffer{};
 		std::ptrdiff_t m_buffer_offset;
 		XMLToken m_lookahead;
@@ -802,10 +813,13 @@ struct parser_imp
 		bool m_inserted;
 	};
 
-	void push_data_source(data_source *source, bool insert)
+	void push_data_source(std::unique_ptr<data_source> source, bool insert)
 	{
+		if (m_source.size() >= m_max_source_stack_size)
+			not_well_formed("Reached the maximum recursion level for entity expansion");
+
 		source->version(m_version);
-		m_source.emplace(this, source, insert);
+		m_source.emplace(this, std::move(source), insert);
 	}
 
 	void pop_data_source()
@@ -904,22 +918,22 @@ struct parser_imp
 		std::set<std::string> m_unbound;
 	};
 
-	bool is_char(char32_t uc)
+	constexpr bool is_char(char32_t uc)
 	{
 		return m_version == version_type{ 1, 0 } ? is_valid_xml_1_0_char(uc) : is_valid_xml_1_1_char(uc);
 	}
 
-	bool is_space(char32_t uc)
+	constexpr bool is_space(char32_t uc)
 	{
 		return uc == ' ' or uc == '\t' or uc == '\n' or uc == '\r';
 	}
 
-	bool is_space(std::string_view s)
+	constexpr bool is_space(std::string_view s)
 	{
 		return not s.empty() and s.find_first_not_of(" \t\r\n") == std::string_view::npos;
 	}
 
-	bool is_referrable_char(char32_t charref)
+	constexpr bool is_referrable_char(char32_t charref)
 	{
 		return m_version == version_type{ 1, 0 }
 		           ? charref == 0x09 or
@@ -945,6 +959,7 @@ struct parser_imp
 	std::string m_token;
 
 	std::stack<source_state> m_source;
+	int m_max_source_stack_size = 8;
 
 	std::array<char32_t, 4> m_buffer{};
 	std::array<char32_t, 4>::iterator m_buffer_ptr = m_buffer.begin();
@@ -974,12 +989,17 @@ struct parser_imp
 	std::set<std::string> m_unresolved_ids; // keep track of IDREFS that were not found yet
 
 	doctype::attribute_ptr m_xmlSpaceAttr;
+
+	// sentinel like entity
+	static const doctype::general_entity s_invalid_entity;
 };
+
+const doctype::general_entity parser_imp::s_invalid_entity("invalid", "invalid-entity", "invalid-entity-path");
 
 // --------------------------------------------------------------------
 // some inlines
 
-inline void parser_imp::s(bool at_least_one)
+void parser_imp::s(bool at_least_one)
 {
 	if (at_least_one)
 		match(XMLToken::Space);
@@ -988,7 +1008,7 @@ inline void parser_imp::s(bool at_least_one)
 		match(XMLToken::Space);
 }
 
-inline void parser_imp::eq()
+void parser_imp::eq()
 {
 	s();
 	match(XMLToken::Eq);
@@ -1001,7 +1021,7 @@ parser_imp::parser_imp(std::istream &data, parser &parser)
 	: m_parser(parser)
 	, m_encoding(encoding_type::ASCII)
 {
-	push_data_source(new istream_data_source(data), false);
+	push_data_source(std::make_unique<istream_data_source>(data), false);
 
 	m_encoding = m_source.top()->encoding();
 
@@ -1012,7 +1032,6 @@ parser_imp::parser_imp(std::istream &data, parser &parser)
 	m_general_entities.push_back(std::make_shared<doctype::general_entity>("apos", "&#39;"));
 	m_general_entities.push_back(std::make_shared<doctype::general_entity>("quot", "&#34;"));
 
-	// m_xmlSpaceAttr.reset(new doctype::attribute("xml:space", doctype::attribute_type::Enumerated, { "preserve", "default" }));
 	m_xmlSpaceAttr = std::make_shared<doctype::attribute>("xml:space", doctype::attribute_type::Enumerated, std::vector<std::string>{ "preserve", "default" });
 }
 
@@ -1042,7 +1061,13 @@ const doctype::entity &parser_imp::get_general_entity(std::string_view name) con
 			return *c;
 	}
 
-	not_well_formed("undefined entity reference '" + std::string{ name } + "'");
+	if (m_general_entities.empty())
+		not_well_formed("undefined entity reference '" + std::string{ name } + "'");
+	else
+	{
+		not_valid("undefined entity reference '" + std::string{ name } + "'");
+		return s_invalid_entity;
+	}
 }
 
 const doctype::entity &parser_imp::get_parameter_entity(std::string_view name) const
@@ -1072,6 +1097,53 @@ const doctype::element_ptr parser_imp::get_element(std::string_view name) const
 	return result;
 }
 
+constexpr const char *parser_imp::describe_token(XMLToken token)
+{
+	switch (token)
+	{
+		case XMLToken::Undef: return "undefined";
+		case XMLToken::Eq: return "=";
+		case XMLToken::QuestionMark: return "?";
+		case XMLToken::GreaterThan: return ">";
+		case XMLToken::OpenBracket: return "[";
+		case XMLToken::CloseBracket: return "]";
+		case XMLToken::OpenParenthesis: return "(";
+		case XMLToken::CloseParenthesis: return ")";
+		case XMLToken::Percent: return "%";
+		case XMLToken::Plus: return "+";
+		case XMLToken::Pipe: return "|";
+		case XMLToken::Asterisk: return "*";
+		case XMLToken::Slash: return "/";
+		case XMLToken::Comma: return ",";
+		case XMLToken::Eof: return "end of file";
+		case XMLToken::Other: return "an invalid character";
+		case XMLToken::XMLDecl: return "'<?xml'";
+		case XMLToken::Space: return "space character";
+		case XMLToken::Comment: return "comment";
+		case XMLToken::Name: return "identifier or name";
+		case XMLToken::NMToken: return "nmtoken";
+		case XMLToken::String: return "quoted string";
+		case XMLToken::PI: return "processing instruction";
+		case XMLToken::STag: return "tag";
+		case XMLToken::ETag: return "end tag";
+		case XMLToken::DocType: return "<!DOCTYPE";
+		case XMLToken::Element: return "<!ELEMENT";
+		case XMLToken::AttList: return "<!ATTLIST";
+		case XMLToken::Entity: return "<!ENTITY";
+		case XMLToken::Notation: return "<!NOTATION";
+		case XMLToken::Required: return "#REQUIRED";
+		case XMLToken::Implied: return "#IMPLIED";
+		case XMLToken::Fixed: return "#FIXED";
+		case XMLToken::PCData: return "#PCData";
+		case XMLToken::PEReference: return "parameter entity reference";
+		case XMLToken::CharRef: return "character reference";
+		case XMLToken::Reference: return "entity reference";
+		case XMLToken::CDSect: return "CDATA section";
+		case XMLToken::Content: return "content";
+		case XMLToken::IncludeIgnore: return "<![ (as in <![INCLUDE[ )";
+		default: assert(false); return "unknown token";
+	}
+}
 char32_t parser_imp::get_next_char()
 {
 	char32_t result = 0;
@@ -1433,6 +1505,7 @@ parser_imp::XMLToken parser_imp::get_next_content()
 	XMLToken token = XMLToken::Undef;
 	int state = state_Start;
 	char32_t charref = 0;
+	CharRefState crState = CharRefState::start;
 
 	m_token.clear();
 
@@ -1607,69 +1680,23 @@ parser_imp::XMLToken parser_imp::get_next_content()
 				break;
 
 			case state_Reference + 2:
-				if (uc == 'x')
-					state = state_Reference + 4;
-				else if (uc >= '0' and uc <= '9')
+				crState = move_charref(uc, charref, crState);
+				switch (crState)
 				{
-					charref = uc - '0';
-					state += 1;
-				}
-				else
-					not_well_formed("invalid character reference");
-				break;
+					using enum CharRefState;
+					case invalid:
+						not_well_formed("invalid character reference");
+					case done:
+					{
+						if (not is_referrable_char(charref))
+							not_well_formed("Illegal character reference in content text");
 
-			case state_Reference + 3:
-				if (uc >= '0' and uc <= '9')
-					charref = charref * 10 + (uc - '0');
-				else if (uc == ';')
-				{
-					if (not is_referrable_char(charref))
-						not_well_formed("Illegal character in content text");
-					m_token.clear();
-					append(m_token, charref);
-					token = XMLToken::CharRef;
+						m_token.clear();
+						append(m_token, charref);
+						token = XMLToken::CharRef;
+					}
+					default: break;
 				}
-				else
-					not_well_formed("invalid character reference");
-				break;
-
-			case state_Reference + 4:
-				if (uc >= 'a' and uc <= 'f')
-				{
-					charref = uc - 'a' + 10;
-					state += 1;
-				}
-				else if (uc >= 'A' and uc <= 'F')
-				{
-					charref = uc - 'A' + 10;
-					state += 1;
-				}
-				else if (uc >= '0' and uc <= '9')
-				{
-					charref = uc - '0';
-					state += 1;
-				}
-				else
-					not_well_formed("invalid character reference");
-				break;
-
-			case state_Reference + 5:
-				if (uc >= 'a' and uc <= 'f')
-					charref = (charref << 4) + (uc - 'a' + 10);
-				else if (uc >= 'A' and uc <= 'F')
-					charref = (charref << 4) + (uc - 'A' + 10);
-				else if (uc >= '0' and uc <= '9')
-					charref = (charref << 4) + (uc - '0');
-				else if (uc == ';')
-				{
-					if (not is_referrable_char(charref))
-						not_well_formed("Illegal character in content text");
-					m_token.clear();
-					append(m_token, charref);
-					token = XMLToken::CharRef;
-				}
-				else
-					not_well_formed("invalid character reference");
 				break;
 
 			// ]]> is illegal
@@ -2031,7 +2058,7 @@ void parser_imp::doctypedecl()
 	// if the external subset is defined, include it here.
 	if (dtd.get() != nullptr)
 	{
-		push_data_source(dtd.release(), false);
+		push_data_source(std::move(dtd), false);
 
 		m_external_subset = true;
 		m_in_external_dtd = true;
@@ -2079,7 +2106,7 @@ void parser_imp::pereference()
 {
 	const doctype::entity &e = get_parameter_entity(m_token);
 
-	push_data_source(new parameter_entity_data_source(e.get_replacement(), e.get_path()), true);
+	push_data_source(std::make_unique<parameter_entity_data_source>(e.get_replacement(), e.get_path()), true);
 
 	match(XMLToken::PEReference);
 }
@@ -2131,7 +2158,7 @@ void parser_imp::declsep()
 
 			match(XMLToken::PEReference);
 
-			push_data_source(new parameter_entity_data_source(e.get_replacement(), e.get_path()), false);
+			push_data_source(std::make_unique<parameter_entity_data_source>(e.get_replacement(), e.get_path()), false);
 
 			m_lookahead = get_next_token();
 			extsubset();
@@ -2835,8 +2862,7 @@ void parser_imp::attlist_decl()
 
 				s(true);
 
-				std::string token_value = m_token;
-				normalize_attribute_value(token_value, attribute->get_type() == doctype::attribute_type::CDATA);
+				std::string token_value = normalize_attribute_value(m_token, attribute->get_type() == doctype::attribute_type::CDATA);
 				if (not token_value.empty() and not attribute->validate_value(token_value, m_general_entities))
 				{
 					not_valid(std::format("default value '{}' for attribute '{}' is not valid", token_value, name));
@@ -2855,9 +2881,10 @@ void parser_imp::attlist_decl()
 				if (m_standalone)
 					not_valid("Document cannot be standalone since there is a default value for an attribute");
 
-				std::string token_value = m_token;
-				normalize_attribute_value(token_value, attribute->get_type() == doctype::attribute_type::CDATA);
-				collapse_spaces(token_value);
+				std::string token_value = normalize_attribute_value(m_token, attribute->get_type() == doctype::attribute_type::CDATA);
+				if (attribute->get_type() != doctype::attribute_type::CDATA)
+					collapse_spaces(token_value);
+
 				if (not token_value.empty() and not attribute->validate_value(token_value, m_general_entities))
 				{
 					not_valid(std::format("default value '{}' for attribute '{}' is not valid", token_value, name));
@@ -2960,7 +2987,7 @@ data_source *parser_imp::get_data_source(std::string_view pubid, std::string uri
 	auto is = m_parser.external_entity_ref(m_source.top()->base(), pubid, uri);
 	if (is != nullptr)
 	{
-		result = new istream_data_source(is.release());
+		result = new istream_data_source(std::move(is));
 
 		std::string::size_type s = uri.rfind('/');
 		if (s == std::string::npos)
@@ -3018,7 +3045,7 @@ std::tuple<std::string, std::string> parser_imp::read_external_id()
 
 	if (data)
 	{
-		push_data_source(data.release(), false);
+		push_data_source(std::move(data), false);
 
 		path = m_source.top()->base();
 
@@ -3049,6 +3076,7 @@ void parser_imp::parse_parameter_entity_declaration(std::string &s)
 
 	int state = 0;
 	char32_t charref = 0;
+	CharRefState crState = CharRefState::start;
 	std::string name;
 	int open = 0;
 
@@ -3097,69 +3125,24 @@ void parser_imp::parse_parameter_entity_declaration(std::string &s)
 				break;
 
 			case 2:
-				if (c == 'x')
-					state = 4;
-				else if (c >= '0' and c <= '9')
+				crState = move_charref(c, charref, crState);
+				switch (crState)
 				{
-					charref = c - '0';
-					state = 3;
-				}
-				else
-					not_well_formed("invalid character reference");
-				break;
+					using enum CharRefState;
+					case invalid:
+						not_well_formed("invalid character reference");
+					case done:
+					{
+						if (not is_referrable_char(charref))
+							not_well_formed("Illegal character reference");
 
-			case 3:
-				if (c >= '0' and c <= '9')
-					charref = charref * 10 + (c - '0');
-				else if (c == ';')
-				{
-					if (not is_referrable_char(charref))
-						not_well_formed("Illegal character referenced: " + to_hex(charref) + '\'');
+						append(result, charref);
 
-					append(result, charref);
-					state = 0;
+						state = 0;
+						crState = CharRefState::start;
+					}
+					default: break;
 				}
-				else
-					not_well_formed("invalid character reference");
-				break;
-
-			case 4:
-				if (c >= 'a' and c <= 'f')
-				{
-					charref = c - 'a' + 10;
-					state = 5;
-				}
-				else if (c >= 'A' and c <= 'F')
-				{
-					charref = c - 'A' + 10;
-					state = 5;
-				}
-				else if (c >= '0' and c <= '9')
-				{
-					charref = c - '0';
-					state = 5;
-				}
-				else
-					not_well_formed("invalid character reference");
-				break;
-
-			case 5:
-				if (c >= 'a' and c <= 'f')
-					charref = (charref << 4) + (c - 'a' + 10);
-				else if (c >= 'A' and c <= 'F')
-					charref = (charref << 4) + (c - 'A' + 10);
-				else if (c >= '0' and c <= '9')
-					charref = (charref << 4) + (c - '0');
-				else if (c == ';')
-				{
-					if (not is_referrable_char(charref))
-						not_well_formed("Illegal character referenced: '" + to_hex(charref) + '\'');
-
-					append(result, charref);
-					state = 0;
-				}
-				else
-					not_well_formed("invalid character reference");
 				break;
 
 			case 20:
@@ -3198,6 +3181,7 @@ void parser_imp::parse_general_entity_declaration(std::string &s)
 
 	int state = 0;
 	char32_t charref = 0;
+	CharRefState crState = CharRefState::start;
 	std::string name;
 
 	auto sp = s.cbegin();
@@ -3240,69 +3224,24 @@ void parser_imp::parse_general_entity_declaration(std::string &s)
 				break;
 
 			case 2:
-				if (c == 'x')
-					state = 4;
-				else if (c >= '0' and c <= '9')
+				crState = move_charref(c, charref, crState);
+				switch (crState)
 				{
-					charref = c - '0';
-					state = 3;
-				}
-				else
-					not_well_formed("invalid character reference");
-				break;
+					using enum CharRefState;
+					case invalid:
+						not_well_formed("invalid character reference");
+					case done:
+					{
+						if (not is_referrable_char(charref))
+							not_well_formed("Illegal character reference");
 
-			case 3:
-				if (c >= '0' and c <= '9')
-					charref = charref * 10 + (c - '0');
-				else if (c == ';')
-				{
-					if (not is_referrable_char(charref))
-						not_well_formed("Illegal character referenced: '" + to_hex(charref) + '\'');
+						append(result, charref);
 
-					append(result, charref);
-					state = 0;
+						state = 0;
+						crState = CharRefState::start;
+					}
+					default: break;
 				}
-				else
-					not_well_formed("invalid character reference");
-				break;
-
-			case 4:
-				if (c >= 'a' and c <= 'f')
-				{
-					charref = c - 'a' + 10;
-					state = 5;
-				}
-				else if (c >= 'A' and c <= 'F')
-				{
-					charref = c - 'A' + 10;
-					state = 5;
-				}
-				else if (c >= '0' and c <= '9')
-				{
-					charref = c - '0';
-					state = 5;
-				}
-				else
-					not_well_formed("invalid character reference");
-				break;
-
-			case 5:
-				if (c >= 'a' and c <= 'f')
-					charref = (charref << 4) + (c - 'a' + 10);
-				else if (c >= 'A' and c <= 'F')
-					charref = (charref << 4) + (c - 'A' + 10);
-				else if (c >= '0' and c <= '9')
-					charref = (charref << 4) + (c - '0');
-				else if (c == ';')
-				{
-					if (not is_referrable_char(charref))
-						not_well_formed("Illegal character referenced: '" + to_hex(charref) + '\'');
-
-					append(result, charref);
-					state = 0;
-				}
-				else
-					not_well_formed("invalid character reference");
 				break;
 
 			case 10:
@@ -3344,12 +3283,28 @@ void parser_imp::parse_general_entity_declaration(std::string &s)
 
 	swap(s, result);
 }
+std::string parser_imp::normalize_attribute_value(const std::string &s, bool isCDATA)
+{
+	push_data_source(std::make_unique<string_data_source>(s), false);
+
+	std::string result = normalize_attribute_value();
+
+	if (m_standalone and result != s)
+		not_valid("Document cannot be standalone since an attribute was modified");
+
+	if (not isCDATA)
+		collapse_spaces(result);
+
+	return result;
+}
 
 std::string parser_imp::normalize_attribute_value()
 {
 	std::string result;
 
 	char32_t charref = 0;
+	CharRefState crState = CharRefState::start;
+
 	std::string name;
 
 	enum State
@@ -3364,149 +3319,112 @@ std::string parser_imp::normalize_attribute_value()
 
 	} state = state_Start;
 
-	for (;;)
+	try
 	{
-		char32_t c = get_next_char();
-
-		if (c == 0)
-			break;
-
-		if (c == '<')
-			not_well_formed("Attribute values may not contain '<' character");
-
-		switch (state)
+		for (;;)
 		{
-			case state_Start:
-				if (c == ' ' or c == '\t' or c == '\r' or c == '\n')
-					result += ' ';
-				else if (c == '&')
-					state = state_ReferenceStart;
-				else
-					append(result, c);
+			char32_t c = get_next_char();
+
+			if (c == 0)
 				break;
 
-			case state_ReferenceStart:
-				if (c == '#')
-					state = state_CharReferenceStart;
-				else if (is_name_start_char(c))
-				{
-					name.clear();
-					append(name, c);
-					state = state_EntityReference;
-				}
-				else
-					not_well_formed("invalid reference found in attribute value");
-				break;
+			if (c == '<')
+				not_well_formed("Attribute values may not contain '<' character");
 
-			case state_CharReferenceStart:
-				if (c == 'x')
-					state = state_HexCharReference;
-				else if (c >= '0' and c <= '9')
-				{
-					charref = c - '0';
-					state = state_DecCharReference;
-				}
-				else
-					not_well_formed("invalid character reference");
-				break;
+			switch (state)
+			{
+				case state_Start:
+					if (c == ' ' or c == '\t' or c == '\r' or c == '\n')
+						result += ' ';
+					else if (c == '&')
+						state = state_ReferenceStart;
+					else
+						append(result, c);
+					break;
 
-			case state_DecCharReference:
-				if (c >= '0' and c <= '9')
-					charref = charref * 10 + (c - '0');
-				else if (c == ';')
-				{
-					if (not is_referrable_char(charref))
-						not_well_formed("Illegal character referenced: '" + to_hex(charref) + '\'');
+				case state_ReferenceStart:
+					if (c == '#')
+						state = state_CharReferenceStart;
+					else if (is_name_start_char(c))
+					{
+						name.clear();
+						append(name, c);
+						state = state_EntityReference;
+					}
+					else
+						not_well_formed("invalid reference found in attribute value");
+					break;
 
-					append(result, charref);
-					state = state_Start;
-				}
-				else
-					not_well_formed("invalid character reference");
-				break;
+				case state_CharReferenceStart:
+					crState = move_charref(c, charref, crState);
+					switch (crState)
+					{
+						using enum CharRefState;
+						case invalid:
+							not_well_formed("invalid character reference");
+						case done:
+						{
+							if (not is_referrable_char(charref))
+								not_well_formed("Illegal character reference");
 
-			case state_HexCharReference:
-				if (c >= 'a' and c <= 'f')
-				{
-					charref = c - 'a' + 10;
-					state = state_HexCharReference2;
-				}
-				else if (c >= 'A' and c <= 'F')
-				{
-					charref = c - 'A' + 10;
-					state = state_HexCharReference2;
-				}
-				else if (c >= '0' and c <= '9')
-				{
-					charref = c - '0';
-					state = state_HexCharReference2;
-				}
-				else
-					not_well_formed("invalid character reference");
-				break;
+							append(result, charref);
 
-			case state_HexCharReference2:
-				if (c >= 'a' and c <= 'f')
-					charref = (charref << 4) + (c - 'a' + 10);
-				else if (c >= 'A' and c <= 'F')
-					charref = (charref << 4) + (c - 'A' + 10);
-				else if (c >= '0' and c <= '9')
-					charref = (charref << 4) + (c - '0');
-				else if (c == ';')
-				{
-					if (not is_referrable_char(charref))
-						not_well_formed("Illegal character referenced: '" + to_hex(charref) + '\'');
+							state = state_Start;
+							crState = CharRefState::start;
+						}
+						default: break;
+					}
+					break;
 
-					append(result, charref);
-					state = state_Start;
-				}
-				else
-					not_well_formed("invalid character reference");
-				break;
+				case state_EntityReference:
+					if (c == ';')
+					{
+						if (std::ranges::find(m_entities_on_stack, name) != m_entities_on_stack.end())
+							not_well_formed("infinite recursion in nested entity references");
 
-			case state_EntityReference:
-				if (c == ';')
-				{
-					if (std::ranges::find(m_entities_on_stack, name) != m_entities_on_stack.end())
-						not_well_formed("infinite recursion in nested entity references");
+						m_entities_on_stack.push_back(name);
 
-					m_entities_on_stack.push_back(name);
+						const doctype::entity &e = get_general_entity(name);
 
-					const doctype::entity &e = get_general_entity(name);
+						if (e.is_external())
+							not_well_formed("attribute value may not contain external entity reference");
 
-					if (e.is_external())
-						not_well_formed("attribute value may not contain external entity reference");
+						if (e.is_externally_defined() and m_standalone)
+							not_well_formed("document marked as standalone but an external entity is referenced");
 
-					if (e.is_externally_defined() and m_standalone)
-						not_well_formed("document marked as standalone but an external entity is referenced");
+						push_data_source(std::make_unique<entity_data_source>(e.get_replacement(), m_source.top()->base()), false);
 
-					push_data_source(new entity_data_source(e.get_replacement(), m_source.top()->base()), false);
+						std::string replacement = normalize_attribute_value();
+						result += replacement;
 
-					std::string replacement = normalize_attribute_value();
-					result += replacement;
+						state = state_Start;
 
-					state = state_Start;
+						m_entities_on_stack.pop_back();
+					}
+					else if (is_name_char(c))
+						append(name, c);
+					else
+						not_well_formed("invalid entity reference");
+					break;
 
-					m_entities_on_stack.pop_back();
-				}
-				else if (is_name_char(c))
-					append(name, c);
-				else
-					not_well_formed("invalid entity reference");
-				break;
-
-			default:
-				assert(false);
-				not_well_formed("invalid state");
+				default:
+					assert(false);
+					not_well_formed("invalid state");
+			}
 		}
+
+		if (state != state_Start)
+			not_well_formed("invalid reference");
+
+		m_source.pop();
+
+		return result;
 	}
-
-	if (state != state_Start)
-		not_well_formed("invalid reference");
-
-	m_source.pop();
-
-	return result;
+	catch (...)
+	{
+		m_source.pop();
+		throw;
+	}
 }
 
 void parser_imp::collapse_spaces(std::string &s)
@@ -3892,13 +3810,16 @@ void parser_imp::content(doctype::validator &valid)
 
 				const doctype::entity &e = get_general_entity(m_token);
 
+				if (&e == &s_invalid_entity)
+					not_well_formed("undefined ENTITY " + m_token);
+
 				if (e.is_externally_defined() and m_standalone)
 					not_well_formed("document marked as standalone but an external entity is referenced");
 
 				if (not e.is_parsed())
 					not_well_formed("content has a general entity reference to an unparsed entity");
 
-				push_data_source(new entity_data_source(e.get_replacement(), m_source.top()->base()), false);
+				push_data_source(std::make_unique<entity_data_source>(e.get_replacement(), m_source.top()->base()), false);
 
 				m_lookahead = get_next_content();
 
@@ -4121,10 +4042,17 @@ parser::parser(std::istream &data)
 {
 }
 
-parser::~parser()
+parser::~parser() = default;
+
+parser::parser(parser &&rhs) noexcept
+	: m_impl(std::move(rhs.m_impl))
 {
-	delete m_impl;
-	delete m_istream;
+}
+
+parser &parser::operator=(parser &&rhs) noexcept
+{
+	std::swap(m_impl, rhs.m_impl);
+	return *this;
 }
 
 void parser::parse(bool validate, bool validate_ns)

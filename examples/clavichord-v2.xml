@@ -1,4 +1,11 @@
 <?xml version="1.1" encoding="UTF-8"?>
+
+<!--
+SPDX-FileCopyrightText: 2026 Maarten L. Hekkelman
+
+SPDX-License-Identifier: CC0-1.0
+-->
+
 <!DOCTYPE data SYSTEM "clavichord-stringing.dtd">
 <data>
   <naam>Zweed klavechord, versie 2</naam>

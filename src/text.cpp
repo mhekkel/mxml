@@ -1,34 +1,12 @@
-/*-
- * SPDX-License-Identifier: BSD-2-Clause
- *
- * Copyright (c) 2024 Maarten L. Hekkelman
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *
- * 1. Redistributions of source code must retain the above copyright notice, this
- *    list of conditions and the following disclaimer
- * 2. Redistributions in binary form must reproduce the above copyright notice,
- *    this list of conditions and the following disclaimer in the documentation
- *    and/or other materials provided with the distribution.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
- * ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- */
+// Copyright (c) 2024-2026 Maarten L. Hekkelman
+// SPDX-License-Identifier: BSD-2-Clause
 
-#include "zeem/text.hpp"
-#include "zeem/error.hpp"
+#ifndef ZEEM_CXX_MODULE
+# include "zeem/zeem.hpp"
 
-#include <string>
-#include <string_view>
+# include <string>
+# include <string_view>
+#endif
 
 namespace zeem
 {
@@ -153,27 +131,21 @@ void append(std::string &s, char32_t uc)
 		s += (static_cast<char>(uc));
 	else if (uc < 0x0800)
 	{
-		s.insert(s.end(), {
-			static_cast<char>(0x0c0U | (uc >> 6U)),
-			static_cast<char>(0x080U | (uc & 0x3fU))
-		});
+		s.insert(s.end(), { static_cast<char>(0x0c0U | (uc >> 6U)),
+							  static_cast<char>(0x080U | (uc & 0x3fU)) });
 	}
 	else if (uc < 0x00010000U)
 	{
-		s.insert(s.end(), {
-			static_cast<char>(0x0e0U | (uc >> 12U)),
-			static_cast<char>(0x080U | ((uc >> 6U) & 0x3fU)),
-			static_cast<char>(0x080U | (uc & 0x3fU))
-		});
+		s.insert(s.end(), { static_cast<char>(0x0e0U | (uc >> 12U)),
+							  static_cast<char>(0x080U | ((uc >> 6U) & 0x3fU)),
+							  static_cast<char>(0x080U | (uc & 0x3fU)) });
 	}
-	else
+	else if (uc < 0x00110000)
 	{
-		s.insert(s.end(), {
-			static_cast<char>(0x0f0U | (uc >> 18U)),
-			static_cast<char>(0x080U | ((uc >> 12U) & 0x3fU)),
-			static_cast<char>(0x080U | ((uc >> 6U) & 0x3fU)),
-			static_cast<char>(0x080U | (uc & 0x3fU))
-		});
+		s.insert(s.end(), { static_cast<char>(0x0f0U | (uc >> 18U)),
+							  static_cast<char>(0x080U | ((uc >> 12U) & 0x3fU)),
+							  static_cast<char>(0x080U | ((uc >> 6U) & 0x3fU)),
+							  static_cast<char>(0x080U | (uc & 0x3fU)) });
 	}
 }
 
@@ -220,59 +192,59 @@ char32_t pop_back_char(std::string &s)
 /// \brief return the first unicode and the advanced pointer from a string
 char32_t pop_front_char(std::string_view::const_iterator &ptr, std::string_view::const_iterator end)
 {
-	char32_t result = static_cast<unsigned char>(*ptr);
-	++ptr;
-
-	if (result > 0x07f)
+	auto get_char = [&]
 	{
-		unsigned char ch[3];
+		if (ptr == end)
+			throw zeem::exception("invalid utf-8 character, truncated?");
+		return static_cast<unsigned char>(*ptr++);
+	};
 
-		if ((result & 0x0E0U) == 0x0C0U)
+	char32_t result = get_char();
+
+	if (result & 0x080)
+	{
+		char8_t ch[3];
+
+		if ((result & 0x0E0) == 0x0C0)
 		{
-			if (ptr >= end)
+			ch[0] = get_char();
+			if ((ch[0] & 0x0c0) != 0x080)
 				throw zeem::exception("Invalid utf-8");
+			result = ((result & 0x01F) << 6) | (ch[0] & 0x03F);
 
-			ch[0] = static_cast<unsigned char>(*ptr);
-			++ptr;
-
-			if ((ch[0] & 0x0c0U) != 0x080U)
-				throw zeem::exception("Invalid utf-8");
-
-			result = ((result & 0x01FU) << 6) | (ch[0] & 0x03FU);
+			if (result < 0x0080)
+				throw zeem::exception("invalid utf-8 character (overlong)");
 		}
-		else if ((result & 0x0F0U) == 0x0E0U)
+		else if ((result & 0x0F0) == 0x0E0)
 		{
-			if (ptr + 1 >= end)
+			ch[0] = get_char();
+			ch[1] = get_char();
+			if ((ch[0] & 0x0c0) != 0x080 or (ch[1] & 0x0c0) != 0x080)
 				throw zeem::exception("Invalid utf-8");
+			result = ((result & 0x00F) << 12) | ((ch[0] & 0x03F) << 6) | (ch[1] & 0x03F);
 
-			ch[0] = static_cast<unsigned char>(*ptr);
-			++ptr;
-			ch[1] = static_cast<unsigned char>(*ptr);
-			++ptr;
-
-			if ((ch[0] & 0x0c0U) != 0x080U or (ch[1] & 0x0c0U) != 0x080U)
-				throw zeem::exception("Invalid utf-8");
-
-			result = ((result & 0x00FU) << 12) | ((ch[0] & 0x03FU) << 6) | (ch[1] & 0x03FU);
+			if (result < 0x0800)
+				throw zeem::exception("invalid utf-8 character (overlong)");
 		}
-		else if ((result & 0x0F8U) == 0x0F0U)
+		else if ((result & 0x0F8) == 0x0F0)
 		{
-			if (ptr + 2 >= end)
+			ch[0] = get_char();
+			ch[1] = get_char();
+			ch[2] = get_char();
+			if ((ch[0] & 0x0c0) != 0x080 or (ch[1] & 0x0c0) != 0x080 or (ch[2] & 0x0c0) != 0x080)
 				throw zeem::exception("Invalid utf-8");
+			result = ((result & 0x007) << 18) | ((ch[0] & 0x03F) << 12) | ((ch[1] & 0x03F) << 6) | (ch[2] & 0x03F);
 
-			ch[0] = static_cast<unsigned char>(*ptr);
-			++ptr;
-			ch[1] = static_cast<unsigned char>(*ptr);
-			++ptr;
-			ch[2] = static_cast<unsigned char>(*ptr);
-			++ptr;
+			if (result < 0x010000)
+				throw zeem::exception("invalid utf-8 character (overlong)");
 
-			if ((ch[0] & 0x0c0U) != 0x080U or (ch[1] & 0x0c0U) != 0x080U or (ch[2] & 0x0c0U) != 0x080U)
-				throw zeem::exception("Invalid utf-8");
-
-			result = ((result & 0x007U) << 18) | ((ch[0] & 0x03FU) << 12) | ((ch[1] & 0x03FU) << 6) | (ch[2] & 0x03FU);
+			if (result > 0x10ffff)
+				throw zeem::exception("invalid utf-8 character (out of range)");
 		}
 	}
+
+	if (result >= 0x0D800 and result <= 0x0DFFF)
+		throw zeem::exception("invalid utf-8 character, surrogate");
 
 	return result;
 }

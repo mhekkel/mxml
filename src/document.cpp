@@ -1,44 +1,18 @@
-/*-
- * SPDX-License-Identifier: BSD-2-Clause
- *
- * Copyright (c) 2024 Maarten L. Hekkelman
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *
- * 1. Redistributions of source code must retain the above copyright notice, this
- *    list of conditions and the following disclaimer
- * 2. Redistributions in binary form must reproduce the above copyright notice,
- *    this list of conditions and the following disclaimer in the documentation
- *    and/or other materials provided with the distribution.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
- * ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- */
+// Copyright (c) 2024-2026 Maarten L. Hekkelman
+// SPDX-License-Identifier: BSD-2-Clause
 
-#include "zeem/document.hpp"
+#ifndef ZEEM_CXX_MODULE
+# include "zeem/zeem.hpp"
 
-#include "zeem/error.hpp"
-#include "zeem/node.hpp"
-#include "zeem/parser.hpp"
-
-#include <algorithm>
-#include <cassert>
-#include <fstream>
-#include <functional>
-#include <memory>
-#include <ranges>
-#include <streambuf>
-#include <string_view>
-#include <tuple>
+# include <cassert>
+# include <fstream>
+# include <functional>
+# include <memory>
+# include <ranges>
+# include <string_view>
+# include <tuple>
+# include <utility>
+#endif
 
 namespace zeem
 {
@@ -73,7 +47,7 @@ document::document(std::string_view s)
 {
 	struct membuf : public std::streambuf
 	{
-		membuf(char *text, size_t length)
+		membuf(char *text, std::size_t length)
 		{
 			this->setg(text, text, text + length);
 		}
@@ -151,7 +125,7 @@ void document::set_version(version_type v)
 bool document::is_html5() const
 {
 	return m_doctype.m_root == "html" and
-	       (not empty() and front().name() == "html") and
+	       (not empty() and front().get_local_name() == "html") and
 	       m_doctype.m_pubid == "" and
 	       m_doctype.m_dtd == "about:legacy-compat";
 }
@@ -244,14 +218,11 @@ void document::write(std::ostream &os, format_info fmt) const
 
 // --------------------------------------------------------------------
 
-node *document::insert_impl(const node *p, node *n)
+node *document::insert_impl(const node *p, std::unique_ptr<node> n)
 {
 	if (child() != nullptr)
-	{
-		delete n;
 		throw exception("Only one child element is allowed in a document");
-	}
-	return element_container::insert_impl(p, n);
+	return element_container::insert_impl(p, std::move(n));
 }
 
 // --------------------------------------------------------------------
@@ -415,7 +386,7 @@ std::unique_ptr<std::istream> document::external_entity_ref(std::string_view bas
 			file->open(m_dtd_dir + '/' + path, std::ios::binary);
 
 		if (file->is_open())
-			result.reset(file.release());
+			result = std::move(file);
 	}
 
 	return result;
@@ -497,14 +468,14 @@ std::string document::str() const
 namespace literals
 {
 
-	document operator""_xml(const char *text, size_t length)
+	document operator""_xml(const char *text, std::size_t length)
 	{
 		zeem::document doc;
 		doc.set_preserve_cdata(true);
 
 		struct membuf : public std::streambuf
 		{
-			membuf(char *text, size_t length)
+			membuf(char *text, std::size_t length)
 			{
 				this->setg(text, text, text + length);
 			}

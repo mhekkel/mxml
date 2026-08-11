@@ -1,46 +1,20 @@
-/*-
- * SPDX-License-Identifier: BSD-2-Clause
- *
- * Copyright (c) 2024 Maarten L. Hekkelman
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *
- * 1. Redistributions of source code must retain the above copyright notice, this
- *    list of conditions and the following disclaimer
- * 2. Redistributions in binary form must reproduce the above copyright notice,
- *    this list of conditions and the following disclaimer in the documentation
- *    and/or other materials provided with the distribution.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
- * ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- */
+// Copyright (c) 2024-2026 Maarten L. Hekkelman
+// SPDX-License-Identifier: BSD-2-Clause
 
-#include "zeem/node.hpp"
+#ifndef ZEEM_CXX_MODULE
+# include "zeem/zeem.hpp"
 
-#include "zeem/error.hpp"
-#include "zeem/text.hpp"
-#include "zeem/version.hpp"
-#include "zeem/xpath.hpp"
-
-#include <cassert>
-#include <exception>
-#include <initializer_list>
-#include <iostream>
-#include <map>
-#include <set>
-#include <stack>
-#include <string>
-#include <string_view>
-#include <tuple>
+# include <cassert>
+# include <exception>
+# include <initializer_list>
+# include <iostream>
+# include <map>
+# include <set>
+# include <stack>
+# include <string>
+# include <string_view>
+# include <tuple>
+#endif
 
 namespace zeem
 {
@@ -55,7 +29,6 @@ struct my_set : std::set<std::string>
 	catch (...)
 	{
 		std::clog << "Error initializing set of html elements\n";
-		std::terminate();
 	}
 };
 
@@ -71,7 +44,7 @@ void write_string(std::ostream &os, std::string_view s, bool escape_whitespace, 
 
 	auto sp = s.cbegin();
 	auto se = s.cend();
-	
+
 	while (sp < se)
 	{
 		auto sb = sp;
@@ -175,7 +148,7 @@ std::string node::get_qname() const
 	return "";
 }
 
-std::string node::name() const
+std::string node::get_local_name() const
 {
 	std::string qn = get_qname();
 	std::string::size_type s = qn.find(':');
@@ -279,26 +252,26 @@ void basic_node_list::clear()
 	}
 }
 
-node *basic_node_list::insert_impl(const node *p, node *n)
+node *basic_node_list::insert_impl(const node *p, std::unique_ptr<node> n)
 {
 	assert(n != nullptr);
-	assert(n->next() == n);
-	assert(n->prev() == n);
+	assert(n->next() == n.get());
+	assert(n->prev() == n.get());
 
 	if (n == nullptr)
 		throw exception("Invalid pointer passed to insert");
 
-	if (n->parent() != nullptr or n->next() != n or n->prev() != n)
+	if (n->parent() != nullptr or n->next() != n.get() or n->prev() != n.get())
 		throw exception("attempt to add a node that already has a parent or siblings");
 
 	n->parent(m_header->m_parent);
 
-	n->prev(p->prev());
-	n->prev()->next(n);
-	n->next(p);
-	n->next()->prev(n);
+	n->prev(const_cast<node *>(p->prev()));
+	n->prev()->next(n.get());
+	n->next(const_cast<node *>(p));
+	n->next()->prev(n.get());
 
-	return n;
+	return n.release();
 }
 
 node *basic_node_list::erase_impl(node *n)
@@ -463,21 +436,36 @@ void element_container::write(std::ostream & /* os */, format_info /* fmt */) co
 {
 }
 
-element_set element_container::find(std::string_view path) const
+std::vector<element *> element_container::find(const xpath &path, const context &ctxt) const
 {
-	return xpath(path).evaluate<element>(*this);
+	return path.evaluate<element>(*this, ctxt);
 }
 
-element_container::iterator element_container::find_first(std::string_view path)
+element_container::iterator element_container::find_first(const xpath &path, const context &ctxt)
 {
-	element_set s = xpath(path).evaluate<element>(*this);
+	std::vector<element *> s = path.evaluate<element>(*this, ctxt);
 
 	return s.empty() ? end() : iterator(s.front());
 }
 
+element_container::const_iterator element_container::find_first(const xpath &path, const context &ctxt) const
+{
+	return const_cast<element_container *>(this)->find_first(path, ctxt);
+}
+
+std::vector<element *> element_container::find(std::string_view path) const
+{
+	return find(xpath{ path }, context{});
+}
+
+element_container::iterator element_container::find_first(std::string_view path)
+{
+	return find_first(xpath{ path }, context{});
+}
+
 element_container::const_iterator element_container::find_first(std::string_view path) const
 {
-	return const_cast<element_container *>(this)->find_first(path);
+	return find_first(xpath{ path }, context{});
 }
 
 // --------------------------------------------------------------------
@@ -536,7 +524,7 @@ bool element::equals(const node *n) const
 	{
 		const auto *e = static_cast<const element *>(n);
 
-		result = name() == e->name() and get_ns() == e->get_ns();
+		result = get_local_name() == e->get_local_name() and get_ns() == e->get_ns();
 
 		auto na = nodes();
 		auto nb = e->nodes();
@@ -641,10 +629,13 @@ void element::set_content(std::string s)
 {
 	// remove all existing text nodes (including cdata ones)
 	auto nn = nodes();
-	for (auto n = nn.begin(); n != nn.end(); ++n)
+	auto n = nn.begin();
+	while (n != nn.end())
 	{
 		if (n->type() == node_type::text or n->type() == node_type::cdata)
 			n = nn.erase(n);
+		else
+			++n;
 	}
 
 	// and add a new text node with the content
@@ -655,10 +646,10 @@ void element::add_text(std::string s)
 {
 	auto nn = nodes();
 
-	if (nn.back().type() == node_type::text)
-		static_cast<text &>(nn.back()).append(s);
-	else
+	if (nn.empty() or nn.back().type() != node_type::text)
 		nn.emplace_back(text(std::move(s)));
+	else
+		static_cast<text &>(nn.back()).append(s);
 }
 
 void element::set_text(std::string s)
@@ -695,7 +686,7 @@ std::string element::namespace_for_prefix(std::string_view prefix) const
 		if (not a.is_namespace())
 			continue;
 
-		if (a.name() == "xmlns")
+		if (a.get_local_name() == "xmlns")
 		{
 			if (prefix.empty())
 			{
@@ -705,7 +696,7 @@ std::string element::namespace_for_prefix(std::string_view prefix) const
 			continue;
 		}
 
-		if (a.name() == prefix)
+		if (a.get_local_name() == prefix)
 		{
 			result = a.value();
 			break;
@@ -773,7 +764,7 @@ void element::move_to_name_space(const std::string &prefix, std::string_view uri
 			m_attributes.emplace(prefix.empty() ? "xmlns" : "xmlns:" + prefix, uri);
 	}
 
-	set_qname(prefix, name());
+	set_qname(prefix, get_local_name());
 
 	if (including_attributes)
 	{
@@ -797,13 +788,13 @@ void element::move_to_name_space(const std::string &prefix, std::string_view uri
 			auto ns = attr.get_ns();
 
 			if (ns.empty())
-				attr.set_qname(prefix, attr.name());
+				attr.set_qname(prefix, attr.get_local_name());
 			else
 			{
 				auto nsp = prefix_for_namespace(ns);
 				if (not nsp.second)
 					throw exception("Cannot move element to new namespace, namespace not found: " + ns);
-				attr.set_qname(nsp.first, attr.name());
+				attr.set_qname(nsp.first, attr.get_local_name());
 			}
 		}
 	}
@@ -818,7 +809,7 @@ void element::move_to_name_space(const std::string &prefix, std::string_view uri
 void element::write(std::ostream &os, format_info fmt) const
 {
 	// if width is set, we wrap and indent the file
-	size_t indentation = fmt.indent_level * fmt.indent_width;
+	std::size_t indentation = fmt.indent_level * fmt.indent_width;
 
 	if (fmt.indent)
 	{
@@ -901,7 +892,7 @@ void fix_namespaces(element &e, const element &source, const element &dest)
 			if (mapped.count(p))
 			{
 				if (mapped[p] != p)
-					n->set_qname(mapped[p], n->name());
+					n->set_qname(mapped[p], n->get_local_name());
 			}
 			else
 			{
@@ -913,7 +904,7 @@ void fix_namespaces(element &e, const element &source, const element &dest)
 				if (dp.second)
 				{
 					mapped[p] = dp.first;
-					n->set_qname(dp.first, n->name());
+					n->set_qname(dp.first, n->get_local_name());
 				}
 				else
 				{

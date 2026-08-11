@@ -1,56 +1,93 @@
-/*-
- * SPDX-License-Identifier: BSD-2-Clause
- *
- * Copyright (c) 2024 Maarten L. Hekkelman
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *
- * 1. Redistributions of source code must retain the above copyright notice, this
- *    list of conditions and the following disclaimer
- * 2. Redistributions in binary form must reproduce the above copyright notice,
- *    this list of conditions and the following disclaimer in the documentation
- *    and/or other materials provided with the distribution.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
- * ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- */
+// Copyright (c) 2024-2026 Maarten L. Hekkelman
+// SPDX-License-Identifier: BSD-2-Clause
 
-#include "zeem/xpath.hpp"
+#include <stdexcept>
+#ifndef ZEEM_CXX_MODULE
+# include "zeem/zeem.hpp"
 
-#include "zeem/detail/charconv.hpp"
-#include "zeem/error.hpp"
-#include "zeem/node.hpp"
-#include "zeem/text.hpp"
-
-#include <algorithm>
-#include <cctype>
-#include <charconv>
-#include <cmath>
-#include <compare>
-#include <cstddef>
-#include <exception>
-#include <functional>
-#include <iterator>
-#include <map>
-#include <memory>
-#include <optional>
-#include <ranges>
-#include <string>
-#include <system_error>
-#include <utility>
-#include <vector>
+# include <algorithm>
+# include <array>
+# include <cctype>
+# include <charconv>
+# include <cmath>
+# include <cstddef>
+# include <exception>
+# include <functional>
+# include <map>
+# include <memory>
+# include <optional>
+# include <string>
+# include <system_error>
+# include <unordered_set>
+# include <utility>
+# include <vector>
+#endif
 
 namespace zeem
 {
+
+// --------------------------------------------------------------------
+
+// using node_set = std::vector<node *>;
+
+struct node_set
+{
+	using iterator = typename std::vector<node *>::iterator;
+	using const_iterator = typename std::vector<node *>::const_iterator;
+
+	node_set() = default;
+
+	node_set(const node_set &rhs) = default;
+
+	node_set(node_set &&rhs) noexcept
+	{
+		swap(*this, rhs);
+	}
+
+	node_set &operator=(node_set sb) noexcept
+	{
+		swap(*this, sb);
+		return *this;
+	}
+
+	void emplace(node *n)
+	{
+		const auto &[_, placed] = m_index.emplace(n);
+		if (placed)
+			m_nodes.emplace_back(n);
+	}
+
+	friend void swap(node_set &a, node_set &b) noexcept
+	{
+		std::swap(a.m_nodes, b.m_nodes);
+		std::swap(a.m_index, b.m_index);
+	}
+
+	[[nodiscard]] constexpr bool empty() const { return m_nodes.empty(); }
+	[[nodiscard]] constexpr auto size() const { return m_nodes.size(); }
+
+	auto begin() const { return m_nodes.begin(); }
+	auto end() const { return m_nodes.end(); }
+
+	auto front() const { return m_nodes.front(); }
+	auto back() const { return m_nodes.back(); }
+
+	constexpr auto operator==(const node_set &sb) const
+	{
+		return m_nodes == sb.m_nodes;
+	}
+
+	constexpr auto operator<=>(const node_set &sb) const
+	{
+		return m_nodes <=> sb.m_nodes;
+	}
+
+	std::vector<node *> nodes() const { return m_nodes; }
+
+  private:
+	std::vector<node *> m_nodes;
+	std::unordered_set<node *> m_index;
+};
 
 // --------------------------------------------------------------------
 
@@ -73,7 +110,7 @@ enum class Token
 
 	OperatorUnion,
 	OperatorAdd,
-	OperatorSubstract,
+	OperatorSubtract,
 	OperatorEqual,
 	OperatorNotEqual,
 	OperatorLess,
@@ -113,21 +150,22 @@ enum class AxisType
 	AxisTypeCount
 };
 
-const char *kAxisNames[static_cast<size_t>(AxisType::AxisTypeCount)] = {
-	"ancestor",
-	"ancestor-or-self",
-	"attribute",
-	"child",
-	"descendant",
-	"descendant-or-self",
-	"following",
-	"following-sibling",
-	"namespace",
-	"parent",
-	"preceding",
-	"preceding-sibling",
-	"self"
-};
+const std::array<const char *, static_cast<std::size_t>(AxisType::AxisTypeCount)>
+	kAxisNames{
+		"ancestor",
+		"ancestor-or-self",
+		"attribute",
+		"child",
+		"descendant",
+		"descendant-or-self",
+		"following",
+		"following-sibling",
+		"namespace",
+		"parent",
+		"preceding",
+		"preceding-sibling",
+		"self"
+	};
 
 enum class CoreFunction
 {
@@ -158,12 +196,11 @@ enum class CoreFunction
 	Floor,
 	Ceiling,
 	Round,
-	Comment,
 
 	CoreFunctionCount
 };
 
-const size_t kCoreFunctionCount = static_cast<size_t>(CoreFunction::CoreFunctionCount);
+const std::size_t kCoreFunctionCount = static_cast<std::size_t>(CoreFunction::CoreFunctionCount);
 
 struct CoreFunctionInfo
 {
@@ -195,13 +232,12 @@ const CoreFunctionInfo kCoreFunctionInfo[kCoreFunctionCount] = {
 	{ "not", 1 },
 	{ "true", 0 },
 	{ "false", 0 },
-	{ "lang", 0 },
+	{ "lang", 1 },
 	{ "number", kOptionalArgument },
-	{ "sum", 0 },
+	{ "sum", 1 },
 	{ "floor", 1 },
 	{ "ceiling", 1 },
 	{ "round", 1 },
-	{ "comment", 1 },
 };
 
 // the expressions are implemented as interpreter objects
@@ -354,7 +390,7 @@ double object::as<double>() const
 			break;
 		}
 		case object_type::boolean: result = m_boolean; break;
-		default: result = 0; break;
+		default: result = std::nan("1"); break;
 	}
 	return result;
 }
@@ -362,9 +398,33 @@ double object::as<double>() const
 template <>
 int object::as<int>() const
 {
-	if (m_type != object_type::number)
-		throw exception("object is not of type number");
-	return static_cast<int>(round(m_number));
+	int result = 0;
+	switch (m_type)
+	{
+		case object_type::number: result = std::ceil(m_number - 0.5); break;
+		case object_type::node_set:
+		{
+			if (not m_node_set.empty())
+			{
+				auto s = m_node_set.front()->str();
+
+				auto r = zeem::from_chars(s.data(), s.data() + s.length(), result);
+				if (r.ec != std::errc{} or r.ptr != s.data() + s.length())
+					throw std::system_error(std::make_error_code(r.ec), "Not an integer");
+			}
+			break;
+		}
+		case object_type::string:
+		{
+			auto r = zeem::from_chars(m_string.data(), m_string.data() + m_string.length(), result);
+			if (r.ec != std::errc{} or r.ptr != m_string.data() + m_string.length())
+				throw std::system_error(std::make_error_code(r.ec), "Not an integer");
+			break;
+		}
+		case object_type::boolean: result = m_boolean; break;
+		default: throw exception("Invalid type for cast to int"); break;
+	}
+	return result;
 }
 
 template <>
@@ -436,20 +496,32 @@ bool object::operator==(const object &o) const
 bool object::operator<(const object &o) const
 {
 	bool result = false;
-	switch (m_type)
+	if (m_type == o.m_type)
 	{
-		case object_type::node_set: result = m_node_set < o.m_node_set; break;
-		case object_type::boolean: result = m_boolean < o.m_boolean; break;
-		case object_type::number: result = m_number < o.m_number; break;
-		case object_type::string: result = m_string < o.m_string; break;
-		default: break;
+		switch (m_type)
+		{
+			case object_type::node_set: result = m_node_set < o.m_node_set; break;
+			case object_type::boolean: result = m_boolean < o.m_boolean; break;
+			case object_type::number: result = m_number < o.m_number; break;
+			case object_type::string: result = m_string < o.m_string; break;
+			default: break;
+		}
+	}
+	else
+	{
+		if (m_type == object_type::number or o.m_type == object_type::number)
+			result = as<double>() < o.as<double>();
+		else if (m_type == object_type::boolean or o.m_type == object_type::boolean)
+			result = as<bool>() < o.as<bool>();
+		else
+			result = as<std::string>() < o.as<std::string>();
 	}
 	return result;
 }
 
 object operator%(const object &lhs, const object &rhs)
 {
-	return lhs.as<double>() + rhs.as<int>();
+	return std::fmod(lhs.as<double>(), rhs.as<double>());
 }
 
 object operator*(const object &lhs, const object &rhs)
@@ -485,16 +557,73 @@ object operator or(const object &lhs, const object &rhs)
 // --------------------------------------------------------------------
 // visiting (or better, collecting) other nodes in the hierarchy is done here.
 
+// template <typename PREDICATE>
+// void iterate_child_elements(element_container *context, node_set &s, bool deep, const PREDICATE &pred)
+// {
+// 	std::stack<element_container *> st;
+// 	st.push(context);
+
+// 	std::unordered_set<node *> result;
+
+// 	while (not st.empty())
+// 	{
+// 		context = st.top();
+// 		st.pop();
+
+// 		for (element &child : *context)
+// 		{
+// 			if (pred(&child))
+// 			{
+// 				const auto &[_, placed] = result.emplace(&child);
+// 				if (not placed)
+// 					continue;
+// 			}
+
+// 			if (deep)
+// 				st.push(&child);
+// 		}
+// 	}
+
+// 	s = node_set{ result.begin(), result.end() };
+// }
+
+// template <typename PREDICATE>
+// void iterate_child_nodes(element_container *context, node_set &s, bool deep, const PREDICATE &pred)
+// {
+// 	std::stack<element_container *> st;
+// 	st.push(context);
+
+// 	std::unordered_set<node *> result;
+
+// 	while (not st.empty())
+// 	{
+// 		context = st.top();
+// 		st.pop();
+
+// 		for (node &child : context->nodes())
+// 		{
+// 			if (pred(&child))
+// 			{
+// 				const auto &[_, placed] = result.emplace(&child);
+// 				if (not placed)
+// 					continue;
+// 			}
+
+// 			if (deep and child.type() == node_type::element)
+// 				st.push(.×static_cast<element_container *>(&child));
+// 		}
+// 	}
+
+// 	s = node_set{ result.begin(), result.end() };
+// }
+
 template <typename PREDICATE>
 void iterate_child_elements(element_container *context, node_set &s, bool deep, const PREDICATE &pred)
 {
 	for (element &child : *context)
 	{
-		if (std::ranges::find(s, &child) != s.end())
-			continue;
-
 		if (pred(&child))
-			s.push_back(&child);
+			s.emplace(&child);
 
 		if (deep)
 			iterate_child_elements(&child, s, true, pred);
@@ -506,11 +635,8 @@ void iterate_child_nodes(element_container *context, node_set &s, bool deep, con
 {
 	for (node &child : context->nodes())
 	{
-		if (std::ranges::find(s, &child) != s.end())
-			continue;
-
 		if (pred(&child))
-			s.push_back(&child);
+			s.emplace(&child);
 
 		if (deep)
 		{
@@ -521,7 +647,7 @@ void iterate_child_nodes(element_container *context, node_set &s, bool deep, con
 }
 
 template <typename PREDICATE>
-inline void iterate_children(element_container *context, node_set &s, bool deep, const PREDICATE &pred, bool elementsOnly)
+void iterate_children(element_container *context, node_set &s, bool deep, const PREDICATE &pred, bool elementsOnly)
 {
 	if (elementsOnly)
 		iterate_child_elements(context, s, deep, pred);
@@ -536,7 +662,7 @@ void iterate_ancestor(element_container *e, node_set &s, const PREDICATE &pred)
 	while (n != nullptr and n->type() != node_type::document)
 	{
 		if (pred(n))
-			s.push_back(n);
+			s.emplace(n);
 		n = n->parent();
 	}
 }
@@ -561,7 +687,7 @@ void iterate_preceding(node *n, node_set &s, bool sibling, const PREDICATE &pred
 			continue;
 
 		if (pred(n))
-			s.push_back(n);
+			s.emplace(n);
 
 		if (sibling == false)
 			iterate_children(static_cast<element *>(n), s, true, pred, elementsOnly);
@@ -588,7 +714,7 @@ void iterate_following(node *n, node_set &s, bool sibling, const PREDICATE &pred
 			continue;
 
 		if (pred(n))
-			s.push_back(n);
+			s.emplace(n);
 
 		if (sibling == false)
 			iterate_children(static_cast<element *>(n), s, true, pred, elementsOnly);
@@ -601,7 +727,7 @@ void iterate_attributes(element *e, node_set &s, const PREDICATE &pred)
 	for (auto &a : e->attributes())
 	{
 		if (pred(&a))
-			s.push_back(&a);
+			s.emplace(&a);
 	}
 }
 
@@ -614,7 +740,7 @@ void iterate_namespaces(element *e, node_set &s, const PREDICATE &pred)
 			continue;
 
 		if (pred(&a))
-			s.push_back(&a);
+			s.emplace(&a);
 	}
 }
 
@@ -660,31 +786,25 @@ struct expression_context : public context_imp_base
 		return m_next.get(std::move(name));
 	}
 
-	[[nodiscard]] size_t position() const;
-	[[nodiscard]] size_t last() const;
+	[[nodiscard]] std::size_t position() const;
+	[[nodiscard]] std::size_t last() const;
 
 	const context_imp_base &m_next;
 	node *m_node;
 	const node_set &m_node_set;
 };
 
-size_t expression_context::position() const
+std::size_t expression_context::position() const
 {
-	size_t result = 0;
-	for (const node *n : m_node_set)
-	{
-		++result;
-		if (n == m_node)
-			break;
-	}
+	auto i = std::ranges::find(m_node_set, m_node);
 
-	if (result == 0)
+	if (i == m_node_set.end())
 		throw exception("invalid context for position");
 
-	return result;
+	return i - m_node_set.begin() + 1;
 }
 
-size_t expression_context::last() const
+std::size_t expression_context::last() const
 {
 	return m_node_set.size();
 }
@@ -698,7 +818,7 @@ class expression
 	virtual object evaluate(expression_context &context) = 0;
 };
 
-using expression_ptr = std::shared_ptr<expression>;
+using expression_ptr = std::unique_ptr<expression>;
 using expression_list = std::vector<expression_ptr>;
 
 // --------------------------------------------------------------------
@@ -734,7 +854,7 @@ object step_expression::evaluate(expression_context &context, const T &pred, boo
 			{
 				auto p = context.m_node->parent();
 				if (p != nullptr and pred(p))
-					result.push_back(p);
+					result.emplace(p);
 				break;
 			}
 
@@ -744,13 +864,13 @@ object step_expression::evaluate(expression_context &context, const T &pred, boo
 
 			case AxisType::AncestorOrSelf:
 				if (pred(context.m_node))
-					result.push_back(context.m_node);
+					result.emplace(context.m_node);
 				iterate_ancestor(context_element, result, pred);
 				break;
 
 			case AxisType::Self:
 				if (pred(context.m_node))
-					result.push_back(context.m_node);
+					result.emplace(context.m_node);
 				break;
 
 			case AxisType::Child:
@@ -763,7 +883,7 @@ object step_expression::evaluate(expression_context &context, const T &pred, boo
 
 			case AxisType::DescendantOrSelf:
 				if (pred(context.m_node))
-					result.push_back(context.m_node);
+					result.emplace(context.m_node);
 				iterate_children(context_element, result, true, pred, elementsOnly);
 				break;
 
@@ -805,14 +925,17 @@ object step_expression::evaluate(expression_context &context, const T &pred, boo
 class name_test_step_expression : public step_expression
 {
   public:
+	name_test_step_expression(AxisType axis, std::string_view ns, std::string_view name)
+		: step_expression(axis)
+		, m_ns(ns)
+		, m_name(name)
+	{
+	}
+
 	name_test_step_expression(AxisType axis, std::string_view name)
 		: step_expression(axis)
 		, m_name(name)
 	{
-		m_test = [this](auto &&PH1)
-		{
-			return name_matches(std::forward<decltype(PH1)>(PH1));
-		};
 	}
 
 	object evaluate(expression_context &context) override;
@@ -820,17 +943,21 @@ class name_test_step_expression : public step_expression
   protected:
 	bool name_matches(const node *n)
 	{
-		bool result = m_name == "*" or n->name() == m_name;
-		return result;
+		if (m_ns == "*")
+			return m_name == "*" or n->get_local_name() == m_name;
+		else if (m_ns.empty())
+			return m_name == "*" or n->get_qname() == m_name;
+		else
+			return n->get_prefix() == m_ns and (m_name == "*" or n->get_local_name() == m_name);
 	}
 
-	std::string m_name;
-	std::function<bool(const node *)> m_test;
+	std::string m_ns, m_name;
 };
 
 object name_test_step_expression::evaluate(expression_context &context)
 {
-	return step_expression::evaluate(context, m_test, true);
+	return step_expression::evaluate(context, [this](const node *n)
+		{ return name_matches(n); }, true);
 }
 
 // --------------------------------------------------------------------
@@ -838,9 +965,10 @@ object name_test_step_expression::evaluate(expression_context &context)
 class node_type_expression : public step_expression
 {
   public:
-	node_type_expression(AxisType axis, node_type test)
+	node_type_expression(AxisType axis, node_type test, std::string target = {})
 		: step_expression(axis)
 		, m_node_type(test)
+		, m_target(std::move(target))
 	{
 	}
 
@@ -857,6 +985,11 @@ class node_type_expression : public step_expression
 		else if (*m_node_type == node_type::text)
 			return step_expression::evaluate(context, [](const node *n)
 				{ return n->type() == node_type::text or n->type() == node_type::cdata; }, false);
+		else if (m_node_type.value() == node_type::processing_instruction)
+			return step_expression::evaluate(context, [target = m_target](const node *n)
+				{
+					auto pi = dynamic_cast<const processing_instruction *>(n);
+					return pi != nullptr and pi->get_target() == target; }, false);
 		else
 			return step_expression::evaluate(context, [t = *m_node_type](const node *n)
 				{ return n->type() == t; }, false);
@@ -864,6 +997,7 @@ class node_type_expression : public step_expression
 
   private:
 	std::optional<node_type> m_node_type;
+	std::string m_target;
 };
 
 // --------------------------------------------------------------------
@@ -877,7 +1011,7 @@ class root_expression : public expression
 object root_expression::evaluate(expression_context &context)
 {
 	node_set result;
-	result.push_back(context.m_node->root());
+	result.emplace(context.m_node->root());
 	return result;
 }
 
@@ -909,7 +1043,7 @@ object operator_expression<Token::OperatorAdd>::evaluate(expression_context &con
 }
 
 template <>
-object operator_expression<Token::OperatorSubstract>::evaluate(expression_context &context)
+object operator_expression<Token::OperatorSubtract>::evaluate(expression_context &context)
 {
 	object v1 = m_lhs->evaluate(context);
 	object v2 = m_rhs->evaluate(context);
@@ -995,7 +1129,7 @@ object operator_expression<Token::OperatorMod>::evaluate(expression_context &con
 	object v1 = m_lhs->evaluate(context);
 	object v2 = m_rhs->evaluate(context);
 
-	return static_cast<double>(v1.as<int>() % v2.as<int>());
+	return std::fmod(v1.as<double>(), v2.as<double>());
 }
 
 template <>
@@ -1068,7 +1202,8 @@ object path_expression::evaluate(expression_context &context)
 
 		node_set s = m_rhs->evaluate(ctxt).as<const node_set &>();
 
-		std::ranges::copy(s, back_inserter(result));
+		for (auto n : s)
+			result.emplace(n);
 	}
 
 	return result;
@@ -1106,10 +1241,10 @@ object predicate_expression::evaluate(expression_context &context)
 		if (test.type() == object_type::number)
 		{
 			if (static_cast<double>(ctxt.position()) == test.as<double>())
-				result.push_back(n);
+				result.emplace(n);
 		}
 		else if (test.as<bool>())
-			result.push_back(n);
+			result.emplace(n);
 	}
 
 	return result;
@@ -1184,8 +1319,8 @@ template <CoreFunction CF>
 class core_function_expression : public expression
 {
   public:
-	explicit core_function_expression(expression_list &arguments)
-		: m_args(arguments)
+	explicit core_function_expression(expression_list arguments)
+		: m_args(std::move(arguments))
 	{
 	}
 
@@ -1217,29 +1352,61 @@ template <>
 object core_function_expression<CoreFunction::Count>::evaluate(expression_context &context)
 {
 	object v = m_args.front()->evaluate(context);
-	size_t result = v.as<const node_set &>().size();
+	std::size_t result = v.as<const node_set &>().size();
 
 	return { static_cast<double>(result) };
+}
+
+// --------------------------------------------------------------------
+/// \brief Simplistic implementation of split, with std:string in the vector
+void split(std::vector<std::string> &v, std::string_view s, std::string_view p)
+{
+	v.clear();
+
+	std::string_view::size_type i = 0;
+	const auto e = s.length();
+
+	while (i <= e)
+	{
+		auto n = s.find_first_of(p, i);
+		if (n > e)
+			n = e;
+
+		if (n > i)
+			v.emplace_back(s.substr(i, n - i));
+
+		i = n + 1;
+	}
 }
 
 template <>
 object core_function_expression<CoreFunction::Id>::evaluate(expression_context &context)
 {
-	node *n = nullptr;
+	node_set result;
 
-	if (m_args.empty())
-		n = context.m_node;
-	else
+	if (not m_args.empty())
 	{
 		object v = m_args.front()->evaluate(context);
-		if (not v.as<const node_set &>().empty())
-			n = v.as<const node_set &>().front();
+
+		std::vector<std::string> ids;
+		if (v.type() == object_type::node_set)
+		{
+			for (const node *n : v.as<const node_set &>())
+				ids.emplace_back(n->str());
+		}
+		else
+			split(ids, v.as<std::string>(), " \t\n\r");
+
+		if (auto en = dynamic_cast<element_container *>(context.m_node); en != nullptr and not ids.empty())
+		{
+			iterate_child_nodes(en, result, true, [&ids](const node *n)
+				{
+					auto e = dynamic_cast<const element *>(n);
+					return e != nullptr and std::ranges::contains(ids, e->id()); });
+		}
 	}
 
-	if (n == nullptr or n->type() != node_type::element)
-		throw exception("argument is not an element in function 'id()'");
-
-	return static_cast<element *>(n)->id();
+	return result;
 }
 
 template <>
@@ -1259,7 +1426,7 @@ object core_function_expression<CoreFunction::LocalName>::evaluate(expression_co
 	if (n == nullptr)
 		throw exception("argument is not an element in function 'local-name'");
 
-	return n->name();
+	return n->get_local_name(); // name() returns the local-name part of the expanded-name of a node
 }
 
 template <>
@@ -1369,17 +1536,10 @@ object core_function_expression<CoreFunction::Contains>::evaluate(expression_con
 	object v1 = m_args.front()->evaluate(context);
 	object v2 = m_args.back()->evaluate(context);
 
-	try
-	{
-		auto s1 = v1.as<std::string>();
-		auto s2 = v2.as<std::string>();
+	auto s1 = v1.as<std::string>();
+	auto s2 = v2.as<std::string>();
 
-		return s1.find(s2) != std::string::npos;
-	}
-	catch (...)
-	{
-		throw exception("expected two strings as argument for contains");
-	}
+	return s1.find(s2) != std::string::npos;
 }
 
 template <>
@@ -1388,22 +1548,15 @@ object core_function_expression<CoreFunction::SubstringBefore>::evaluate(express
 	object v1 = m_args.front()->evaluate(context);
 	object v2 = m_args.back()->evaluate(context);
 
-	try
+	std::string result;
+	if (not v2.as<std::string>().empty())
 	{
-		std::string result;
-		if (not v2.as<std::string>().empty())
-		{
-			std::string::size_type p = v1.as<std::string>().find(v2.as<std::string>());
-			if (p != std::string::npos)
-				result = v1.as<std::string>().substr(0, p);
-		}
+		std::string::size_type p = v1.as<std::string>().find(v2.as<std::string>());
+		if (p != std::string::npos)
+			result = v1.as<std::string>().substr(0, p);
+	}
 
-		return result;
-	}
-	catch (...)
-	{
-		throw exception("expected two strings as argument for substring-before");
-	}
+	return result;
 }
 
 template <>
@@ -1412,24 +1565,17 @@ object core_function_expression<CoreFunction::SubstringAfter>::evaluate(expressi
 	object v1 = m_args.front()->evaluate(context);
 	object v2 = m_args.back()->evaluate(context);
 
-	try
+	std::string result;
+	if (v2.as<std::string>().empty())
+		result = v1.as<std::string>();
+	else
 	{
-		std::string result;
-		if (v2.as<std::string>().empty())
-			result = v1.as<std::string>();
-		else
-		{
-			std::string::size_type p = v1.as<std::string>().find(v2.as<std::string>());
-			if (p != std::string::npos and p + v2.as<std::string>().length() < v1.as<std::string>().length())
-				result = v1.as<std::string>().substr(p + v2.as<std::string>().length());
-		}
+		std::string::size_type p = v1.as<std::string>().find(v2.as<std::string>());
+		if (p != std::string::npos and p + v2.as<std::string>().length() < v1.as<std::string>().length())
+			result = v1.as<std::string>().substr(p + v2.as<std::string>().length());
+	}
 
-		return result;
-	}
-	catch (...)
-	{
-		throw exception("expected two strings as argument for substring-after");
-	}
+	return result;
 }
 
 template <>
@@ -1441,18 +1587,29 @@ object core_function_expression<CoreFunction::Substring>::evaluate(expression_co
 	++a;
 	object v2 = (*a)->evaluate(context);
 	++a;
-	object v3 = (*a)->evaluate(context);
 
-	if (v2.type() != object_type::number or v3.type() != object_type::number)
-		throw exception("expected one string and two numbers as argument for substring");
+	auto s = v1.as<std::string>();
 
-	try
+	int start = v2.as<int>();
+
+	if (m_args.size() == 3)
 	{
-		return v1.as<std::string>().substr(v2.as<int>() - 1, v3.as<int>());
+		object v3 = (*a)->evaluate(context);
+
+		int len = v3.as<int>();
+		if (start < 1)
+		{
+			len += start - 1;
+			start = 1;
+		}
+
+		return s.substr(start - 1, len);
 	}
-	catch (...)
+	else
 	{
-		throw exception("expected one string and two numbers as argument for substring");
+		if (start < 1)
+			start = 1;
+		return s.substr(start - 1, std::string::npos);
 	}
 }
 
@@ -1474,7 +1631,7 @@ object core_function_expression<CoreFunction::NormalizeSpace>::evaluate(expressi
 
 	for (char c : s)
 	{
-		if (isspace(c))
+		if (std::isspace(static_cast<unsigned char>(c)))
 		{
 			if (not space)
 				result += ' ';
@@ -1589,24 +1746,46 @@ object core_function_expression<CoreFunction::Number>::evaluate(expression_conte
 }
 
 template <>
+object core_function_expression<CoreFunction::Sum>::evaluate(expression_context &context)
+{
+	object v = m_args.front()->evaluate(context);
+	double sum = 0;
+	for (auto &n : v.as<const node_set &>())
+	{
+		auto s = n->str();
+		double v;
+		auto [p, e] = from_chars(s.data(), s.data() + s.length(), v);
+		if (e == std::errc{} and p == s.data() + s.length())
+		{
+			sum += v;
+			continue;
+		}
+
+		sum = std::nan("1");
+		break;
+	}
+	return sum;
+}
+
+template <>
 object core_function_expression<CoreFunction::Floor>::evaluate(expression_context &context)
 {
 	object v = m_args.front()->evaluate(context);
-	return floor(v.as<double>());
+	return std::floor(v.as<double>());
 }
 
 template <>
 object core_function_expression<CoreFunction::Ceiling>::evaluate(expression_context &context)
 {
 	object v = m_args.front()->evaluate(context);
-	return ceil(v.as<double>());
+	return std::ceil(v.as<double>());
 }
 
 template <>
 object core_function_expression<CoreFunction::Round>::evaluate(expression_context &context)
 {
 	object v = m_args.front()->evaluate(context);
-	return round(v.as<double>());
+	return std::ceil(v.as<double>() - 0.5);
 }
 
 // --------------------------------------------------------------------
@@ -1637,7 +1816,8 @@ object union_expression::evaluate(expression_context &context)
 	node_set s1 = v1.as<const node_set &>();
 	node_set s2 = v2.as<const node_set &>();
 
-	std::ranges::copy(s2, back_inserter(s1));
+	for (auto n : s2)
+		s1.emplace(n);
 
 	return s1;
 }
@@ -1713,7 +1893,7 @@ expression_ptr xpath_parser::parse(std::string_view path)
 	while (m_lookahead == Token::OperatorUnion)
 	{
 		match(Token::OperatorUnion);
-		result = std::make_shared<union_expression>(result, location_path());
+		result = std::make_unique<union_expression>(std::move(result), location_path());
 	}
 
 	if (m_lookahead != Token::Eof)
@@ -1848,7 +2028,7 @@ std::string xpath_parser::describe_token(Token token)
 		case Token::NodeType: result = "node type specification"; break;
 		case Token::OperatorUnion: result = "union operator"; break;
 		case Token::OperatorAdd: result = "addition operator"; break;
-		case Token::OperatorSubstract: result = "subtraction operator"; break;
+		case Token::OperatorSubtract: result = "subtraction operator"; break;
 		case Token::OperatorEqual: result = "equals operator"; break;
 		case Token::OperatorNotEqual: result = "not-equals operator"; break;
 		case Token::OperatorLess: result = "less operator"; break;
@@ -1918,7 +2098,7 @@ Token xpath_parser::get_next_token()
 					case '/': token = Token::Slash; break;
 					case '|': token = Token::OperatorUnion; break;
 					case '+': token = Token::OperatorAdd; break;
-					case '-': token = Token::OperatorSubstract; break;
+					case '-': token = Token::OperatorSubtract; break;
 					case '=': token = Token::OperatorEqual; break;
 					case '!': state = xps_ExclamationMark; break;
 					case '<': state = xps_LessThan; break;
@@ -2090,17 +2270,15 @@ Token xpath_parser::get_next_token()
 			// look forward and see what's ahead
 			for (std::u32string::const_iterator c = m_next; c != m_end; ++c)
 			{
-				if (isspace(static_cast<int>(*c)))
+				if (std::isspace(static_cast<unsigned char>(*c)))
 					continue;
 
 				if (*c == ':' and *(c + 1) == ':') // it must be an axis specifier
 				{
 					token = Token::AxisSpec;
 
-					const int kAxisNameCount = sizeof(kAxisNames) / sizeof(const char *);
-					const char **a = find(kAxisNames, kAxisNames + kAxisNameCount, m_token_string);
-					if (*a != nullptr)
-						m_token_axis = AxisType(a - kAxisNames);
+					if (auto a = std::ranges::find(kAxisNames, m_token_string); a != kAxisNames.end())
+						m_token_axis = AxisType(a - kAxisNames.begin());
 					else
 						throw exception("invalid axis specification " + m_token_string);
 
@@ -2113,18 +2291,10 @@ Token xpath_parser::get_next_token()
 						m_token_string == "processing-instruction" or m_token_string == "node")
 					{
 						token = Token::NodeType;
-
-						// set input pointer after the parenthesis
-						m_next = c + 1;
-						while (m_next != m_end and isspace(static_cast<int>(*m_next)))
-							++m_next;
-						if (*m_next != ')')
-							throw exception("expected '()' after a node type specifier");
-						++m_next;
 					}
 					else
 					{
-						for (size_t i = 0; i < kCoreFunctionCount; ++i)
+						for (std::size_t i = 0; i < kCoreFunctionCount; ++i)
 						{
 							if (m_token_string == kCoreFunctionInfo[i].name)
 							{
@@ -2157,7 +2327,7 @@ void xpath_parser::match(Token token)
 		std::string found = describe_token(m_lookahead);
 
 		if (m_lookahead != Token::Eof and m_lookahead != Token::Undef)
-			found += " (\"" + m_token_string + "\"";
+			found += " (\"" + m_token_string + "\")";
 
 		std::string expected = describe_token(token);
 
@@ -2177,7 +2347,7 @@ expression_ptr xpath_parser::location_path()
 	expression_ptr result(relative_location_path());
 
 	if (absolute)
-		result = std::make_shared<path_expression>(expression_ptr(new root_expression()), result);
+		result = std::make_unique<path_expression>(expression_ptr(new root_expression()), std::move(result));
 
 	return result;
 }
@@ -2189,7 +2359,7 @@ expression_ptr xpath_parser::relative_location_path()
 	while (m_lookahead == Token::Slash)
 	{
 		match(Token::Slash);
-		result = std::make_shared<path_expression>(result, step());
+		result = std::make_unique<path_expression>(std::move(result), step());
 	}
 
 	return result;
@@ -2211,7 +2381,7 @@ expression_ptr xpath_parser::step()
 	while (m_lookahead == Token::LeftBracket)
 	{
 		match(Token::LeftBracket);
-		result = std::make_shared<predicate_expression>(result, expr());
+		result = std::make_unique<predicate_expression>(std::move(result), expr());
 		match(Token::RightBracket);
 	}
 
@@ -2224,30 +2394,58 @@ expression_ptr xpath_parser::node_test(AxisType axis)
 
 	if (m_lookahead == Token::Asterisk)
 	{
-		result = std::make_shared<name_test_step_expression>(axis, m_token_string);
 		match(Token::Asterisk);
+
+		if (m_lookahead == Token::Colon)
+		{
+			match(Token::Colon);
+			result = std::make_unique<name_test_step_expression>(axis, "*", m_token_string);
+			match(Token::Name);
+		}
+		else
+			result = std::make_unique<name_test_step_expression>(axis, "*");
 	}
 	else if (m_lookahead == Token::NodeType)
 	{
 		std::string name = m_token_string;
 		match(Token::NodeType);
 
-		if (name == "comment")
-			result = std::make_shared<node_type_expression>(axis, node_type::comment);
-		else if (name == "text")
-			result = std::make_shared<node_type_expression>(axis, node_type::text);
-		else if (name == "processing-instruction")
-			result = std::make_shared<node_type_expression>(axis, node_type::processing_instruction);
-		else if (name == "node")
-			result = std::make_shared<node_type_expression>(axis);
+		match(Token::LeftParenthesis);
+		if (name == "processing-instruction")
+		{
+			auto target = m_token_string;
+			match(Token::Literal);
 
+			result = std::make_unique<node_type_expression>(axis, node_type::processing_instruction, target);
+		}
 		else
-			throw exception("invalid node type specified: " + name);
+		{
+			if (name == "comment")
+				result = std::make_unique<node_type_expression>(axis, node_type::comment);
+			else if (name == "text")
+				result = std::make_unique<node_type_expression>(axis, node_type::text);
+			else if (name == "node")
+				result = std::make_unique<node_type_expression>(axis);
+			else
+				throw exception("invalid node type specified: " + name);
+		}
+		match(Token::RightParenthesis);
 	}
+	else if (m_lookahead == Token::FunctionName)
+		result = function_call();
 	else
 	{
-		result = std::make_shared<name_test_step_expression>(axis, m_token_string);
+		auto name = m_token_string;
 		match(Token::Name);
+
+		if (m_lookahead == Token::Colon)
+		{
+			match(Token::Colon);
+			result = std::make_unique<name_test_step_expression>(axis, name, m_token_string);
+			match(Token::Name);
+		}
+		else
+			result = std::make_unique<name_test_step_expression>(axis, name);
 	}
 
 	return result;
@@ -2260,7 +2458,7 @@ expression_ptr xpath_parser::expr()
 	while (m_lookahead == Token::OperatorOr)
 	{
 		match(Token::OperatorOr);
-		result = std::make_shared<operator_expression<Token::OperatorOr>>(result, and_expr());
+		result = std::make_unique<operator_expression<Token::OperatorOr>>(std::move(result), and_expr());
 	}
 
 	return result;
@@ -2273,7 +2471,7 @@ expression_ptr xpath_parser::primary_expr()
 	switch (m_lookahead)
 	{
 		case Token::Variable:
-			result = std::make_shared<variable_expression>(m_token_string.substr(1));
+			result = std::make_unique<variable_expression>(m_token_string.substr(1));
 			match(Token::Variable);
 			break;
 
@@ -2284,12 +2482,12 @@ expression_ptr xpath_parser::primary_expr()
 			break;
 
 		case Token::Literal:
-			result = std::make_shared<literal_expression>(m_token_string);
+			result = std::make_unique<literal_expression>(m_token_string);
 			match(Token::Literal);
 			break;
 
 		case Token::Number:
-			result = std::make_shared<number_expression>(m_token_number);
+			result = std::make_unique<number_expression>(m_token_number);
 			match(Token::Number);
 			break;
 
@@ -2333,7 +2531,7 @@ expression_ptr xpath_parser::function_call()
 	int expected_arg_count = kCoreFunctionInfo[static_cast<int>(function)].arg_count;
 	if (expected_arg_count > 0)
 	{
-		if (arguments.size() != static_cast<size_t>(expected_arg_count))
+		if (arguments.size() != static_cast<std::size_t>(expected_arg_count))
 			throw exception("invalid number of arguments for function "s + kCoreFunctionInfo[static_cast<int>(function)].name);
 	}
 	else if (expected_arg_count == kOptionalArgument)
@@ -2346,33 +2544,33 @@ expression_ptr xpath_parser::function_call()
 
 	switch (function)
 	{
-		case CoreFunction::Last: result = std::make_shared<core_function_expression<CoreFunction::Last>>(arguments); break;
-		case CoreFunction::Position: result = std::make_shared<core_function_expression<CoreFunction::Position>>(arguments); break;
-		case CoreFunction::Count: result = std::make_shared<core_function_expression<CoreFunction::Count>>(arguments); break;
-		case CoreFunction::Id: result = std::make_shared<core_function_expression<CoreFunction::Id>>(arguments); break;
-		case CoreFunction::LocalName: result = std::make_shared<core_function_expression<CoreFunction::LocalName>>(arguments); break;
-		case CoreFunction::NamespaceUri: result = std::make_shared<core_function_expression<CoreFunction::NamespaceUri>>(arguments); break;
-		case CoreFunction::Name: result = std::make_shared<core_function_expression<CoreFunction::Name>>(arguments); break;
-		case CoreFunction::String: result = std::make_shared<core_function_expression<CoreFunction::String>>(arguments); break;
-		case CoreFunction::Concat: result = std::make_shared<core_function_expression<CoreFunction::Concat>>(arguments); break;
-		case CoreFunction::StartsWith: result = std::make_shared<core_function_expression<CoreFunction::StartsWith>>(arguments); break;
-		case CoreFunction::Contains: result = std::make_shared<core_function_expression<CoreFunction::Contains>>(arguments); break;
-		case CoreFunction::SubstringBefore: result = std::make_shared<core_function_expression<CoreFunction::SubstringBefore>>(arguments); break;
-		case CoreFunction::SubstringAfter: result = std::make_shared<core_function_expression<CoreFunction::SubstringAfter>>(arguments); break;
-		case CoreFunction::StringLength: result = std::make_shared<core_function_expression<CoreFunction::StringLength>>(arguments); break;
-		case CoreFunction::NormalizeSpace: result = std::make_shared<core_function_expression<CoreFunction::NormalizeSpace>>(arguments); break;
-		case CoreFunction::Translate: result = std::make_shared<core_function_expression<CoreFunction::Translate>>(arguments); break;
-		case CoreFunction::Boolean: result = std::make_shared<core_function_expression<CoreFunction::Boolean>>(arguments); break;
-		case CoreFunction::Not: result = std::make_shared<core_function_expression<CoreFunction::Not>>(arguments); break;
-		case CoreFunction::True: result = std::make_shared<core_function_expression<CoreFunction::True>>(arguments); break;
-		case CoreFunction::False: result = std::make_shared<core_function_expression<CoreFunction::False>>(arguments); break;
-		case CoreFunction::Lang: result = std::make_shared<core_function_expression<CoreFunction::Lang>>(arguments); break;
-		case CoreFunction::Number: result = std::make_shared<core_function_expression<CoreFunction::Number>>(arguments); break;
-		case CoreFunction::Sum: result = std::make_shared<core_function_expression<CoreFunction::Sum>>(arguments); break;
-		case CoreFunction::Floor: result = std::make_shared<core_function_expression<CoreFunction::Floor>>(arguments); break;
-		case CoreFunction::Ceiling: result = std::make_shared<core_function_expression<CoreFunction::Ceiling>>(arguments); break;
-		case CoreFunction::Round: result = std::make_shared<core_function_expression<CoreFunction::Round>>(arguments); break;
-		case CoreFunction::Comment: result = std::make_shared<core_function_expression<CoreFunction::Comment>>(arguments); break;
+		case CoreFunction::Last: result = std::make_unique<core_function_expression<CoreFunction::Last>>(std::move(arguments)); break;
+		case CoreFunction::Position: result = std::make_unique<core_function_expression<CoreFunction::Position>>(std::move(arguments)); break;
+		case CoreFunction::Count: result = std::make_unique<core_function_expression<CoreFunction::Count>>(std::move(arguments)); break;
+		case CoreFunction::Id: result = std::make_unique<core_function_expression<CoreFunction::Id>>(std::move(arguments)); break;
+		case CoreFunction::LocalName: result = std::make_unique<core_function_expression<CoreFunction::LocalName>>(std::move(arguments)); break;
+		case CoreFunction::NamespaceUri: result = std::make_unique<core_function_expression<CoreFunction::NamespaceUri>>(std::move(arguments)); break;
+		case CoreFunction::Name: result = std::make_unique<core_function_expression<CoreFunction::Name>>(std::move(arguments)); break;
+		case CoreFunction::String: result = std::make_unique<core_function_expression<CoreFunction::String>>(std::move(arguments)); break;
+		case CoreFunction::Concat: result = std::make_unique<core_function_expression<CoreFunction::Concat>>(std::move(arguments)); break;
+		case CoreFunction::StartsWith: result = std::make_unique<core_function_expression<CoreFunction::StartsWith>>(std::move(arguments)); break;
+		case CoreFunction::Contains: result = std::make_unique<core_function_expression<CoreFunction::Contains>>(std::move(arguments)); break;
+		case CoreFunction::SubstringBefore: result = std::make_unique<core_function_expression<CoreFunction::SubstringBefore>>(std::move(arguments)); break;
+		case CoreFunction::SubstringAfter: result = std::make_unique<core_function_expression<CoreFunction::SubstringAfter>>(std::move(arguments)); break;
+		case CoreFunction::Substring: result = std::make_unique<core_function_expression<CoreFunction::Substring>>(std::move(arguments)); break;
+		case CoreFunction::StringLength: result = std::make_unique<core_function_expression<CoreFunction::StringLength>>(std::move(arguments)); break;
+		case CoreFunction::NormalizeSpace: result = std::make_unique<core_function_expression<CoreFunction::NormalizeSpace>>(std::move(arguments)); break;
+		case CoreFunction::Translate: result = std::make_unique<core_function_expression<CoreFunction::Translate>>(std::move(arguments)); break;
+		case CoreFunction::Boolean: result = std::make_unique<core_function_expression<CoreFunction::Boolean>>(std::move(arguments)); break;
+		case CoreFunction::Not: result = std::make_unique<core_function_expression<CoreFunction::Not>>(std::move(arguments)); break;
+		case CoreFunction::True: result = std::make_unique<core_function_expression<CoreFunction::True>>(std::move(arguments)); break;
+		case CoreFunction::False: result = std::make_unique<core_function_expression<CoreFunction::False>>(std::move(arguments)); break;
+		case CoreFunction::Lang: result = std::make_unique<core_function_expression<CoreFunction::Lang>>(std::move(arguments)); break;
+		case CoreFunction::Number: result = std::make_unique<core_function_expression<CoreFunction::Number>>(std::move(arguments)); break;
+		case CoreFunction::Sum: result = std::make_unique<core_function_expression<CoreFunction::Sum>>(std::move(arguments)); break;
+		case CoreFunction::Floor: result = std::make_unique<core_function_expression<CoreFunction::Floor>>(std::move(arguments)); break;
+		case CoreFunction::Ceiling: result = std::make_unique<core_function_expression<CoreFunction::Ceiling>>(std::move(arguments)); break;
+		case CoreFunction::Round: result = std::make_unique<core_function_expression<CoreFunction::Round>>(std::move(arguments)); break;
 		default: break;
 	}
 
@@ -2386,7 +2584,7 @@ expression_ptr xpath_parser::union_expr()
 	while (m_lookahead == Token::OperatorUnion)
 	{
 		match(m_lookahead);
-		result = std::make_shared<union_expression>(result, path_expr());
+		result = std::make_unique<union_expression>(std::move(result), path_expr());
 	}
 
 	return result;
@@ -2404,7 +2602,7 @@ expression_ptr xpath_parser::path_expr()
 		if (m_lookahead == Token::Slash)
 		{
 			match(Token::Slash);
-			result = std::make_shared<path_expression>(result, relative_location_path());
+			result = std::make_unique<path_expression>(std::move(result), relative_location_path());
 		}
 	}
 	else
@@ -2420,7 +2618,7 @@ expression_ptr xpath_parser::filter_expr()
 	while (m_lookahead == Token::LeftBracket)
 	{
 		match(Token::LeftBracket);
-		result = std::make_shared<predicate_expression>(result, expr());
+		result = std::make_unique<predicate_expression>(std::move(result), expr());
 		match(Token::RightBracket);
 	}
 
@@ -2434,7 +2632,7 @@ expression_ptr xpath_parser::and_expr()
 	while (m_lookahead == Token::OperatorAnd)
 	{
 		match(Token::OperatorAnd);
-		result = std::make_shared<operator_expression<Token::OperatorAnd>>(result, equality_expr());
+		result = std::make_unique<operator_expression<Token::OperatorAnd>>(std::move(result), equality_expr());
 	}
 
 	return result;
@@ -2449,9 +2647,9 @@ expression_ptr xpath_parser::equality_expr()
 		Token op = m_lookahead;
 		match(m_lookahead);
 		if (op == Token::OperatorEqual)
-			result = std::make_shared<operator_expression<Token::OperatorEqual>>(result, relational_expr());
+			result = std::make_unique<operator_expression<Token::OperatorEqual>>(std::move(result), relational_expr());
 		else
-			result = std::make_shared<operator_expression<Token::OperatorNotEqual>>(result, relational_expr());
+			result = std::make_unique<operator_expression<Token::OperatorNotEqual>>(std::move(result), relational_expr());
 	}
 
 	return result;
@@ -2471,19 +2669,19 @@ expression_ptr xpath_parser::relational_expr()
 		switch (op)
 		{
 			case Token::OperatorLess:
-				result = std::make_shared<operator_expression<Token::OperatorLess>>(result, rhs);
+				result = std::make_unique<operator_expression<Token::OperatorLess>>(std::move(result), std::move(rhs));
 				break;
 
 			case Token::OperatorLessOrEqual:
-				result = std::make_shared<operator_expression<Token::OperatorLessOrEqual>>(result, rhs);
+				result = std::make_unique<operator_expression<Token::OperatorLessOrEqual>>(std::move(result), std::move(rhs));
 				break;
 
 			case Token::OperatorGreater:
-				result = std::make_shared<operator_expression<Token::OperatorGreater>>(result, rhs);
+				result = std::make_unique<operator_expression<Token::OperatorGreater>>(std::move(result), std::move(rhs));
 				break;
 
 			case Token::OperatorGreaterOrEqual:
-				result = std::make_shared<operator_expression<Token::OperatorGreaterOrEqual>>(result, rhs);
+				result = std::make_unique<operator_expression<Token::OperatorGreaterOrEqual>>(std::move(result), std::move(rhs));
 				break;
 
 			default:
@@ -2498,14 +2696,14 @@ expression_ptr xpath_parser::additive_expr()
 {
 	expression_ptr result(multiplicative_expr());
 
-	while (m_lookahead == Token::OperatorAdd or m_lookahead == Token::OperatorSubstract)
+	while (m_lookahead == Token::OperatorAdd or m_lookahead == Token::OperatorSubtract)
 	{
 		Token op = m_lookahead;
 		match(m_lookahead);
 		if (op == Token::OperatorAdd)
-			result = std::make_shared<operator_expression<Token::OperatorAdd>>(result, multiplicative_expr());
+			result = std::make_unique<operator_expression<Token::OperatorAdd>>(std::move(result), multiplicative_expr());
 		else
-			result = std::make_shared<operator_expression<Token::OperatorSubstract>>(result, multiplicative_expr());
+			result = std::make_unique<operator_expression<Token::OperatorSubtract>>(std::move(result), multiplicative_expr());
 	}
 
 	return result;
@@ -2520,21 +2718,21 @@ expression_ptr xpath_parser::multiplicative_expr()
 		if (m_lookahead == Token::Asterisk)
 		{
 			match(m_lookahead);
-			result = std::make_shared<operator_expression<Token::Asterisk>>(result, unary_expr());
+			result = std::make_unique<operator_expression<Token::Asterisk>>(std::move(result), unary_expr());
 			continue;
 		}
 
 		if (m_lookahead == Token::OperatorMod)
 		{
 			match(m_lookahead);
-			result = std::make_shared<operator_expression<Token::OperatorMod>>(result, unary_expr());
+			result = std::make_unique<operator_expression<Token::OperatorMod>>(std::move(result), unary_expr());
 			continue;
 		}
 
 		if (m_lookahead == Token::OperatorDiv)
 		{
 			match(m_lookahead);
-			result = std::make_shared<operator_expression<Token::OperatorDiv>>(result, unary_expr());
+			result = std::make_unique<operator_expression<Token::OperatorDiv>>(std::move(result), unary_expr());
 			continue;
 		}
 
@@ -2548,10 +2746,10 @@ expression_ptr xpath_parser::unary_expr()
 {
 	expression_ptr result;
 
-	if (m_lookahead == Token::OperatorSubstract)
+	if (m_lookahead == Token::OperatorSubtract)
 	{
-		match(Token::OperatorSubstract);
-		result = std::make_shared<negate_expression>(unary_expr());
+		match(Token::OperatorSubtract);
+		result = std::make_unique<negate_expression>(unary_expr());
 	}
 	else
 		result = union_expr();
@@ -2596,17 +2794,17 @@ xpath::xpath(std::string_view path)
 }
 
 template <>
-node_set xpath::evaluate<node>(const node &root, const context &ctxt) const
+std::vector<node *> xpath::evaluate<node>(const node &root, const context &ctxt) const
 {
 	node_set empty;
 	expression_context context(*ctxt.m_impl, &root, empty);
-	return m_impl->evaluate(context).as<const node_set &>();
+	return m_impl->evaluate(context).as<const node_set &>().nodes();
 }
 
 template <>
-element_set xpath::evaluate<element>(const node &root, const context &ctxt) const
+std::vector<element *> xpath::evaluate<element>(const node &root, const context &ctxt) const
 {
-	element_set result;
+	std::vector<element *> result;
 
 	for (node *n : evaluate<node>(root, ctxt))
 	{

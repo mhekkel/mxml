@@ -5,14 +5,14 @@ This is a feature complete XML library containing a validating parser as well as
 
 The core of this library is a validating XML parser with DTD processing and all. On top of this are implemented an API for manipulating XML data in a DOM like fashion and a serialization API. As a bonus there's also an XPath implementation, albeit this is limited to XPath 1.0.
 
-This XML library was extracted from `libzeep <https://github.com/mhekkel/libzeep>`_ since having a separate and simple XML library is more convenient. The API is unfortunately no longer compatible since the goal was to be more standards compliant. E.g., :cpp:class:`zeem::element` should now be a complete `Sequence Container <https://en.cppreference.com/w/cpp/named_req/SequenceContainer>`_
+This XML library was extracted from `libzeep <https://forge.hekkelman.net/maarten/zeep>`_ since having a separate and simple XML library is more convenient. The API is unfortunately no longer compatible since the goal was to be more standards compliant. E.g., :cpp:class:`zeem::element` should now be a complete `Sequence Container <https://en.cppreference.com/w/cpp/named_req/SequenceContainer>`_
 
 The DOM API
 -----------
 
 ZEEM uses a modern C++ way of accessing and manipulating data. Look at the following code to get an idea how this works.
 
-.. literalinclude:: ../examples/synopsis-xml.cpp
+.. literalinclude:: ../examples/zeem-synopsis.cpp
     :language: c++
     :start-after: //[ synopsis_xml_main
     :end-before: //]
@@ -104,6 +104,11 @@ attributes
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Suppose you want to serialize a value into a XML attribute, you would have to replace `zeem::make_element_nvp` with `zeem::make_attribute_nvp`.
+
+schema
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The class `zeem::schema_creator` can be used to create XML Schema's. It is still a bare bones implementation, mainly used to create `WSDL` document in libzeep.
 
 custom types
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

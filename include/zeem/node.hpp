@@ -1,65 +1,45 @@
-/*-
- * SPDX-License-Identifier: BSD-2-Clause
- *
- * Copyright (c) 2024 Maarten L. Hekkelman
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *
- * 1. Redistributions of source code must retain the above copyright notice, this
- *    list of conditions and the following disclaimer
- * 2. Redistributions in binary form must reproduce the above copyright notice,
- *    this list of conditions and the following disclaimer in the documentation
- *    and/or other materials provided with the distribution.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
- * ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- */
+// Copyright (c) 2024-2026 Maarten L. Hekkelman
+// SPDX-License-Identifier: BSD-2-Clause
 
 #pragma once
 
 /// \file
 /// the core of the zeem XML library defining the main classes in the DOM API
 
-#include "zeem/error.hpp"
-#include "zeem/version.hpp"
+#ifndef ZEEM_CXX_MODULE
+# include "zeem/error.hpp"
+# include "zeem/version.hpp"
 
-#include <algorithm>
-#include <cassert>
-#include <compare>
-#include <cstddef>
-#include <cstdint>
-#include <initializer_list>
-#include <iosfwd>
-#include <iterator>
-#include <string>
-#include <string_view>
-#include <type_traits>
-#include <utility>
-#include <vector>
+# include <algorithm>
+# include <cassert>
+# include <compare>
+# include <cstddef>
+# include <cstdint>
+# include <initializer_list>
+# include <iosfwd>
+# include <iterator>
+# include <memory>
+# include <string>
+# include <string_view>
+# include <type_traits>
+# include <utility>
+# include <vector>
+#endif
 
 namespace zeem
 {
 
 // forward declarations
-class attribute;
-class element;
-class element_container;
-class node;
-class text;
+ZEEM_EXPORT class attribute;
+ZEEM_EXPORT class attribute_set;
+ZEEM_EXPORT class context;
+ZEEM_EXPORT class element;
+ZEEM_EXPORT class element_container;
+ZEEM_EXPORT class node;
+ZEEM_EXPORT class text;
+ZEEM_EXPORT class xpath;
 
-using node_set = std::vector<node *>;
-using element_set = std::vector<element *>;
-
-template <typename T>
+ZEEM_EXPORT template <typename T>
 concept NodeType = std::is_base_of_v<zeem::node, std::remove_cvref_t<T>>;
 
 /**
@@ -67,8 +47,7 @@ concept NodeType = std::is_base_of_v<zeem::node, std::remove_cvref_t<T>>;
  * to find out the actual type of a node
  */
 
-enum class node_type : uint8_t
-{
+ZEEM_EXPORT enum class node_type : uint8_t {
 	element,
 	text,
 	attribute,
@@ -83,7 +62,7 @@ enum class node_type : uint8_t
 // --------------------------------------------------------------------
 
 /// \brief specification of how XML data should be written out
-struct format_info
+ZEEM_EXPORT struct format_info
 {
 	bool indent = false;
 	bool indent_attributes = false;
@@ -161,7 +140,7 @@ class node
 	 *
 	 * @param qn
 	 */
-	virtual void set_qname([[maybe_unused]] std::string qn) {} // NOLINT(performance-unnecessary-value-param)
+	virtual void set_qname([[maybe_unused]] std::string qn) noexcept {} // NOLINT(performance-unnecessary-value-param)
 
 	/**
 	 * \brief set the qname with two parameters, if \a prefix is empty the qname will be simply \a name
@@ -176,9 +155,14 @@ class node
 		set_qname(prefix.empty() ? std::move(name) : prefix + ':' + name);
 	}
 
-	[[nodiscard]] virtual std::string name() const;       ///< The name for the node as parsed from the qname.
-	[[nodiscard]] virtual std::string get_prefix() const; ///< The prefix for the node as parsed from the qname.
-	[[nodiscard]] virtual std::string get_ns() const;     ///< Returns the namespace URI for the node, if it can be resolved.
+	[[nodiscard]] virtual std::string get_local_name() const; ///< The local-name for the node as parsed from the qname.
+	[[nodiscard]] virtual std::string get_prefix() const;     ///< The prefix for the node as parsed from the qname.
+	[[nodiscard]] virtual std::string get_ns() const;         ///< Returns the namespace URI for the node, if it can be resolved.
+
+	[[nodiscard]] virtual std::string name() const ///< By default, the name returns the local name
+	{
+		return get_local_name();
+	}
 
 	/// Return the namespace URI for a prefix
 	[[nodiscard]] virtual std::string namespace_for_prefix(std::string_view prefix) const;
@@ -205,13 +189,13 @@ class node
 	element_container *parent() { return m_parent; }                           ///< The parent node for this node
 	[[nodiscard]] const element_container *parent() const { return m_parent; } ///< The parent node for this node
 
-	void next(const node *n) noexcept { m_next = const_cast<node *>(n); } ///< Set next to \a n
-	node *next() { return m_next; }                                       ///< The next sibling
-	[[nodiscard]] const node *next() const { return m_next; }             ///< The next sibling
+	void next(node *n) noexcept { m_next = const_cast<node *>(n); } ///< Set next to \a n
+	node *next() { return m_next; }                                 ///< The next sibling
+	[[nodiscard]] const node *next() const { return m_next; }       ///< The next sibling
 
-	void prev(const node *n) noexcept { m_prev = const_cast<node *>(n); } ///< Set prev to \a n
-	node *prev() { return m_prev; }                                       ///< The previous sibling
-	[[nodiscard]] const node *prev() const { return m_prev; }             ///< The previous sibling
+	void prev(node *n) noexcept { m_prev = const_cast<node *>(n); } ///< Set prev to \a n
+	node *prev() { return m_prev; }                                 ///< The previous sibling
+	[[nodiscard]] const node *prev() const { return m_prev; }       ///< The previous sibling
 
 	/// Compare the node with \a n
 	virtual bool equals(const node *n) const;
@@ -353,7 +337,7 @@ class basic_node_list
   protected:
 	// proxy methods for every insertion
 
-	virtual node *insert_impl(const node *p, node *n);
+	virtual node *insert_impl(const node *p, std::unique_ptr<node> n);
 
 	node *erase_impl(node *n);
 };
@@ -500,7 +484,7 @@ class iterator_impl
 	{
 		if constexpr (std::is_same_v<std::remove_cv_t<value_type>, element>)
 		{
-			while (m_current->type() != node_type::element and m_current->type() != node_type::header)
+			while (m_current != nullptr and m_current->type() != node_type::element and m_current->type() != node_type::header)
 				m_current = m_current->next();
 		}
 	}
@@ -539,7 +523,7 @@ class node_list : public basic_node_list
   public:
 	using value_type = T;
 	using allocator_type = std::allocator<value_type>;
-	using size_type = size_t;
+	using size_type = std::size_t;
 	using difference_type = std::ptrdiff_t;
 	using reference = value_type &;
 	using const_reference = const value_type &;
@@ -568,8 +552,8 @@ class node_list : public basic_node_list
 	[[nodiscard]] iterator begin() { return iterator(m_header->m_next); }
 	[[nodiscard]] iterator end() { return iterator(m_header); }
 
-	[[nodiscard]] const_iterator cbegin() { return const_iterator(m_header->m_next); }
-	[[nodiscard]] const_iterator cend() { return const_iterator(m_header); }
+	[[nodiscard]] const_iterator cbegin() const { return const_iterator(m_header->m_next); }
+	[[nodiscard]] const_iterator cend() const { return const_iterator(m_header); }
 
 	[[nodiscard]] const_iterator begin() const { return const_iterator(m_header->m_next); }
 	[[nodiscard]] const_iterator end() const { return const_iterator(m_header); }
@@ -582,7 +566,7 @@ class node_list : public basic_node_list
 
 	/// @brief The size of the visible items
 	/// @return The count of items visible
-	[[nodiscard]] size_t size() const { return std::distance(begin(), end()); }
+	[[nodiscard]] std::size_t size() const { return std::distance(begin(), end()); }
 	[[nodiscard]] bool empty() const { return size() == 0; }
 	explicit operator bool() const { return not empty(); }
 
@@ -594,18 +578,17 @@ class node_list : public basic_node_list
 
 	/// \brief construct a new node using arguments provided in \a a
 
-	// TODO: maarten - When users try to emplace/insert e.g. a cdata node in an element
-	// this will fail, since they need to use the nodes() variant. However,
-	// a better error is required in that case. Perhaps using concepts?
+	// When users try to emplace/insert e.g. a cdata node in an element
+	// this will fail, since they need to use the nodes() variant.
 
 	template <typename... Args>
 	iterator insert(const_iterator p, Args &&...args)
 		requires(sizeof...(Args) > 1 or not std::is_base_of_v<node, std::remove_cvref_t<Args>...>)
 	{
-		return insert_impl(p, new value_type(std::forward<Args>(args)...));
+		return insert_impl(p, std::make_unique<value_type>(std::forward<Args>(args)...));
 	}
 
-	iterator insert(const_iterator pos, size_t count, const value_type &n)
+	iterator insert(const_iterator pos, std::size_t count, const value_type &n)
 	{
 		iterator p(const_cast<value_type *>(&*pos));
 		while (count-- > 0)
@@ -727,9 +710,9 @@ class node_list : public basic_node_list
   protected:
 	using basic_node_list::insert_impl;
 
-	node *insert_impl(const_iterator pos, node *n)
+	node *insert_impl(const_iterator pos, std::unique_ptr<node> n)
 	{
-		return insert_impl(&*pos, n);
+		return insert_impl(&*pos, std::move(n));
 	}
 
 	using basic_node_list::erase_impl;
@@ -757,7 +740,7 @@ class node_list : public basic_node_list
  * element_container is not exported.
  */
 
-class element_container : public node, public node_list<element>
+ZEEM_EXPORT class element_container : public node, public node_list<element>
 {
   public:
 	/// @brief Default constructor
@@ -818,7 +801,7 @@ class element_container : public node, public node_list<element>
 	/// If you need to find other classes than xml::element, of if your XPath
 	/// contains variables, you should create a zeem::xpath object and use
 	/// its evaluate method.
-	[[nodiscard]] element_set find(std::string_view path) const;
+	[[nodiscard]] std::vector<element *> find(std::string_view path) const;
 
 	/// \brief return the first element that matches XPath \a path.
 	///
@@ -827,6 +810,15 @@ class element_container : public node, public node_list<element>
 	/// its evaluate method.
 	[[nodiscard]] iterator find_first(std::string_view path);
 	[[nodiscard]] const_iterator find_first(std::string_view path) const;
+
+	// With prepared xpaths:
+
+	/// \brief return the elements that match XPath \a path.
+	[[nodiscard]] std::vector<element *> find(const xpath &path, const context &ctxt) const;
+
+	/// \brief return the first element that matches XPath \a path.
+	[[nodiscard]] iterator find_first(const xpath &path, const context &ctxt);
+	[[nodiscard]] const_iterator find_first(const xpath &path, const context &ctxt) const;
 
 	/** @cond */
 	void write(std::ostream &os, format_info fmt) const override;
@@ -841,7 +833,7 @@ class element_container : public node, public node_list<element>
  *
  */
 
-class node_with_text : public node
+ZEEM_EXPORT class node_with_text : public node
 {
   protected:
 	/** @cond */
@@ -899,7 +891,7 @@ class node_with_text : public node
  *
  */
 
-class comment final : public node_with_text
+ZEEM_EXPORT class comment final : public node_with_text
 {
   public:
 	[[nodiscard]] constexpr node_type type() const override { return node_type::comment; }
@@ -943,7 +935,7 @@ class comment final : public node_with_text
  *
  */
 
-class processing_instruction final : public node_with_text
+ZEEM_EXPORT class processing_instruction final : public node_with_text
 {
   public:
 	[[nodiscard]] constexpr node_type type() const override { return node_type::processing_instruction; }
@@ -995,7 +987,10 @@ class processing_instruction final : public node_with_text
 	/// \brief compare nodes for equality
 	bool equals(const node *n) const override
 	{
-		return this == n or (n->type() == node_type::processing_instruction and node_with_text::equals(n));
+		return this == n or
+		       (n->type() == node_type::processing_instruction and
+				   node_with_text::equals(n) and
+				   m_target == static_cast<const processing_instruction *>(n)->m_target);
 	}
 
 	/** @cond */
@@ -1058,7 +1053,7 @@ class text final : public node_with_text
  *
  */
 
-class cdata final : public node_with_text
+ZEEM_EXPORT class cdata final : public node_with_text
 {
   public:
 	[[nodiscard]] constexpr node_type type() const override { return node_type::cdata; }
@@ -1164,7 +1159,7 @@ class attribute final : public node
 	[[nodiscard]] std::string get_qname() const override { return m_qname; }
 
 	/// @brief Set the qualified name to \a qn
-	void set_qname(std::string qn) override { m_qname = std::move(qn); }
+	void set_qname(std::string qn) noexcept override { m_qname = std::move(qn); }
 
 	using node::set_qname;
 
@@ -1205,11 +1200,11 @@ class attribute final : public node
 	[[nodiscard]] bool is_id() const { return m_id; }
 
 	/// \brief support for structured binding
-	template <size_t N>
+	template <std::size_t N>
 	[[nodiscard]] decltype(auto) get() const
 	{
 		if constexpr (N == 0)
-			return name();
+			return get_local_name();
 		else if constexpr (N == 1)
 			return value();
 	}
@@ -1229,7 +1224,7 @@ class attribute final : public node
  *
  */
 
-class attribute_set : public node_list<attribute>
+ZEEM_EXPORT class attribute_set : public node_list<attribute>
 {
   public:
 	/// @brief constructor to create an attribute_set for an element
@@ -1278,7 +1273,7 @@ class attribute_set : public node_list<attribute>
 	template <typename... Args>
 	std::pair<iterator, bool> emplace(Args &&...args)
 	{
-		return emplace(value_type{ std::forward<decltype(args)>(args)... });
+		return emplace(value_type{ std::forward<Args>(args)... });
 	}
 
 	/// \brief emplace an attribute move constructed from \a a
@@ -1294,7 +1289,7 @@ class attribute_set : public node_list<attribute>
 			*i = std::forward<value_type>(a); // move assign value of a
 		else
 		{
-			i = iterator{ node_list::insert_impl(node_list::end(), new attribute(std::forward<value_type>(a))) };
+			i = iterator{ node_list::insert_impl(node_list::end(), std::make_unique<attribute>(std::forward<value_type>(a))) };
 			inserted = true;
 		}
 
@@ -1337,8 +1332,15 @@ class element final : public element_container
 	{
 	}
 
+	/// @brief constructor taking a \a qname
+	explicit element(std::string_view qname)
+		: m_qname(qname)
+		, m_attributes(this)
+	{
+	}
+
 	/// @brief constructor taking a \a qname and a list of \a attributes
-	explicit element(std::string_view qname, std::initializer_list<attribute> attributes = {})
+	element(std::string_view qname, std::initializer_list<attribute> attributes)
 		: m_qname(qname)
 		, m_attributes(this)
 	{
@@ -1393,7 +1395,7 @@ class element final : public element_container
 	[[nodiscard]] std::string get_qname() const override { return m_qname; }
 
 	/// @brief Set the qualified name to \a qn
-	void set_qname(std::string qn) override { m_qname = std::move(qn); }
+	void set_qname(std::string qn) noexcept override { m_qname = std::move(qn); }
 
 	/// \brief content of a xml:lang attribute of this element, or its nearest ancestor
 	[[nodiscard]] std::string lang() const override;
@@ -1482,7 +1484,7 @@ class element final : public element_container
 // --------------------------------------------------------------------
 /** @cond */
 template <typename T>
-inline node_list<T>::node_list(element_container *e)
+node_list<T>::node_list(element_container *e)
 	: basic_node_list(e)
 {
 	if constexpr (std::is_same_v<value_type, node>)
@@ -1490,55 +1492,49 @@ inline node_list<T>::node_list(element_container *e)
 }
 
 template <>
-inline auto node_list<element>::insert(const_iterator pos, const element &e) -> iterator
+ZEEM_INLINE auto node_list<element>::insert(const_iterator pos, const element &e) -> iterator
 {
-	return iterator{ insert_impl(pos, new element(e)) };
+	return iterator{ insert_impl(pos, std::make_unique<element>(e)) };
 }
 
 /// \brief insert a copy of \a e at position \a pos, moving its data
 template <>
-inline auto node_list<element>::insert(const_iterator pos, element &&e) -> iterator
+ZEEM_INLINE auto node_list<element>::insert(const_iterator pos, element &&e) -> iterator
 {
-	return iterator{ insert_impl(pos, new element(std::forward<value_type>(e))) };
+	return iterator{ insert_impl(pos, std::make_unique<element>(std::forward<value_type>(e))) };
 }
 
 template <>
-inline auto node_list<attribute>::insert(const_iterator pos, const attribute &e) -> iterator
+ZEEM_INLINE auto node_list<attribute>::insert(const_iterator pos, const attribute &e) -> iterator
 {
-	return iterator{ insert_impl(pos, new attribute(e)) };
+	return iterator{ insert_impl(pos, std::make_unique<attribute>(e)) };
 }
 
 /// \brief insert a copy of \a e at position \a pos, moving its data
 template <>
-inline auto node_list<attribute>::insert(const_iterator pos, attribute &&e) -> iterator
+ZEEM_INLINE auto node_list<attribute>::insert(const_iterator pos, attribute &&e) -> iterator
 {
-	return iterator{ insert_impl(pos, new attribute(std::forward<value_type>(e))) };
+	return iterator{ insert_impl(pos, std::make_unique<attribute>(std::forward<value_type>(e))) };
 }
 
 // NOLINTBEGIN(cppcoreguidelines-owning-memory,cppcoreguidelines-pro-type-static-cast-downcast)
 template <>
-inline auto node_list<node>::insert(const_iterator pos, const value_type &e) -> iterator
+ZEEM_INLINE auto node_list<node>::insert(const_iterator pos, const value_type &e) -> iterator
 {
 	switch (e.type())
 	{
 		case node_type::element:
-			return insert_impl(pos, new element(static_cast<const element &>(e)));
-			break;
+			return insert_impl(pos, std::make_unique<element>(static_cast<const element &>(e)));
 		case node_type::text:
-			return insert_impl(pos, new text(static_cast<const text &>(e)));
-			break;
+			return insert_impl(pos, std::make_unique<text>(static_cast<const text &>(e)));
 		case node_type::attribute:
-			return insert_impl(pos, new attribute(static_cast<const attribute &>(e)));
-			break;
+			return insert_impl(pos, std::make_unique<attribute>(static_cast<const attribute &>(e)));
 		case node_type::comment:
-			return insert_impl(pos, new comment(static_cast<const comment &>(e)));
-			break;
+			return insert_impl(pos, std::make_unique<comment>(static_cast<const comment &>(e)));
 		case node_type::cdata:
-			return insert_impl(pos, new cdata(static_cast<const cdata &>(e)));
-			break;
+			return insert_impl(pos, std::make_unique<cdata>(static_cast<const cdata &>(e)));
 		case node_type::processing_instruction:
-			return insert_impl(pos, new processing_instruction(static_cast<const processing_instruction &>(e)));
-			break;
+			return insert_impl(pos, std::make_unique<processing_instruction>(static_cast<const processing_instruction &>(e)));
 		default:
 			throw exception("internal error");
 	}
@@ -1546,28 +1542,22 @@ inline auto node_list<node>::insert(const_iterator pos, const value_type &e) -> 
 
 /// \brief insert a copy of \a e at position \a pos, moving its data
 template <>
-inline auto node_list<node>::insert(const_iterator pos, value_type &&e) -> iterator
+ZEEM_INLINE auto node_list<node>::insert(const_iterator pos, value_type &&e) -> iterator
 {
 	switch (e.type())
 	{
 		case node_type::element:
-			return insert_impl(pos, new element(std::forward<element &&>(static_cast<element &&>(e))));
-			break;
+			return insert_impl(pos, std::make_unique<element>(std::forward<element &&>(static_cast<element &&>(e))));
 		case node_type::text:
-			return insert_impl(pos, new text(std::forward<text &&>(static_cast<text &&>(e))));
-			break;
+			return insert_impl(pos, std::make_unique<text>(std::forward<text &&>(static_cast<text &&>(e))));
 		case node_type::attribute:
-			return insert_impl(pos, new attribute(std::forward<attribute &&>(static_cast<attribute &&>(e))));
-			break;
+			return insert_impl(pos, std::make_unique<attribute>(std::forward<attribute &&>(static_cast<attribute &&>(e))));
 		case node_type::comment:
-			return insert_impl(pos, new comment(std::forward<comment &&>(static_cast<comment &&>(e))));
-			break;
+			return insert_impl(pos, std::make_unique<comment>(std::forward<comment &&>(static_cast<comment &&>(e))));
 		case node_type::cdata:
-			return insert_impl(pos, new cdata(std::forward<cdata &&>(static_cast<cdata &&>(e))));
-			break;
+			return insert_impl(pos, std::make_unique<cdata>(std::forward<cdata &&>(static_cast<cdata &&>(e))));
 		case node_type::processing_instruction:
-			return insert_impl(pos, new processing_instruction(std::forward<processing_instruction &&>(static_cast<processing_instruction &&>(e))));
-			break;
+			return insert_impl(pos, std::make_unique<processing_instruction>(std::forward<processing_instruction &&>(static_cast<processing_instruction &&>(e))));
 		default:
 			throw exception("internal error");
 	}
@@ -1613,7 +1603,7 @@ void node_list<T>::sort(const Pred &pred)
  * \param dest		The (usually) document element that is the destination
  */
 
-void fix_namespaces(element &e, const element &source, const element &dest);
+ZEEM_EXPORT void fix_namespaces(element &e, const element &source, const element &dest);
 
 } // namespace zeem
 
@@ -1621,27 +1611,22 @@ void fix_namespaces(element &e, const element &source, const element &dest);
 // structured binding support
 /** @cond */
 
-namespace std
-{
-
 template <>
-struct tuple_size<::zeem::attribute>
+struct std::tuple_size<::zeem::attribute>
 	: public std::integral_constant<std::size_t, 2>
 {
 };
 
 template <>
-struct tuple_element<0, ::zeem::attribute>
+struct std::tuple_element<0, ::zeem::attribute>
 {
 	using type = decltype(std::declval<::zeem::attribute>().name());
 };
 
 template <>
-struct tuple_element<1, ::zeem::attribute>
+struct std::tuple_element<1, ::zeem::attribute>
 {
 	using type = decltype(std::declval<::zeem::attribute>().value());
 };
 
 /** @endcond */
-
-} // namespace std

@@ -4,6 +4,9 @@
 #
 #    pip-compile --output-file=requirements.txt requirements.in
 #
+# Copyright (c) Maarten L. Hekkelman 2026
+# 
+# SPDX-License-Identifier: BSD-2-Clause
 alabaster==0.7.13
     # via sphinx
 babel==2.12.1
@@ -89,5 +92,5 @@ sphinxcontrib-serializinghtml==1.1.5
     # via sphinx
 typing-extensions==4.7.1
     # via myst-parser
-urllib3==2.6.0
+urllib3==2.6.3
     # via requests

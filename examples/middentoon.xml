@@ -1,4 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
+
+<!--
+SPDX-FileCopyrightText: 2026 Maarten L. Hekkelman
+
+SPDX-License-Identifier: CC0-1.0
+-->
+
 <!-- Middentoon stemming -->
 <noot id="c"  f="0.5981396111"/>
 <noot id="c#" f="0.6250001033"/>

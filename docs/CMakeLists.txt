@@ -1,3 +1,7 @@
+# Copyright (c) Maarten L. Hekkelman 2026
+# 
+# SPDX-License-Identifier: BSD-2-Clause
+
 find_package(Doxygen REQUIRED)
 find_package(Sphinx REQUIRED)
 
@@ -12,7 +16,7 @@ set(DOXYGEN_INDEX_FILE ${DOXYGEN_OUTPUT_DIR}/index.xml)
 set(DOXYFILE_IN ${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile.in)
 set(DOXYFILE_OUT ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile)
 
-# Replace variables inside @@ with the current values
+#Replace variables inside @@ with the current values
 configure_file(${DOXYFILE_IN} ${DOXYFILE_OUT} @ONLY)
 
 add_custom_command(
