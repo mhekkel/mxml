@@ -15,10 +15,10 @@ namespace zeem
 
 bool is_name_start_char(char32_t uc)
 {
-	return uc == L':' or
-	       (uc >= L'A' and uc <= L'Z') or
-	       uc == L'_' or
-	       (uc >= L'a' and uc <= L'z') or
+	return uc == ':' or
+	       (uc >= 'A' and uc <= 'Z') or
+	       uc == '_' or
+	       (uc >= 'a' and uc <= 'z') or
 	       (uc >= 0x0C0 and uc <= 0x0D6) or
 	       (uc >= 0x0D8 and uc <= 0x0F6) or
 	       (uc >= 0x0F8 and uc <= 0x02FF) or
@@ -240,6 +240,10 @@ char32_t pop_front_char(std::string_view::const_iterator &ptr, std::string_view:
 
 			if (result > 0x10ffff)
 				throw zeem::exception("invalid utf-8 character (out of range)");
+		}
+		else
+		{
+			throw zeem::exception("invalid utf-8 start byte");
 		}
 	}
 
