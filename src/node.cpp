@@ -4,6 +4,7 @@
 #ifndef ZEEM_CXX_MODULE
 # include "zeem/zeem.hpp"
 
+# include <algorithm>
 # include <cassert>
 # include <exception>
 # include <initializer_list>
@@ -19,22 +20,15 @@
 namespace zeem
 {
 
-struct my_set : std::set<std::string>
-{
-	my_set(std::initializer_list<const char *> strings,
-		const std::string::allocator_type &alloc = std::string::allocator_type{}) noexcept
-	try
-		: std
-		::set<std::string>(strings.begin(), strings.end(), alloc) {}
-	catch (...)
-	{
-		std::clog << "Error initializing set of html elements\n";
-	}
+constexpr std::array<std::string_view, 15> kEmptyHTMLElements{
+	"area", "base", "br", "col", "embed", "hr", "img", "input", "keygen", "link", "meta", "param", "source", "track", "wbr"
+
 };
 
-const my_set kEmptyHTMLElements{
-	"area", "base", "br", "col", "embed", "hr", "img", "input", "keygen", "link", "meta", "param", "source", "track", "wbr"
-};
+constexpr bool is_empty_element(std::string_view el)
+{
+	return std::ranges::binary_search(kEmptyHTMLElements, el);
+}
 
 // --------------------------------------------------------------------
 
@@ -832,7 +826,7 @@ void element::write(std::ostream &os, format_info fmt) const
 			attr_fmt.indent_width = indentation + 1 + m_qname.length() + 1;
 	}
 
-	if ((fmt.html and kEmptyHTMLElements.count(m_qname)) or
+	if ((fmt.html and is_empty_element(m_qname)) or
 		(not fmt.html and fmt.collapse_tags and nodes().empty()))
 		os << "/>";
 	else
