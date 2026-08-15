@@ -815,7 +815,7 @@ struct parser_imp
 
 	void push_data_source(std::unique_ptr<data_source> source, bool insert)
 	{
-		if (m_source.size() >= m_max_source_stack_size)
+		if (std::cmp_greater_equal(m_source.size(), m_max_source_stack_size))
 			not_well_formed("Reached the maximum recursion level for entity expansion");
 
 		source->version(m_version);
