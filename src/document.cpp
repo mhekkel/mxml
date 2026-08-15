@@ -266,7 +266,7 @@ void document::StartElementHandler(const std::string &name, const std::string &u
 			qname = prefix + ':' + name;
 	}
 
-	m_cur = static_cast<element *>(static_cast<element *>(m_cur)->emplace_back(qname));
+	m_cur = &*m_cur->emplace_back(qname);
 
 	for (const auto &[prefix, ns_uri] : m_namespaces)
 	{
