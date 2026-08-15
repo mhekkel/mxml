@@ -1109,9 +1109,9 @@ template <>
 object operator_expression<Token::OperatorAnd>::evaluate(expression_context &context)
 {
 	object v1 = m_lhs->evaluate(context);
-	object v2 = m_rhs->evaluate(context);
-
-	return v1 and v2;
+	if (not v1.as<bool>())
+		return false;
+	return m_rhs->evaluate(context);
 }
 
 template <>
