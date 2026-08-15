@@ -4,7 +4,7 @@
 
 EXCLUDE_SYMBOLS        = std* zeem::doctype::*
 FILE_PATTERNS          = *.hpp
-PREDEFINED             += and=&& or=|| not=! ZEEM_EXPORT=export ZEEM_INLINE=inline
+PREDEFINED             += and=&& or=|| not=! ZEEM_EXPORT= ZEEM_INLINE=inline
 GENERATE_XML           = YES
 GENERATE_HTML          = NO
 GENERATE_LATEX         = NO

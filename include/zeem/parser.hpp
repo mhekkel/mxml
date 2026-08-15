@@ -122,6 +122,9 @@ ZEEM_EXPORT class parser
 	/** @brief Start the actual parsing, optionally validating content and namespaces */
 	void parse(bool validate, bool validate_ns);
 
+	// Return the version of zeem
+	static std::string get_version();
+
   protected:
 	/** @cond */
 	friend struct parser_imp;

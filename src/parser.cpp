@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: BSD-2-Clause
 
 #ifndef ZEEM_CXX_MODULE
+# include "revision.hpp"
 # include "zeem/zeem.hpp"
 
 # include <algorithm>
@@ -4058,6 +4059,12 @@ parser &parser::operator=(parser &&rhs) noexcept
 void parser::parse(bool validate, bool validate_ns)
 {
 	m_impl->parse(validate, validate_ns);
+}
+
+std::string parser::get_version()
+{
+	return std::format("libzeem version {} {} {}",
+		klibzeemVersionNumber, klibzeemRevisionDate, klibzeemRevisionGitTag);
 }
 
 void parser::xml_decl(encoding_type encoding, bool standalone, version_type version)
