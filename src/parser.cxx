@@ -37,4 +37,5 @@ module zeem;
 
 // import std;
 
+#include "revision.hpp"
 #include "parser.cpp"
