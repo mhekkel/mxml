@@ -64,16 +64,16 @@ ZEEM_EXPORT enum class node_type : uint8_t {
 /// \brief specification of how XML data should be written out
 ZEEM_EXPORT struct format_info
 {
-	bool indent = false;
-	bool indent_attributes = false;
-	bool collapse_tags = true;
-	bool suppress_comments = false;
-	bool escape_white_space = false;
-	bool escape_double_quote = true;
-	bool html = false; ///< This flag can be used to collapse only 'empty elements'
-	std::size_t indent_width = 0;
-	std::size_t indent_level = 0;
-	version_type version{ 1, 0 };
+	bool indent = false;             ///< Indent the output
+	bool indent_attributes = false;  ///< Indent attributes on separate lines
+	bool collapse_tags = true;       ///< Collapse empty tags, e.g. write `<foo/>` instead of `<foo></foo>`
+	bool suppress_comments = false;  ///< Do not write comments
+	bool escape_white_space = false; ///< Write white space as XML entities
+	bool escape_double_quote = true; ///< Write double quotes as &quot;
+	bool html = false;               ///< This flag can be used to collapse only 'empty elements'
+	std::size_t indent_width = 0;    ///< Number of spaces per indent level
+	std::size_t indent_level = 0;    ///< The current indent level
+	version_type version{ 1, 0 };    ///< The XML version to write
 };
 
 // --------------------------------------------------------------------
@@ -369,6 +369,8 @@ class iterator_impl
 
 	/** @endcond */
 
+	/** @cond */
+
 	using iterator_category = std::bidirectional_iterator_tag;
 	using value_type = T;
 	using pointer = value_type *;
@@ -490,6 +492,7 @@ class iterator_impl
 	}
 
 	node_base_type *m_current = nullptr;
+	/** @endcond */
 };
 
 // --------------------------------------------------------------------
@@ -521,6 +524,8 @@ template <typename T = node>
 class node_list : public basic_node_list
 {
   public:
+	/** @cond */
+
 	using value_type = T;
 	using allocator_type = std::allocator<value_type>;
 	using size_type = std::size_t;
@@ -529,6 +534,8 @@ class node_list : public basic_node_list
 	using const_reference = const value_type &;
 	using pointer = value_type *;
 	using const_pointer = const value_type *;
+
+	/** @endcond */
 
 	/**
 	 * @brief Construct a new node list for an element_container \a e
@@ -549,25 +556,37 @@ class node_list : public basic_node_list
 	using const_iterator = iterator_impl<const value_type>;
 	static_assert(std::input_iterator<const_iterator>);
 
+	/// @brief Return an iterator to the first element
 	[[nodiscard]] iterator begin() { return iterator(m_header->m_next); }
+	/// @brief Return an iterator past the last element
 	[[nodiscard]] iterator end() { return iterator(m_header); }
 
+	/// @brief Return a const iterator to the first element
 	[[nodiscard]] const_iterator cbegin() const { return const_iterator(m_header->m_next); }
+	/// @brief Return a const iterator past the last element
 	[[nodiscard]] const_iterator cend() const { return const_iterator(m_header); }
 
+	/// @brief Return a const iterator to the first element
 	[[nodiscard]] const_iterator begin() const { return const_iterator(m_header->m_next); }
+	/// @brief Return a const iterator past the last element
 	[[nodiscard]] const_iterator end() const { return const_iterator(m_header); }
 
+	/// @brief Return a reference to the first element
 	[[nodiscard]] value_type &front() { return *begin(); }
+	/// @brief Return a reference to the first element
 	[[nodiscard]] const value_type &front() const { return *begin(); }
 
+	/// @brief Return a reference to the last element
 	[[nodiscard]] value_type &back() { return *std::prev(end()); }
+	/// @brief Return a reference to the last element
 	[[nodiscard]] const value_type &back() const { return *std::prev(end()); }
 
 	/// @brief The size of the visible items
 	/// @return The count of items visible
 	[[nodiscard]] std::size_t size() const { return std::distance(begin(), end()); }
+	/// @brief Whether the list contains any items
 	[[nodiscard]] bool empty() const { return size() == 0; }
+	/// @brief Whether the list contains any items
 	explicit operator bool() const { return not empty(); }
 
 	/// \brief insert a copy of \a e
@@ -588,6 +607,7 @@ class node_list : public basic_node_list
 		return insert_impl(p, std::make_unique<value_type>(std::forward<Args>(args)...));
 	}
 
+	/// \brief insert \a count copies of \a n at position \a pos
 	iterator insert(const_iterator pos, std::size_t count, const value_type &n)
 	{
 		iterator p(const_cast<value_type *>(&*pos));
@@ -708,6 +728,8 @@ class node_list : public basic_node_list
 	void sort(const Pred &pred);
 
   protected:
+	/** @cond */
+
 	using basic_node_list::insert_impl;
 
 	node *insert_impl(const_iterator pos, std::unique_ptr<node> n)
@@ -722,6 +744,8 @@ class node_list : public basic_node_list
 		return basic_node_list::erase_impl(&*pos);
 	}
 	friend T;
+
+	/** @endcond */
 };
 
 // --------------------------------------------------------------------
@@ -809,6 +833,11 @@ ZEEM_EXPORT class element_container : public node, public node_list<element>
 	/// contains variables, you should create a zeem::xpath object and use
 	/// its evaluate method.
 	[[nodiscard]] iterator find_first(std::string_view path);
+	/// \brief return the first element that matches XPath \a path.
+	///
+	/// If you need to find other classes than xml::element, of if your XPath
+	/// contains variables, you should create a zeem::xpath object and use
+	/// its evaluate method.
 	[[nodiscard]] const_iterator find_first(std::string_view path) const;
 
 	// With prepared xpaths:
@@ -818,6 +847,7 @@ ZEEM_EXPORT class element_container : public node, public node_list<element>
 
 	/// \brief return the first element that matches XPath \a path.
 	[[nodiscard]] iterator find_first(const xpath &path, const context &ctxt);
+	/// \brief return the first element that matches XPath \a path.
 	[[nodiscard]] const_iterator find_first(const xpath &path, const context &ctxt) const;
 
 	/** @cond */

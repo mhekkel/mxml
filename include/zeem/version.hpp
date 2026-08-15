@@ -27,6 +27,7 @@ struct version_type
 	uint8_t major; ///< major, usually 1
 	uint8_t minor; ///< minor, usually 0 or 1
 
+	/// \brief Compare two versions, comparing major first and then minor
 	constexpr auto operator<=>(const version_type &) const = default;
 };
 

@@ -45,9 +45,16 @@ ZEEM_EXPORT void append(std::string &s, char32_t uc);
 /// \brief remove the last unicode character from an utf-8 string
 ZEEM_EXPORT char32_t pop_back_char(std::string &s);
 
-/// \brief return the first unicode and advance the pointer @a ptr from a string
+/// \brief Remove and return the first unicode character from an UTF-8 string
+/// \param ptr	On input an iterator to the start of the string, on return advanced past the character
+/// \param end	Iterator to the end of the string
+/// \return		The first unicode character, or 0 if the string is empty
 ZEEM_EXPORT char32_t pop_front_char(std::string::const_iterator &ptr, std::string::const_iterator end);
 
+/// \brief Remove and return the first unicode character from an UTF-8 string_view
+/// \param ptr	On input an iterator to the start of the string, on return advanced past the character
+/// \param end	Iterator to the end of the string
+/// \return		The first unicode character, or 0 if the string is empty
 ZEEM_EXPORT char32_t pop_front_char(std::string_view::const_iterator &ptr, std::string_view::const_iterator end);
 
 /// \brief A simple implementation of trim, removing white space from start and end of \a s

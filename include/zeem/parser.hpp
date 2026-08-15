@@ -35,6 +35,7 @@ struct version_type;
 ZEEM_EXPORT class invalid_exception : public exception
 {
   public:
+	/// \brief Create an exception with the message in \a msg
 	explicit invalid_exception(std::string msg)
 		: exception(std::move(msg))
 	{
@@ -50,6 +51,7 @@ ZEEM_EXPORT class invalid_exception : public exception
 ZEEM_EXPORT class not_wf_exception : public exception
 {
   public:
+	/// \brief Create an exception with the message in \a msg
 	explicit not_wf_exception(std::string msg)
 		: exception(std::move(msg))
 	{
@@ -78,6 +80,7 @@ ZEEM_EXPORT class parser
 		bool m_id{};         ///< Flag indicating the attribute is defined as type ID in its ATTLIST decl
 	};
 
+	/// \brief A list of parsed attributes, as passed to the start_element handler
 	using attr_list_type = std::vector<attr>;
 
 	/// @brief constructor taking a std::istream in \a is
@@ -89,11 +92,12 @@ ZEEM_EXPORT class parser
 	// Avoid copy
 	parser(const parser &) = delete;
 
-	// Move constructor
+	/// \brief Move constructor
 	parser(parser &&rhs) noexcept;
 
 	// Assignment operators
 	parser &operator=(const parser &) = delete;
+	/// \brief Move assignment operator
 	parser &operator=(parser &&rhs) noexcept;
 
 	/// @brief destructor
@@ -104,25 +108,25 @@ ZEEM_EXPORT class parser
 	 * the following callback function variables.
 	 */
 
-	std::function<void(encoding_type encoding, bool standalone, version_type version)> xml_decl_handler;
-	std::function<void(std::string name, std::string uri, const attr_list_type &atts)> start_element_handler;
-	std::function<void(std::string name, std::string uri)> end_element_handler;
-	std::function<void(std::string data)> character_data_handler;
-	std::function<void(std::string target, std::string data)> processing_instruction_handler;
-	std::function<void(std::string data)> comment_handler;
-	std::function<void()> start_cdata_section_handler;
-	std::function<void()> end_cdata_section_handler;
-	std::function<void(std::string prefix, std::string uri)> start_namespace_decl_handler;
-	std::function<void(std::string prefix)> end_namespace_decl_handler;
-	std::function<void(std::string root, std::string publicId, std::string uri)> doctype_decl_handler;
-	std::function<void(std::string name, std::string systemId, std::string publicId)> notation_decl_handler;
-	std::function<std::unique_ptr<std::istream>(std::string_view base, std::string_view pubid, std::string_view uri)> external_entity_ref_handler;
-	std::function<void(std::string msg)> report_invalidation_handler;
+	std::function<void(encoding_type encoding, bool standalone, version_type version)> xml_decl_handler;      ///< Called when the XML declaration is parsed
+	std::function<void(std::string name, std::string uri, const attr_list_type &atts)> start_element_handler; ///< Called when an element start tag is parsed
+	std::function<void(std::string name, std::string uri)> end_element_handler;                               ///< Called when an element end tag is parsed
+	std::function<void(std::string data)> character_data_handler;                                             ///< Called when character data is parsed
+	std::function<void(std::string target, std::string data)> processing_instruction_handler;                 ///< Called when a processing instruction is parsed
+	std::function<void(std::string data)> comment_handler;                                                    ///< Called when a comment is parsed
+	std::function<void()> start_cdata_section_handler;                                                        ///< Called at the start of a CDATA section
+	std::function<void()> end_cdata_section_handler;                                                          ///< Called at the end of a CDATA section
+	std::function<void(std::string prefix, std::string uri)> start_namespace_decl_handler;                    ///< Called when a namespace declaration is parsed
+	std::function<void(std::string prefix)> end_namespace_decl_handler;                                      ///< Called when a namespace declaration goes out of scope
+	std::function<void(std::string root, std::string publicId, std::string uri)> doctype_decl_handler;        ///< Called when a DOCTYPE declaration is parsed
+	std::function<void(std::string name, std::string systemId, std::string publicId)> notation_decl_handler;  ///< Called when a notation declaration is parsed
+	std::function<std::unique_ptr<std::istream>(std::string_view base, std::string_view pubid, std::string_view uri)> external_entity_ref_handler; ///< Called to load an external entity
+	std::function<void(std::string msg)> report_invalidation_handler;                                         ///< Called when the document fails validation
 
 	/** @brief Start the actual parsing, optionally validating content and namespaces */
 	void parse(bool validate, bool validate_ns);
 
-	// Return the version of zeem
+	/// \brief Return the version of zeem
 	static std::string get_version();
 
   protected:

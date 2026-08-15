@@ -8,7 +8,9 @@
  */
 
 #ifndef ZEEM_CXX_MODULE
+/** \brief Expands to nothing in the non-module build; marks exported symbols in the C++20 module build. */
 # define ZEEM_EXPORT
+/** \brief Expands to inline in the non-module build; marks exported inline functions in the C++20 module build. */
 # define ZEEM_INLINE inline
 
 // IWYU pragma: begin_exports

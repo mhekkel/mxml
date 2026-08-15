@@ -34,9 +34,9 @@ namespace zeem
 
 struct doc_type
 {
-	std::string m_root;
-	std::string m_pubid; // pubid is empty for SYSTEM DOCTYPE
-	std::string m_dtd;
+	std::string m_root;  ///< The name of the root element
+	std::string m_pubid; ///< The public id, empty for a SYSTEM DOCTYPE
+	std::string m_dtd;   ///< The DTD system id
 };
 
 /**
@@ -100,15 +100,19 @@ ZEEM_EXPORT class document final : public element_container
 
 	~document() override = default;
 
+	/** @cond */
 	friend void swap(document &a, document &b) noexcept;
+	/** @endcond */
 
 	/// options for parsing
 	/// validating uses a DTD if it is defined
 	[[nodiscard]] bool is_validating() const { return m_validating; }
+	/// \brief enable or disable validation of the document using a DTD, if defined
 	void set_validating(bool validate) { m_validating = validate; }
 
 	/// validating_ns: when validating take the NS 1.0 specification into account
 	[[nodiscard]] bool is_validating_ns() const { return m_validating_ns; }
+	/// \brief enable or disable validation, taking the NS 1.0 specification into account
 	void set_validating_ns(bool validate) { m_validating_ns = validate; }
 
 	/// preserve cdata, preserves CDATA sections instead of converting them

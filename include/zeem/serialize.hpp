@@ -52,8 +52,11 @@ struct value_serializer;
 template <>
 struct value_serializer<bool>
 {
+	/// \brief The XSD type name, "xsd:boolean"
 	static constexpr std::string type_name() { return "xsd:boolean"; }
+	/// \brief Convert \a value to a string, either "true" or "false"
 	static constexpr std::string to_string(bool value) { return value ? "true" : "false"; }
+	/// \brief Parse \a value, accepting "true", "1" or "yes"
 	static constexpr bool from_string(std::string_view value) { return value == "true" or value == "1" or value == "yes"; }
 };
 
@@ -61,8 +64,11 @@ struct value_serializer<bool>
 template <>
 struct value_serializer<std::string>
 {
+	/// \brief The XSD type name, "xsd:string"
 	static constexpr std::string type_name() { return "xsd:string"; }
+	/// \brief Convert \a value to a string
 	static constexpr std::string to_string(std::string value) { return value; }
+	/// \brief Parse \a value into a string
 	static constexpr std::string from_string(std::string_view value) { return std::string{ value }; }
 };
 
@@ -70,14 +76,17 @@ struct value_serializer<std::string>
 template <typename T>
 struct char_conv_serializer
 {
+	/// \brief The type being serialized
 	using value_type = T;
 
+	/// \brief Return the derived XSD type name using the value_serializer of \a value_type
 	static constexpr std::string derived_type_name()
 	{
 		using value_serializer_type = value_serializer<value_type>;
 		return value_serializer_type::type_name();
 	}
 
+	/// \brief Convert \a value to a string using std::to_chars
 	static std::string to_string(value_type value)
 	{
 		char b[32];
@@ -87,6 +96,7 @@ struct char_conv_serializer
 			throw std::system_error(std::make_error_code(r.ec), "Error converting value to string for type " + derived_type_name());
 	}
 
+	/// \brief Parse \a value into a value_type using from_chars, throws std::system_error on failure
 	static value_type from_string(std::string_view value)
 	{
 		value_type result{};
@@ -103,6 +113,7 @@ struct char_conv_serializer
 template <>
 struct value_serializer<int8_t> : char_conv_serializer<int8_t>
 {
+	/// \brief The XSD type name, "xsd:byte"
 	static std::string type_name() { return "xsd:byte"; }
 };
 
@@ -110,6 +121,7 @@ struct value_serializer<int8_t> : char_conv_serializer<int8_t>
 template <>
 struct value_serializer<uint8_t> : char_conv_serializer<uint8_t>
 {
+	/// \brief The XSD type name, "xsd:unsignedByte"
 	static std::string type_name() { return "xsd:unsignedByte"; }
 };
 
@@ -117,6 +129,7 @@ struct value_serializer<uint8_t> : char_conv_serializer<uint8_t>
 template <>
 struct value_serializer<int16_t> : char_conv_serializer<int16_t>
 {
+	/// \brief The XSD type name, "xsd:short"
 	static std::string type_name() { return "xsd:short"; }
 };
 
@@ -124,6 +137,7 @@ struct value_serializer<int16_t> : char_conv_serializer<int16_t>
 template <>
 struct value_serializer<uint16_t> : char_conv_serializer<uint16_t>
 {
+	/// \brief The XSD type name, "xsd:unsignedShort"
 	static std::string type_name() { return "xsd:unsignedShort"; }
 };
 
@@ -131,6 +145,7 @@ struct value_serializer<uint16_t> : char_conv_serializer<uint16_t>
 template <>
 struct value_serializer<int32_t> : char_conv_serializer<int32_t>
 {
+	/// \brief The XSD type name, "xsd:int"
 	static std::string type_name() { return "xsd:int"; }
 };
 
@@ -138,6 +153,7 @@ struct value_serializer<int32_t> : char_conv_serializer<int32_t>
 template <>
 struct value_serializer<uint32_t> : char_conv_serializer<uint32_t>
 {
+	/// \brief The XSD type name, "xsd:unsignedInt"
 	static std::string type_name() { return "xsd:unsignedInt"; }
 };
 
@@ -145,6 +161,7 @@ struct value_serializer<uint32_t> : char_conv_serializer<uint32_t>
 template <>
 struct value_serializer<int64_t> : char_conv_serializer<int64_t>
 {
+	/// \brief The XSD type name, "xsd:long"
 	static std::string type_name() { return "xsd:long"; }
 };
 
@@ -152,6 +169,7 @@ struct value_serializer<int64_t> : char_conv_serializer<int64_t>
 template <>
 struct value_serializer<uint64_t> : char_conv_serializer<uint64_t>
 {
+	/// \brief The XSD type name, "xsd:unsignedLong"
 	static std::string type_name() { return "xsd:unsignedLong"; }
 };
 
@@ -159,6 +177,7 @@ struct value_serializer<uint64_t> : char_conv_serializer<uint64_t>
 template <>
 struct value_serializer<float> : char_conv_serializer<float>
 {
+	/// \brief The XSD type name, "xsd:float"
 	static std::string type_name() { return "xsd:float"; }
 };
 
@@ -166,6 +185,7 @@ struct value_serializer<float> : char_conv_serializer<float>
 template <>
 struct value_serializer<double> : char_conv_serializer<double>
 {
+	/// \brief The XSD type name, "xsd:double"
 	static std::string type_name() { return "xsd:double"; }
 };
 
@@ -487,7 +507,9 @@ class name_value_pair
 	name_value_pair &operator=(name_value_pair &&) = default;
 	/** @endcond */
 
+	/// \brief Return the name of this name/value pair
 	[[nodiscard]] const std::string &name() const { return m_name; }
+	/// \brief Return a reference to the value of this name/value pair
 	[[nodiscard]] T &value() const { return m_value; }
 
 	/** @cond */
@@ -502,6 +524,7 @@ ZEEM_EXPORT template <typename T>
 class element_nvp : public name_value_pair<T>
 {
   public:
+	/// @brief constructor
 	element_nvp(std::string name, T &value)
 		: name_value_pair<T>(std::move(name), value)
 	{
@@ -513,6 +536,7 @@ ZEEM_EXPORT template <typename T>
 class attribute_nvp : public name_value_pair<T>
 {
   public:
+	/// @brief constructor
 	attribute_nvp(std::string name, T &value)
 		: name_value_pair<T>(std::move(name), value)
 	{
@@ -639,40 +663,48 @@ ZEEM_EXPORT using type_map = std::map<std::string, element>;
 
 ZEEM_EXPORT struct schema_creator
 {
+	/// @brief constructor, creating an empty schema
 	schema_creator()
 		: schema_creator(std::make_unique<type_map>(), std::make_unique<element>(element{ "xsd:schema", { { "xmlns:xsd", "http://www.w3.org/2001/XMLSchema" } } }))
 	{
 	}
 
+	/// @brief constructor, using the given \a types map and \a schema element
 	schema_creator(type_map &types, element &schema)
 		: m_schema(schema)
 		, m_types(types)
 	{
 	}
 
+	/// \brief Set the namespace prefix to use for generated type names
 	void set_ns_prefix(std::string ns_prefix)
 	{
 		m_ns_prefix = std::move(ns_prefix);
 	}
 
+	/// \brief add the element name/value pair \a rhs to the schema
 	template <typename T>
 	schema_creator &operator&(const element_nvp<T> &rhs)
 	{
 		return add_element(rhs.name(), rhs.value());
 	}
 
+	/// \brief add the attribute name/value pair \a rhs to the schema
 	template <typename T>
 	schema_creator &operator&(const attribute_nvp<T> &rhs)
 	{
 		return add_attribute(rhs.name(), rhs.value());
 	}
 
+	/// \brief add an element with \a name to the schema, registering the type of \a value
 	template <typename T>
 	schema_creator &add_element(std::string_view name, const T &value);
 
+	/// \brief add an attribute with \a name to the schema, registering the type of \a value
 	template <typename T>
 	schema_creator &add_attribute(std::string_view name, const T &value);
 
+	/// \brief Return the generated schema as a document with \a name as the name of the root element
 	document schema(std::string name) const
 	{
 		document doc(R"(<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema"/>)");

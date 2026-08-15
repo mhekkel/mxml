@@ -26,6 +26,7 @@ ZEEM_EXPORT class exception : public std::exception
 	{
 	}
 
+	/// \brief Return the error message as a NUL-terminated string
 	[[nodiscard]] const char *what() const noexcept override { return m_message.c_str(); }
 
   private:
