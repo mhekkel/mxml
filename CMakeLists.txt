@@ -11,7 +11,7 @@ cmake_minimum_required(VERSION 3.28)
 #     set(CMAKE_CXX_MODULE_STD 1)
 # endif()
 
-project(zeem VERSION 2.3.2 LANGUAGES CXX)
+project(zeem VERSION 2.4.0 LANGUAGES CXX)
 
 list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 
@@ -24,12 +24,7 @@ include(VersionString)
 
 option(ZEEM_BUILD_DOCUMENTATION "Build documentation" OFF)
 option(ZEEM_BUILD_EXAMPLES "Build example executables" ON)
-
-if(${CMAKE_VERSION} VERSION_GREATER_EQUAL 4.3.3 AND
-    ${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU" AND
-    ${CMAKE_CXX_COMPILER_VERSION} VERSION_GREATER_EQUAL 16)
-    option(ZEEM_BUILD_CXX_MODULE "Build the library as a C++ 20 module" ON)
-endif()
+option(ZEEM_BUILD_CXX_MODULE "Build the library as a C++ 20 module library" ON)
 
 if(${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
     if(ZEEM_BUILD_CXX_MODULE)
@@ -112,8 +107,14 @@ add_library(zeem::zeem ALIAS zeem)
 
 target_compile_features(zeem PUBLIC cxx_std_23)
 
+if(BUILD_SHARED_LIBS AND WIN32)
+    target_compile_definitions(zeem PRIVATE ZEEM_SHARED_BUILD)
+    set_target_properties(zeem PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS ON)
+endif()
+
 if(NOT STD_CHARCONV_COMPILING)
     target_include_directories(zeem PRIVATE $<TARGET_PROPERTY:FastFloat::fast_float,INTERFACE_INCLUDE_DIRECTORIES>)
+    target_compile_definitions(zeem PRIVATE USE_FAST_FLOAT)
 endif()
 
 if(NOT USE_STD_CHRONO_FROM_STREAM)
@@ -129,6 +130,7 @@ target_sources(zeem
     FILES ${zeem_headers})
 
 set_target_properties(zeem PROPERTIES POSITION_INDEPENDENT_CODE ON)
+
 set(zeem_MAJOR_VERSION ${PROJECT_VERSION_MAJOR})
 set_target_properties(zeem PROPERTIES
     VERSION ${PROJECT_VERSION}
@@ -153,7 +155,16 @@ if(OLD_HEADER)
 endif()
 
 if(ZEEM_BUILD_CXX_MODULE)
-    add_library(zeem-module ${zeem_cxx})
+    if(BUILD_SHARED_LIBS)
+        add_library(zeem-module SHARED ${zeem_cxx})
+
+        if(WIN32)
+            target_compile_definitions(zeem-module PRIVATE ZEEM_SHARED_BUILD)
+            set_target_properties(zeem-module PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS ON)
+        endif()
+    else()
+        add_library(zeem-module STATIC ${zeem_cxx})
+    endif()
     add_library(zeem::zeem-module ALIAS zeem-module)
 
     target_compile_features(zeem-module PUBLIC cxx_std_23)
@@ -177,6 +188,7 @@ if(ZEEM_BUILD_CXX_MODULE)
         COMPATIBLE_INTERFACE_STRING zeem_MAJOR_VERSION)
 
     target_include_directories(zeem-module PUBLIC
+        PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include
         $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/zeem>)
 
     install(TARGETS zeem-module
@@ -186,8 +198,8 @@ if(ZEEM_BUILD_CXX_MODULE)
 
     install(EXPORT zeem-module-targets
         NAMESPACE zeem::
-        DESTINATION lib/cmake/zeem)
-
+        DESTINATION lib/cmake/zeem
+        FILE "zeem-module-targets.cmake")
 endif()
 
 configure_package_config_file(

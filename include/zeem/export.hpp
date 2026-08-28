@@ -3,5 +3,18 @@
 
 #pragma once
 
-#define ZEEM_EXPORT
-#define ZEEM_INLINE inline
+#ifndef ZEEM_EXPORT
+# define ZEEM_EXPORT
+#endif
+
+#ifndef ZEEM_INLINE
+# define ZEEM_INLINE inline
+#endif
+
+#ifndef ZEEM_API
+# if defined(_WIN32) && defined(ZEEM_SHARED_BUILD)
+#  define ZEEM_API __declspec(dllexport)
+# else
+#  define ZEEM_API
+# endif
+#endif

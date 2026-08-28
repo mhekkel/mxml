@@ -9,6 +9,7 @@
  */
 
 #ifndef ZEEM_CXX_MODULE
+# include "zeem/export.hpp"
 # include "zeem/node.hpp"
 # include "zeem/parser.hpp"
 # include "zeem/text.hpp"
@@ -62,145 +63,147 @@ struct doc_type
  * so-called root-node.
  */
 
-ZEEM_EXPORT class document final : public element_container
+ZEEM_EXPORT ZEEM_API class document final : public element_container
 {
   public:
 	/// \brief node_type of a document
-	[[nodiscard]] node_type type() const override { return node_type::document; }
+	ZEEM_API [[nodiscard]] node_type type() const override { return node_type::document; }
 
 	/// \brief Constructor for an empty document.
-	document();
+	ZEEM_API document();
 
 	/// \brief Copy constructor
-	document(const document &doc);
+	ZEEM_API document(const document &doc);
 
 	/// \brief Move constructor
-	document(document &&other) noexcept
+	ZEEM_API document(document &&other) noexcept
 		: document()
 	{
 		swap(*this, other);
 	}
 
 	/// \brief operator=
-	document &operator=(document doc) noexcept
+	ZEEM_API document &operator=(document doc) noexcept
 	{
 		swap(*this, doc);
 		return *this;
 	}
 
 	/// \brief Constructor that will parse the XML passed in argument \a s using default settings
-	explicit document(std::string_view s);
+	ZEEM_API explicit document(std::string_view s);
 
 	/// \brief Constructor that will parse the XML passed in argument \a is using default settings
-	explicit document(std::istream &is);
+	ZEEM_API explicit document(std::istream &is);
 
 	/// \brief Constructor that will parse the XML passed in argument \a is. This
 	/// constructor will also validate the input using DTD's found in \a base_dir
-	document(std::istream &is, std::string base_dir);
+	ZEEM_API document(std::istream &is, std::string base_dir);
 
-	~document() override = default;
+	ZEEM_API ~document() override = default;
 
 	/** @cond */
-	friend void swap(document &a, document &b) noexcept;
+	ZEEM_API friend void swap(document &a, document &b) noexcept;
 	/** @endcond */
 
 	/// options for parsing
 	/// validating uses a DTD if it is defined
-	[[nodiscard]] bool is_validating() const { return m_validating; }
+	ZEEM_API [[nodiscard]] bool is_validating() const { return m_validating; }
+
 	/// \brief enable or disable validation of the document using a DTD, if defined
-	void set_validating(bool validate) { m_validating = validate; }
+	ZEEM_API void set_validating(bool validate) { m_validating = validate; }
 
 	/// validating_ns: when validating take the NS 1.0 specification into account
-	[[nodiscard]] bool is_validating_ns() const { return m_validating_ns; }
+	ZEEM_API [[nodiscard]] bool is_validating_ns() const { return m_validating_ns; }
+
 	/// \brief enable or disable validation, taking the NS 1.0 specification into account
-	void set_validating_ns(bool validate) { m_validating_ns = validate; }
+	ZEEM_API void set_validating_ns(bool validate) { m_validating_ns = validate; }
 
 	/// preserve cdata, preserves CDATA sections instead of converting them
 	/// into text nodes.
-	[[nodiscard]] bool preserves_cdata() const { return m_preserve_cdata; }
+	ZEEM_API [[nodiscard]] bool preserves_cdata() const { return m_preserve_cdata; }
 
 	/// \brief if \a p is true, the CDATA sections will be preserved when parsing XML, if \a p is false, the content of the CDATA will be treated as text
-	void set_preserve_cdata(bool p) { m_preserve_cdata = p; }
+	ZEEM_API void set_preserve_cdata(bool p) { m_preserve_cdata = p; }
 
 	/// \brief collapse means replacing e.g. `<foo></foo>` with `<foo/>`
-	[[nodiscard]] bool collapses_empty_tags() const { return m_fmt.collapse_tags; }
+	ZEEM_API [[nodiscard]] bool collapses_empty_tags() const { return m_fmt.collapse_tags; }
 
 	/// \brief if \a c is true, empty tags will be replaced, i.e. write `<foo/>` instead of `<foo></foo>`
-	void set_collapse_empty_tags(bool c) { m_fmt.collapse_tags = c; }
+	ZEEM_API void set_collapse_empty_tags(bool c) { m_fmt.collapse_tags = c; }
 
 	/// \brief collapse 'empty elements' according to HTML rules
-	[[nodiscard]] bool write_html() const { return m_fmt.html; }
+	ZEEM_API [[nodiscard]] bool write_html() const { return m_fmt.html; }
 
 	/// \brief if \a c is true, 'empty elements' will be collapsed according to HTML rules
-	void set_write_html(bool f) { m_fmt.html = f; }
+	ZEEM_API void set_write_html(bool f) { m_fmt.html = f; }
 
 	/// \brief whether to write out comments
-	[[nodiscard]] bool suppresses_comments() const { return m_fmt.suppress_comments; }
+	ZEEM_API [[nodiscard]] bool suppresses_comments() const { return m_fmt.suppress_comments; }
 
 	/// \brief if \a s is true, comments will not be written
-	void set_suppress_comments(bool s) { m_fmt.suppress_comments = s; }
+	ZEEM_API void set_suppress_comments(bool s) { m_fmt.suppress_comments = s; }
 
 	/// \brief whether to escape white space
-	[[nodiscard]] bool escapes_white_space() const { return m_fmt.escape_white_space; }
+	ZEEM_API [[nodiscard]] bool escapes_white_space() const { return m_fmt.escape_white_space; }
 
 	/// \brief if \a e is true, white space will be written as XML entities
-	void set_escape_white_space(bool e) { m_fmt.escape_white_space = e; }
+	ZEEM_API void set_escape_white_space(bool e) { m_fmt.escape_white_space = e; }
 
 	/// \brief whether to escape double quotes
-	[[nodiscard]] bool escapes_double_quote() const { return m_fmt.escape_double_quote; }
+	ZEEM_API [[nodiscard]] bool escapes_double_quote() const { return m_fmt.escape_double_quote; }
 
 	/// \brief if \a e is true, double quotes will be written as &quot;
-	void set_escape_double_quote(bool e) { m_fmt.escape_double_quote = e; }
+	ZEEM_API void set_escape_double_quote(bool e) { m_fmt.escape_double_quote = e; }
 
 	/// \brief whether to place a newline after a prolog
-	[[nodiscard]] bool wraps_prolog() const { return m_wrap_prolog; }
+	ZEEM_API [[nodiscard]] bool wraps_prolog() const { return m_wrap_prolog; }
 
 	/// \brief if \a w is true, a newline will be written after the XML prolog
-	void set_wrap_prolog(bool w) { m_wrap_prolog = w; }
+	ZEEM_API void set_wrap_prolog(bool w) { m_wrap_prolog = w; }
 
 	/// \brief Get the doctype as parsed
-	[[nodiscard]] doc_type get_doctype() const { return m_doctype; }
+	ZEEM_API [[nodiscard]] doc_type get_doctype() const { return m_doctype; }
 
 	/// \brief Set the doctype to write out
-	void set_doctype(std::string root, std::string pubid, std::string dtd)
+	ZEEM_API void set_doctype(std::string root, std::string pubid, std::string dtd)
 	{
 		set_doctype({ std::move(root), std::move(pubid), std::move(dtd) });
 	}
 
 	/// Set the doctype to write out
-	void set_doctype(const doc_type &doctype)
+	ZEEM_API void set_doctype(const doc_type &doctype)
 	{
 		m_doctype = doctype;
 		m_write_doctype = true;
 	}
 
 	/// \brief whether to write a XML prolog
-	[[nodiscard]] bool writes_xml_decl() const { return m_write_xml_decl; }
+	ZEEM_API [[nodiscard]] bool writes_xml_decl() const { return m_write_xml_decl; }
 
 	/// \brief if \a w is true, an XML prolog will be written
-	void set_write_xml_decl(bool w) { m_write_xml_decl = w; }
+	ZEEM_API void set_write_xml_decl(bool w) { m_write_xml_decl = w; }
 
 	/// \brief whether to write a DOCTYPE
-	[[nodiscard]] bool writes_doctype() const { return m_write_doctype; }
+	ZEEM_API [[nodiscard]] bool writes_doctype() const { return m_write_doctype; }
 
 	/// \brief if \a f is true a DOCTYPE will be written
-	void set_write_doctype(bool f) { m_write_doctype = f; }
+	ZEEM_API void set_write_doctype(bool f) { m_write_doctype = f; }
 
 	/// \brief Check the doctype to see if this is supposed to be HTML5
-	[[nodiscard]] bool is_html5() const;
+	ZEEM_API [[nodiscard]] bool is_html5() const;
 
 	/// \brief Write out the document
-	friend std::ostream &operator<<(std::ostream &os, const document &doc);
+	ZEEM_API friend std::ostream &operator<<(std::ostream &os, const document &doc);
 
 	/// \brief Read in a document
-	friend std::istream &operator>>(std::istream &is, document &doc);
+	ZEEM_API friend std::istream &operator>>(std::istream &is, document &doc);
 
 	/// Compare two xml documents
-	bool operator==(const document &doc) const;
+	ZEEM_API bool operator==(const document &doc) const;
 
 	/// If you want to validate the document using DTD files stored on disk, you can specifiy this directory prior to reading
 	/// the document.
-	void set_base_dir(std::string path);
+	ZEEM_API void set_base_dir(std::string path);
 
 	/**
 	 * @brief Set a callback for loading external entities
@@ -212,28 +215,28 @@ ZEEM_EXPORT class document final : public element_container
 	 * DTD files from another source.
 	 */
 	template <typename Callback>
-	void set_entity_loader(Callback &&cb)
+	ZEEM_API void set_entity_loader(Callback &&cb)
 	{
 		m_external_entity_ref_loader = std::forward<Callback>(cb);
 	}
 
-	[[nodiscard]] encoding_type get_encoding() const; ///< The text encoding as detected in the input.
-	void set_encoding(encoding_type enc);             ///< The text encoding to use for output
+	ZEEM_API [[nodiscard]] encoding_type get_encoding() const; ///< The text encoding as detected in the input.
+	ZEEM_API void set_encoding(encoding_type enc);             ///< The text encoding to use for output
 
-	[[nodiscard]] version_type get_version() const; ///< XML version, should be either 1.0 or 1.1
-	void set_version(version_type v);               ///< XML version, should be either 1.0 or 1.1
+	ZEEM_API [[nodiscard]] version_type get_version() const; ///< XML version, should be either 1.0 or 1.1
+	ZEEM_API void set_version(version_type v);               ///< XML version, should be either 1.0 or 1.1
 
-	element_container *root() override { return this; }                           ///< The root node, which is the document of course
-	[[nodiscard]] const element_container *root() const override { return this; } ///< The root node, which is the document of course
+	ZEEM_API element_container *root() override { return this; }                           ///< The root node, which is the document of course
+	ZEEM_API [[nodiscard]] const element_container *root() const override { return this; } ///< The root node, which is the document of course
 
 	/// @brief Return the single child, or nullptr in case the document is empty
-	element *child()
+	ZEEM_API element *child()
 	{
 		return empty() ? nullptr : &front();
 	}
 
 	/// @brief Return the single child, or nullptr in case the document is empty
-	[[nodiscard]] const element *child() const
+	ZEEM_API [[nodiscard]] const element *child() const
 	{
 		return empty() ? nullptr : &front();
 	}
@@ -241,20 +244,20 @@ ZEEM_EXPORT class document final : public element_container
 	/// @brief Emplace a single element using \a args for the construction
 	template <typename... Args>
 		requires std::is_constructible_v<element, Args...>
-	auto emplace(Args &&...args)
+	ZEEM_API auto emplace(Args &&...args)
 	{
 		return emplace_back(std::forward<Args>(args)...);
 	}
 
 	/// @brief Return the concatenation of all contained text nodes
-	[[nodiscard]] std::string str() const override;
+	ZEEM_API [[nodiscard]] std::string str() const override;
 
 	/** @cond */
 
-	void write(std::ostream &os, format_info fmt) const override;
+	ZEEM_API void write(std::ostream &os, format_info fmt) const override;
 
   protected:
-	node *insert_impl(const node *p, std::unique_ptr<node> n) override;
+	ZEEM_API node *insert_impl(const node *p, std::unique_ptr<node> n) override;
 
   private:
 	void XmlDeclHandler(encoding_type encoding, bool standalone, version_type version);
@@ -321,7 +324,7 @@ ZEEM_EXPORT namespace literals
 	 * zeem::document doc = "<text>Hello, world!</text>"_xml;"
 	 * @endcode
 	 */
-	document operator""_xml(const char *text, std::size_t length);
+	ZEEM_API document operator""_xml(const char *text, std::size_t length);
 } // namespace literals
 
 } // namespace zeem

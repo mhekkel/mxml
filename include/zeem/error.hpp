@@ -9,6 +9,7 @@
  */
 
 #ifndef ZEEM_CXX_MODULE
+# include "zeem/export.hpp"
 # include <exception>
 # include <string>
 #endif
@@ -21,13 +22,13 @@ ZEEM_EXPORT class exception : public std::exception
 {
   public:
 	/// \brief Create an exception with the message in \a message
-	explicit exception(std::string message)
+	ZEEM_API explicit exception(std::string message)
 		: m_message(std::move(message))
 	{
 	}
 
 	/// \brief Return the error message as a NUL-terminated string
-	[[nodiscard]] const char *what() const noexcept override { return m_message.c_str(); }
+	ZEEM_API [[nodiscard]] const char *what() const noexcept override { return m_message.c_str(); }
 
   private:
 	std::string m_message;

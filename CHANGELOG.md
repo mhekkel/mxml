@@ -3,6 +3,13 @@ SPDX-FileCopyrightText: 2026 Maarten L. Hekkelman
 SPDX-License-Identifier: BSD-2-Clause
 -->
 
+Version 2.4.0
+- Add Windows shared library and MSVC support
+- Added version providing function
+- Removed the global std::set, making the library thread-safe
+- Added doxygen documentation to the public headers
+- Various include cleanups and smaller fixes
+
 Version 2.3.2
 - Moved is_detected back into the detail namespace. Broke too many other
   applications that depended on it.

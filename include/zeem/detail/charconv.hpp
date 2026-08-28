@@ -4,6 +4,7 @@
 #pragma once
 
 #ifndef ZEEM_CXX_MODULE
+# include "zeem/export.hpp"
 # include <charconv>
 # include <concepts>
 # include <type_traits>
@@ -86,11 +87,11 @@ struct ff_charconv<T>
 	static std::from_chars_result from_chars(const char *a, const char *b, T &v);
 };
 
-ZEEM_EXPORT template <typename T>
+template <typename T>
 using charconv = std::conditional_t<detail::is_detected_v<from_chars_function, T>, std_charconv<T>, ff_charconv<T>>;
 
 ZEEM_EXPORT template <typename T>
-constexpr auto from_chars(const char *s, const char *e, T &v)
+ZEEM_API constexpr auto from_chars(const char *s, const char *e, T &v)
 {
 	return charconv<T>::from_chars(s, e, v);
 }

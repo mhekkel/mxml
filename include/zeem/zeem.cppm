@@ -17,7 +17,6 @@ module;
 #include <cstddef>
 #include <cstdint>
 #include <exception>
-#include <experimental/type_traits>
 #include <functional>
 #include <initializer_list>
 #include <iosfwd>
@@ -46,6 +45,13 @@ export module zeem;
 #define ZEEM_EXPORT export
 #define ZEEM_INLINE
 
+#if defined(_WIN32) && defined(ZEEM_SHARED_BUILD)
+# define ZEEM_API __declspec(dllexport)
+#else
+# define ZEEM_API
+#endif
+
+// clang-format off
 #include "detail/charconv.hpp"
 #include "doctype.hpp"
 #include "version.hpp"
@@ -56,3 +62,4 @@ export module zeem;
 #include "parser.hpp"
 #include "document.hpp"
 #include "serialize.hpp"
+// clang-format on

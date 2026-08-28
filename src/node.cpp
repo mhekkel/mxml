@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: BSD-2-Clause
 
 #ifndef ZEEM_CXX_MODULE
+# include "zeem/export.hpp"
 # include "zeem/zeem.hpp"
 
 # include <algorithm>
@@ -10,6 +11,7 @@
 # include <initializer_list>
 # include <iostream>
 # include <map>
+# include <memory>
 # include <set>
 # include <stack>
 # include <string>

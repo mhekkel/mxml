@@ -1,15 +1,8 @@
 # Copyright (c) 2026 Maarten L. Hekkelman
 # SPDX-License-Identifier: BSD-2-Clause
 
-CPMFindPackage(NAME Catch2
-    GIT_REPOSITORY "https://github.com/catchorg/Catch2"
-    VERSION "3.4.0"
-    EXCLUDE_FROM_ALL YES)
-CPMFindPackage(NAME mcfp
-    GIT_REPOSITORY "https://forge.hekkelman.net/maarten/mcfp.git"
-    GIT_TAG v2.0.2
-    EXCLUDE_FROM_ALL YES
-    OPTIONS "MCFP_BUILD_CXX_MODULE ON")
+CPMFindPackage(NAME Catch2 GIT_REPOSITORY "https://github.com/catchorg/Catch2" VERSION "3.4.0" EXCLUDE_FROM_ALL YES)
+CPMFindPackage(NAME mcfp GIT_REPOSITORY "https://forge.hekkelman.net/maarten/mcfp.git" GIT_TAG v2.1.1 EXCLUDE_FROM_ALL YES OPTIONS "MCFP_BUILD_CXX_MODULE ON")
 
 # data files for the parser test
 set(XML_CONF_TAR ${CMAKE_CURRENT_SOURCE_DIR}/XML-Test-Suite.tbz)
@@ -33,25 +26,33 @@ list(APPEND ZEEM_TESTS
     fuzz)
 
 function(create_test ZEEM_TEST ZEEM_TEST_SOURCE ZEEM_TEST_ARGS MODULE)
-    add_executable(${ZEEM_TEST} ${ZEEM_TEST_SOURCE})
+    set(ZEEM_TEST-exe ${ZEEM_TEST}-app)
+    set(ZEEM_TEST-name ${ZEEM_TEST})
+
+    add_executable(${ZEEM_TEST-exe} ${ZEEM_TEST_SOURCE})
 
     if(MODULE)
-        # target_link_libraries(${ZEEM_TEST} PRIVATE mcfp::mcfp-module zeem::zeem-module Catch2::Catch2)
-        target_link_libraries(${ZEEM_TEST} PRIVATE mcfp::mcfp zeem::zeem-module Catch2::Catch2)
+        target_link_libraries(${ZEEM_TEST-exe} PRIVATE mcfp::mcfp-module zeem::zeem-module Catch2::Catch2)
     else()
-        target_link_libraries(${ZEEM_TEST} PRIVATE mcfp::mcfp zeem::zeem Catch2::Catch2)
+        target_link_libraries(${ZEEM_TEST-exe} PRIVATE mcfp::mcfp zeem::zeem Catch2::Catch2)
     endif()
 
-    add_dependencies(${ZEEM_TEST} XML_CONF)
+    add_dependencies(${ZEEM_TEST-exe} XML_CONF)
 
     if(MSVC)
         # Specify unwind semantics so that MSVC knowns how to handle exceptions
-        target_compile_options(${ZEEM_TEST} PRIVATE /EHsc)
+        target_compile_options(${ZEEM_TEST-exe} PRIVATE /EHsc)
     endif()
 
     add_test(NAME ${ZEEM_TEST}
-        COMMAND $<TARGET_FILE:${ZEEM_TEST}> ${ZEEM_TEST_ARGS}
-        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/)
+        COMMAND $<TARGET_FILE:${ZEEM_TEST-exe}> ${ZEEM_TEST_ARGS})
+
+    set(dll_dirs "$<TARGET_RUNTIME_DLL_DIRS:${ZEEM_TEST-exe}>")
+    set(is_empty "$<STREQUAL:${dll_dirs},>")
+    set(env_op "PATH=path_list_append:")
+
+    set_property(TEST ${ZEEM_TEST-name} APPEND PROPERTY ENVIRONMENT_MODIFICATION
+        "$<$<NOT:${is_empty}>:${env_op}$<JOIN:${dll_dirs},$<SEMICOLON>${env_op}>>")
 
 endfunction()
 
@@ -80,10 +81,10 @@ foreach(TEST IN LISTS ZEEM_TESTS)
 
     create_test(${ZEEM_TEST} ${ZEEM_TEST_SOURCE} "${ZEEM_TEST_ARGS}" OFF)
 
-	# if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
-	# 	target_compile_options("${ZEEM_TEST}" PRIVATE -fsanitize=address)
-	# 	target_link_options("${ZEEM_TEST}" PRIVATE -fsanitize=address)
-	# endif()
+    # if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+    # 	target_compile_options("${ZEEM_TEST}" PRIVATE -fsanitize=address)
+    # 	target_link_options("${ZEEM_TEST}" PRIVATE -fsanitize=address)
+    # endif()
 
     if(ZEEM_BUILD_CXX_MODULE)
         create_test("${ZEEM_TEST}-m" ${ZEEM_TEST_SOURCE} "${ZEEM_TEST_ARGS}" ON)

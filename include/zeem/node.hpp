@@ -7,6 +7,7 @@
 /// the core of the zeem XML library defining the main classes in the DOM API
 
 #ifndef ZEEM_CXX_MODULE
+# include "zeem/export.hpp"
 # include "zeem/error.hpp"
 # include "zeem/version.hpp"
 
@@ -47,7 +48,7 @@ concept NodeType = std::is_base_of_v<zeem::node, std::remove_cvref_t<T>>;
  * to find out the actual type of a node
  */
 
-ZEEM_EXPORT enum class node_type : uint8_t {
+ZEEM_EXPORT enum class ZEEM_API node_type : uint8_t {
 	element,
 	text,
 	attribute,
@@ -62,7 +63,7 @@ ZEEM_EXPORT enum class node_type : uint8_t {
 // --------------------------------------------------------------------
 
 /// \brief specification of how XML data should be written out
-ZEEM_EXPORT struct format_info
+ZEEM_EXPORT struct ZEEM_API format_info
 {
 	bool indent = false;             ///< Indent the output
 	bool indent_attributes = false;  ///< Indent attributes on separate lines
@@ -106,18 +107,18 @@ class node
   public:
 	/** @cond */
 
-	node &operator=(const node &n) = delete;
-	node &operator=(node &&n) = delete;
+	ZEEM_API node &operator=(const node &n) = delete;
+	ZEEM_API node &operator=(node &&n) = delete;
 
-	virtual ~node() = default;
+	ZEEM_API virtual ~node() = default;
 
 	/** @endcond */
 
 	/// \brief node_type to be returned by each implementation of this node class
-	[[nodiscard]] virtual constexpr node_type type() const = 0;
+	ZEEM_API [[nodiscard]] virtual constexpr node_type type() const = 0;
 
 	/// content of a xml:lang attribute of this element, or its nearest ancestor
-	[[nodiscard]] virtual std::string lang() const;
+	ZEEM_API [[nodiscard]] virtual std::string lang() const;
 
 	/**
 	 * @brief Get the qualified name
@@ -131,7 +132,7 @@ class node
 	 *
 	 * @return std::string
 	 */
-	[[nodiscard]] virtual std::string get_qname() const;
+	ZEEM_API [[nodiscard]] virtual std::string get_qname() const;
 
 	/**
 	 * @brief Set the qualified name to @a qn
@@ -140,7 +141,7 @@ class node
 	 *
 	 * @param qn
 	 */
-	virtual void set_qname([[maybe_unused]] std::string qn) noexcept {} // NOLINT(performance-unnecessary-value-param)
+	ZEEM_API virtual void set_qname([[maybe_unused]] std::string qn) noexcept {} // NOLINT(performance-unnecessary-value-param)
 
 	/**
 	 * \brief set the qname with two parameters, if \a prefix is empty the qname will be simply \a name
@@ -150,31 +151,31 @@ class node
 	 * \param name		The actual name to use
 	 */
 
-	void set_qname(const std::string &prefix, std::string name)
+	ZEEM_API void set_qname(const std::string &prefix, std::string name)
 	{
 		set_qname(prefix.empty() ? std::move(name) : prefix + ':' + name);
 	}
 
-	[[nodiscard]] virtual std::string get_local_name() const; ///< The local-name for the node as parsed from the qname.
-	[[nodiscard]] virtual std::string get_prefix() const;     ///< The prefix for the node as parsed from the qname.
-	[[nodiscard]] virtual std::string get_ns() const;         ///< Returns the namespace URI for the node, if it can be resolved.
+	ZEEM_API [[nodiscard]] virtual std::string get_local_name() const; ///< The local-name for the node as parsed from the qname.
+	ZEEM_API [[nodiscard]] virtual std::string get_prefix() const;     ///< The prefix for the node as parsed from the qname.
+	ZEEM_API [[nodiscard]] virtual std::string get_ns() const;         ///< Returns the namespace URI for the node, if it can be resolved.
 
-	[[nodiscard]] virtual std::string name() const ///< By default, the name returns the local name
+	ZEEM_API [[nodiscard]] virtual std::string name() const ///< By default, the name returns the local name
 	{
 		return get_local_name();
 	}
 
 	/// Return the namespace URI for a prefix
-	[[nodiscard]] virtual std::string namespace_for_prefix(std::string_view prefix) const;
+	ZEEM_API [[nodiscard]] virtual std::string namespace_for_prefix(std::string_view prefix) const;
 
 	/// Return the prefix for a namespace URI
-	[[nodiscard]] virtual std::pair<std::string, bool> prefix_for_namespace(std::string_view uri) const;
+	ZEEM_API [[nodiscard]] virtual std::pair<std::string, bool> prefix_for_namespace(std::string_view uri) const;
 
 	/// Prefix the \a tag with the namespace prefix for \a uri
-	[[nodiscard]] virtual std::string prefix_tag(const std::string &tag, std::string_view uri) const;
+	ZEEM_API [[nodiscard]] virtual std::string prefix_tag(const std::string &tag, std::string_view uri) const;
 
 	/// return all content concatenated, including that of children.
-	[[nodiscard]] virtual std::string str() const = 0;
+	ZEEM_API [[nodiscard]] virtual std::string str() const = 0;
 
 	// --------------------------------------------------------------------
 	// low level routines
@@ -182,28 +183,28 @@ class node
 	// basic access
 
 	// All nodes should have a single root node
-	virtual element_container *root();                           ///< The root node for this node
-	[[nodiscard]] virtual const element_container *root() const; ///< The root node for this node
+	ZEEM_API virtual element_container *root();                           ///< The root node for this node
+	ZEEM_API [[nodiscard]] virtual const element_container *root() const; ///< The root node for this node
 
-	void parent(element_container *p) noexcept { m_parent = p; }               ///< Set parent to \a p
-	element_container *parent() { return m_parent; }                           ///< The parent node for this node
-	[[nodiscard]] const element_container *parent() const { return m_parent; } ///< The parent node for this node
+	ZEEM_API void parent(element_container *p) noexcept { m_parent = p; }               ///< Set parent to \a p
+	ZEEM_API element_container *parent() { return m_parent; }                           ///< The parent node for this node
+	ZEEM_API [[nodiscard]] const element_container *parent() const { return m_parent; } ///< The parent node for this node
 
-	void next(node *n) noexcept { m_next = const_cast<node *>(n); } ///< Set next to \a n
-	node *next() { return m_next; }                                 ///< The next sibling
-	[[nodiscard]] const node *next() const { return m_next; }       ///< The next sibling
+	ZEEM_API void next(node *n) noexcept { m_next = const_cast<node *>(n); } ///< Set next to \a n
+	ZEEM_API node *next() { return m_next; }                                 ///< The next sibling
+	ZEEM_API [[nodiscard]] const node *next() const { return m_next; }       ///< The next sibling
 
-	void prev(node *n) noexcept { m_prev = const_cast<node *>(n); } ///< Set prev to \a n
-	node *prev() { return m_prev; }                                 ///< The previous sibling
-	[[nodiscard]] const node *prev() const { return m_prev; }       ///< The previous sibling
+	ZEEM_API void prev(node *n) noexcept { m_prev = const_cast<node *>(n); } ///< Set prev to \a n
+	ZEEM_API node *prev() { return m_prev; }                                 ///< The previous sibling
+	ZEEM_API [[nodiscard]] const node *prev() const { return m_prev; }       ///< The previous sibling
 
 	/// Compare the node with \a n
-	virtual bool equals(const node *n) const;
+	ZEEM_API virtual bool equals(const node *n) const;
 
 	/// \brief low level routine for writing out XML
 	///
 	/// This method is usually called by operator<<(std::ostream&, zeem::document&)
-	virtual void write(std::ostream &os, format_info fmt) const = 0;
+	ZEEM_API virtual void write(std::ostream &os, format_info fmt) const = 0;
 
   protected:
 	/** @cond */
@@ -317,10 +318,10 @@ class basic_node_list
 	basic_node_list &operator=(basic_node_list &&nl) = delete;
 	virtual ~basic_node_list() = default;
 
-	bool operator==(const basic_node_list &b) const;
+	ZEEM_API bool operator==(const basic_node_list &b) const;
 
 	/// \brief remove all nodes
-	virtual void clear();
+	ZEEM_API virtual void clear();
 
   protected:
 	friend void swap(basic_node_list &a, basic_node_list &b) noexcept
@@ -337,9 +338,9 @@ class basic_node_list
   protected:
 	// proxy methods for every insertion
 
-	virtual node *insert_impl(const node *p, std::unique_ptr<node> n);
+	ZEEM_API virtual node *insert_impl(const node *p, std::unique_ptr<node> n);
 
-	node *erase_impl(node *n);
+	ZEEM_API node *erase_impl(node *n);
 };
 
 /** @endcond */
@@ -377,22 +378,22 @@ class iterator_impl
 	using reference = value_type &;
 	using difference_type = std::ptrdiff_t;
 
-	iterator_impl() = default;
+	ZEEM_API iterator_impl() = default;
 
 	// NOLINTBEGIN(hicpp-explicit-conversions)
-	iterator_impl(node *current)
+	ZEEM_API iterator_impl(node *current)
 		: m_current(current)
 	{
 		skip();
 	}
 
-	iterator_impl(const node *current)
+	ZEEM_API iterator_impl(const node *current)
 		requires(std::is_const_v<value_type>)
 		: iterator_impl(const_cast<node *>(current))
 	{
 	}
 
-	iterator_impl(const iterator_impl &i) = default;
+	ZEEM_API iterator_impl(const iterator_impl &i) = default;
 
 	/**
 	 * @brief Copy constructor
@@ -404,7 +405,7 @@ class iterator_impl
 	 */
 	template <typename Iterator>
 		requires(std::is_base_of_v<value_type, typename Iterator::value_type>)
-	iterator_impl(const Iterator &i)
+	ZEEM_API iterator_impl(const Iterator &i)
 		: m_current(const_cast<node *>(i.m_current))
 	{
 		skip();
@@ -412,7 +413,7 @@ class iterator_impl
 
 	// NOLINTEND(hicpp-explicit-conversions)
 
-	iterator_impl &operator=(iterator_impl i)
+	ZEEM_API iterator_impl &operator=(iterator_impl i)
 	{
 		m_current = i.m_current;
 		return *this;
@@ -420,30 +421,30 @@ class iterator_impl
 
 	template <typename Iterator>
 		requires(std::is_base_of_v<value_type, typename Iterator::value_type>)
-	iterator_impl &operator=(const Iterator &i)
+	ZEEM_API iterator_impl &operator=(const Iterator &i)
 	{
 		m_current = i.m_current;
 		return *this;
 	}
 
-	reference operator*() const { return *static_cast<value_type *>(m_current); }
-	pointer operator->() const { return static_cast<value_type *>(m_current); }
+	ZEEM_API reference operator*() const { return *static_cast<value_type *>(m_current); }
+	ZEEM_API pointer operator->() const { return static_cast<value_type *>(m_current); }
 
-	iterator_impl &operator++()
+	ZEEM_API iterator_impl &operator++()
 	{
 		m_current = m_current->next();
 		skip();
 		return *this;
 	}
 
-	iterator_impl operator++(int)
+	ZEEM_API iterator_impl operator++(int)
 	{
 		iterator_impl iter(*this);
 		operator++();
 		return iter;
 	}
 
-	iterator_impl &operator--()
+	ZEEM_API iterator_impl &operator--()
 	{
 		m_current = m_current->prev();
 		if constexpr (std::is_same_v<std::remove_cv_t<value_type>, element>)
@@ -455,7 +456,7 @@ class iterator_impl
 		return *this;
 	}
 
-	iterator_impl operator--(int)
+	ZEEM_API iterator_impl operator--(int)
 	{
 		iterator_impl iter(*this);
 		operator--();
@@ -464,20 +465,20 @@ class iterator_impl
 
 	template <typename IteratorType>
 		requires NodeType<typename IteratorType::node_type>
-	bool operator==(const IteratorType &other) const
+	ZEEM_API bool operator==(const IteratorType &other) const
 	{
 		return m_current == other.m_current;
 	}
 
-	bool operator==(const iterator_impl &other) const
+	ZEEM_API bool operator==(const iterator_impl &other) const
 	{
 		return m_current == other.m_current;
 	}
 
 	template <NodeType T2>
-	bool operator==(const T2 *n) const { return m_current == n; }
+	ZEEM_API bool operator==(const T2 *n) const { return m_current == n; }
 
-	explicit operator pointer() const { return static_cast<pointer>(m_current); }
+	ZEEM_API explicit operator pointer() const { return static_cast<pointer>(m_current); }
 
   private:
 	using node_base_type = std::conditional_t<std::is_const_v<T>, const node, node>;
@@ -550,50 +551,54 @@ class node_list : public basic_node_list
   public:
 	/// @brief The iterator class
 	using iterator = iterator_impl<value_type>;
+#if not defined(_MSC_VER)
 	static_assert(std::input_iterator<iterator>);
+#endif
 
 	/// @brief The const iterator class
 	using const_iterator = iterator_impl<const value_type>;
+#if not defined(_MSC_VER)
 	static_assert(std::input_iterator<const_iterator>);
+#endif
 
 	/// @brief Return an iterator to the first element
-	[[nodiscard]] iterator begin() { return iterator(m_header->m_next); }
+	ZEEM_API [[nodiscard]] iterator begin() { return iterator(m_header->m_next); }
 	/// @brief Return an iterator past the last element
-	[[nodiscard]] iterator end() { return iterator(m_header); }
+	ZEEM_API [[nodiscard]] iterator end() { return iterator(m_header); }
 
 	/// @brief Return a const iterator to the first element
-	[[nodiscard]] const_iterator cbegin() const { return const_iterator(m_header->m_next); }
+	ZEEM_API [[nodiscard]] const_iterator cbegin() const { return const_iterator(m_header->m_next); }
 	/// @brief Return a const iterator past the last element
-	[[nodiscard]] const_iterator cend() const { return const_iterator(m_header); }
+	ZEEM_API [[nodiscard]] const_iterator cend() const { return const_iterator(m_header); }
 
 	/// @brief Return a const iterator to the first element
-	[[nodiscard]] const_iterator begin() const { return const_iterator(m_header->m_next); }
+	ZEEM_API [[nodiscard]] const_iterator begin() const { return const_iterator(m_header->m_next); }
 	/// @brief Return a const iterator past the last element
-	[[nodiscard]] const_iterator end() const { return const_iterator(m_header); }
+	ZEEM_API [[nodiscard]] const_iterator end() const { return const_iterator(m_header); }
 
 	/// @brief Return a reference to the first element
-	[[nodiscard]] value_type &front() { return *begin(); }
+	ZEEM_API [[nodiscard]] value_type &front() { return *begin(); }
 	/// @brief Return a reference to the first element
-	[[nodiscard]] const value_type &front() const { return *begin(); }
+	ZEEM_API [[nodiscard]] const value_type &front() const { return *begin(); }
 
 	/// @brief Return a reference to the last element
-	[[nodiscard]] value_type &back() { return *std::prev(end()); }
+	ZEEM_API [[nodiscard]] value_type &back() { return *std::prev(end()); }
 	/// @brief Return a reference to the last element
-	[[nodiscard]] const value_type &back() const { return *std::prev(end()); }
+	ZEEM_API [[nodiscard]] const value_type &back() const { return *std::prev(end()); }
 
 	/// @brief The size of the visible items
 	/// @return The count of items visible
-	[[nodiscard]] std::size_t size() const { return std::distance(begin(), end()); }
+	ZEEM_API [[nodiscard]] std::size_t size() const { return std::distance(begin(), end()); }
 	/// @brief Whether the list contains any items
-	[[nodiscard]] bool empty() const { return size() == 0; }
+	ZEEM_API [[nodiscard]] bool empty() const { return size() == 0; }
 	/// @brief Whether the list contains any items
-	explicit operator bool() const { return not empty(); }
+	ZEEM_API explicit operator bool() const { return not empty(); }
 
 	/// \brief insert a copy of \a e
-	iterator insert(const_iterator pos, const value_type &e);
+	ZEEM_API iterator insert(const_iterator pos, const value_type &e);
 
 	/// \brief insert a copy of \a e at position \a pos, moving its data
-	iterator insert(const_iterator pos, value_type &&e);
+	ZEEM_API iterator insert(const_iterator pos, value_type &&e);
 
 	/// \brief construct a new node using arguments provided in \a a
 
@@ -601,14 +606,14 @@ class node_list : public basic_node_list
 	// this will fail, since they need to use the nodes() variant.
 
 	template <typename... Args>
-	iterator insert(const_iterator p, Args &&...args)
+	ZEEM_API iterator insert(const_iterator p, Args &&...args)
 		requires(sizeof...(Args) > 1 or not std::is_base_of_v<node, std::remove_cvref_t<Args>...>)
 	{
 		return insert_impl(p, std::make_unique<value_type>(std::forward<Args>(args)...));
 	}
 
 	/// \brief insert \a count copies of \a n at position \a pos
-	iterator insert(const_iterator pos, std::size_t count, const value_type &n)
+	ZEEM_API iterator insert(const_iterator pos, std::size_t count, const value_type &n)
 	{
 		iterator p(const_cast<value_type *>(&*pos));
 		while (count-- > 0)
@@ -618,7 +623,7 @@ class node_list : public basic_node_list
 
 	/// \brief insert copies of the nodes from \a first to \a last at position \a pos
 	template <typename InputIter>
-	iterator insert(const_iterator pos, InputIter first, InputIter last)
+	ZEEM_API iterator insert(const_iterator pos, InputIter first, InputIter last)
 	{
 		iterator p(const_cast<value_type *>(&*pos));
 		iterator result = p;
@@ -633,14 +638,14 @@ class node_list : public basic_node_list
 	}
 
 	/// \brief insert copies of the nodes in \a nodes at position \a pos
-	iterator insert(const_iterator pos, std::initializer_list<value_type> nodes)
+	ZEEM_API iterator insert(const_iterator pos, std::initializer_list<value_type> nodes)
 	{
 		return insert(pos, nodes.begin(), nodes.end());
 	}
 
 	/// \brief replace content with copies of the nodes from \a first to \a last
 	template <typename InputIter>
-	void assign(InputIter first, InputIter last)
+	ZEEM_API void assign(InputIter first, InputIter last)
 	{
 		basic_node_list::clear();
 		insert(begin(), first, last);
@@ -648,33 +653,33 @@ class node_list : public basic_node_list
 
 	/// \brief emplace an element at position \a p using arguments \a args
 	template <typename... Args>
-	iterator emplace(const_iterator p, Args &&...args)
+	ZEEM_API iterator emplace(const_iterator p, Args &&...args)
 	{
 		return insert(p, std::forward<Args>(args)...);
 	}
 
 	/// \brief emplace an element at the front using arguments \a args
 	template <typename... Args>
-	iterator emplace_front(Args &&...args)
+	ZEEM_API iterator emplace_front(Args &&...args)
 	{
 		return emplace(begin(), std::forward<Args>(args)...);
 	}
 
 	/// \brief emplace an element at the back using arguments \a args
 	template <typename... Args>
-	iterator emplace_back(Args &&...args)
+	ZEEM_API iterator emplace_back(Args &&...args)
 	{
 		return emplace(end(), std::forward<Args>(args)...);
 	}
 
 	/// \brief erase the node at \a pos
-	iterator erase(const_iterator pos)
+	ZEEM_API iterator erase(const_iterator pos)
 	{
 		return erase_impl(pos);
 	}
 
 	/// \brief erase the nodes from \a first to \a last
-	iterator erase(iterator first, iterator last)
+	ZEEM_API iterator erase(iterator first, iterator last)
 	{
 		while (first != last)
 		{
@@ -688,44 +693,44 @@ class node_list : public basic_node_list
 	}
 
 	/// \brief erase the first node
-	void pop_front()
+	ZEEM_API void pop_front()
 	{
 		erase(begin());
 	}
 
 	/// \brief erase the last node
-	void pop_back()
+	ZEEM_API void pop_back()
 	{
 		erase(std::prev(end()));
 	}
 
 	/// \brief move the value_type \a e to the front of this value_type.
-	void push_front(value_type &&e)
+	ZEEM_API void push_front(value_type &&e)
 	{
 		emplace(begin(), std::forward<value_type>(e));
 	}
 
 	/// \brief copy the value_type \a e to the front of this value_type.
-	void push_front(const value_type &e)
+	ZEEM_API void push_front(const value_type &e)
 	{
 		emplace(begin(), e);
 	}
 
 	/// \brief move the value_type \a e to the back of this value_type.
-	void push_back(value_type &&e)
+	ZEEM_API void push_back(value_type &&e)
 	{
 		emplace(end(), std::forward<value_type>(e));
 	}
 
 	/// \brief copy the value_type \a e to the back of this value_type.
-	void push_back(const value_type &e)
+	ZEEM_API void push_back(const value_type &e)
 	{
 		emplace(end(), e);
 	}
 
 	/// \brief Sort the nodes
 	template <typename Pred>
-	void sort(const Pred &pred);
+	ZEEM_API void sort(const Pred &pred);
 
   protected:
 	/** @cond */
@@ -768,13 +773,13 @@ ZEEM_EXPORT class element_container : public node, public node_list<element>
 {
   public:
 	/// @brief Default constructor
-	element_container()
+	ZEEM_API element_container()
 		: node_list<element>(this)
 	{
 	}
 
 	/// @brief Copy constructor
-	element_container(const element_container &e)
+	ZEEM_API element_container(const element_container &e)
 		: node(e)
 		, node_list<element>(this)
 	{
@@ -784,7 +789,7 @@ ZEEM_EXPORT class element_container : public node, public node_list<element>
 	}
 
 	/// @brief Destructor
-	~element_container() override
+	ZEEM_API ~element_container() override
 	{
 		clear();
 	}
@@ -792,7 +797,7 @@ ZEEM_EXPORT class element_container : public node, public node_list<element>
 	// --------------------------------------------------------------------
 
 	/** @cond */
-	friend void swap(element_container &a, element_container &b) noexcept
+	ZEEM_API friend void swap(element_container &a, element_container &b) noexcept
 	{
 		swap(static_cast<node_list<element> &>(a), static_cast<node_list<element> &>(b));
 	}
@@ -807,7 +812,7 @@ ZEEM_EXPORT class element_container : public node, public node_list<element>
 	 *
 	 * @return node_list<> The node_list for nodes of all types
 	 */
-	node_list<> nodes() { return { this }; }
+	ZEEM_API node_list<> nodes() { return { this }; }
 
 	/**
 	 * @brief This method allows read access to the nodes not visible using
@@ -815,43 +820,43 @@ ZEEM_EXPORT class element_container : public node, public node_list<element>
 	 *
 	 * @return node_list<> The node_list for nodes of all types
 	 */
-	[[nodiscard]] const node_list<> nodes() const { return node_list<node>(const_cast<element_container *>(this)); }
+	ZEEM_API [[nodiscard]] const node_list<> nodes() const { return node_list<node>(const_cast<element_container *>(this)); }
 
 	/// \brief will return the concatenation of str() from all child nodes
-	[[nodiscard]] std::string str() const override;
+	ZEEM_API [[nodiscard]] std::string str() const override;
 
 	/// \brief return the elements that match XPath \a path.
 	///
 	/// If you need to find other classes than xml::element, of if your XPath
 	/// contains variables, you should create a zeem::xpath object and use
 	/// its evaluate method.
-	[[nodiscard]] std::vector<element *> find(std::string_view path) const;
+	ZEEM_API [[nodiscard]] std::vector<element *> find(std::string_view path) const;
 
 	/// \brief return the first element that matches XPath \a path.
 	///
 	/// If you need to find other classes than xml::element, of if your XPath
 	/// contains variables, you should create a zeem::xpath object and use
 	/// its evaluate method.
-	[[nodiscard]] iterator find_first(std::string_view path);
+	ZEEM_API [[nodiscard]] iterator find_first(std::string_view path);
 	/// \brief return the first element that matches XPath \a path.
 	///
 	/// If you need to find other classes than xml::element, of if your XPath
 	/// contains variables, you should create a zeem::xpath object and use
 	/// its evaluate method.
-	[[nodiscard]] const_iterator find_first(std::string_view path) const;
+	ZEEM_API [[nodiscard]] const_iterator find_first(std::string_view path) const;
 
 	// With prepared xpaths:
 
 	/// \brief return the elements that match XPath \a path.
-	[[nodiscard]] std::vector<element *> find(const xpath &path, const context &ctxt) const;
+	ZEEM_API [[nodiscard]] std::vector<element *> find(const xpath &path, const context &ctxt) const;
 
 	/// \brief return the first element that matches XPath \a path.
-	[[nodiscard]] iterator find_first(const xpath &path, const context &ctxt);
+	ZEEM_API [[nodiscard]] iterator find_first(const xpath &path, const context &ctxt);
 	/// \brief return the first element that matches XPath \a path.
-	[[nodiscard]] const_iterator find_first(const xpath &path, const context &ctxt) const;
+	ZEEM_API [[nodiscard]] const_iterator find_first(const xpath &path, const context &ctxt) const;
 
 	/** @cond */
-	void write(std::ostream &os, format_info fmt) const override;
+	ZEEM_API void write(std::ostream &os, format_info fmt) const override;
 	/** @endcond */
 };
 
@@ -879,7 +884,7 @@ ZEEM_EXPORT class node_with_text : public node
 	node_with_text(node_with_text &&n) = default;
 
   public:
-	friend void swap(node_with_text &a, node_with_text &b) noexcept
+	ZEEM_API friend void swap(node_with_text &a, node_with_text &b) noexcept
 	{
 		std::swap(a.m_text, b.m_text);
 	}
@@ -887,16 +892,16 @@ ZEEM_EXPORT class node_with_text : public node
 	/** @endcond */
 
 	/// \brief return the text content
-	[[nodiscard]] std::string str() const override { return m_text; }
+	ZEEM_API [[nodiscard]] std::string str() const override { return m_text; }
 
 	/// \brief return the text content, same as str()
-	[[nodiscard]] virtual std::string get_text() const { return m_text; }
+	ZEEM_API [[nodiscard]] virtual std::string get_text() const { return m_text; }
 
 	/// \brief set the text content
-	virtual void set_text(std::string text) { m_text = std::move(text); }
+	ZEEM_API virtual void set_text(std::string text) { m_text = std::move(text); }
 
 	/// @brief Compare two nodes with text for equality
-	bool equals(const node *n) const override
+	ZEEM_API bool equals(const node *n) const override
 	{
 		return type() == n->type() and
 		       static_cast<const node_with_text *>(n)->m_text == m_text;
@@ -924,38 +929,38 @@ ZEEM_EXPORT class node_with_text : public node
 ZEEM_EXPORT class comment final : public node_with_text
 {
   public:
-	[[nodiscard]] constexpr node_type type() const override { return node_type::comment; }
+	ZEEM_API [[nodiscard]] constexpr node_type type() const override { return node_type::comment; }
 
 	/// @brief default constructor
-	explicit comment(std::string text = {})
+	ZEEM_API explicit comment(std::string text = {})
 		: node_with_text(std::move(text))
 	{
 	}
 
 	/// @brief copy constructor
-	comment(const comment &c) = default;
+	ZEEM_API comment(const comment &c) = default;
 
 	/// @brief move constructor
-	comment(comment &&c) noexcept
+	ZEEM_API comment(comment &&c) noexcept
 	{
 		swap(*this, c);
 	}
 
 	/// @brief assignment operator
-	comment &operator=(comment c) noexcept
+	ZEEM_API comment &operator=(comment c) noexcept
 	{
 		swap(*this, c);
 		return *this;
 	}
 
 	/// \brief compare nodes for equality
-	bool equals(const node *n) const override
+	ZEEM_API bool equals(const node *n) const override
 	{
 		return this == n or (n->type() == node_type::comment and node_with_text::equals(n));
 	}
 
 	/** @cond */
-	void write(std::ostream &os, format_info fmt) const override;
+	ZEEM_API void write(std::ostream &os, format_info fmt) const override;
 	/** @endcond */
 };
 
@@ -968,37 +973,37 @@ ZEEM_EXPORT class comment final : public node_with_text
 ZEEM_EXPORT class processing_instruction final : public node_with_text
 {
   public:
-	[[nodiscard]] constexpr node_type type() const override { return node_type::processing_instruction; }
+	ZEEM_API [[nodiscard]] constexpr node_type type() const override { return node_type::processing_instruction; }
 
 	/// @brief default constructor
-	processing_instruction() = default;
+	ZEEM_API processing_instruction() = default;
 
 	/// \brief constructor with parameters
 	///
 	/// This constructs a processing instruction with the specified parameters
 	/// \param target	The target, this will follow the <? characters, e.g. `php` will generate <?php ... ?>
 	/// \param text		The text inside this node, e.g. the PHP code.
-	processing_instruction(std::string target, std::string text)
+	ZEEM_API processing_instruction(std::string target, std::string text)
 		: node_with_text(std::move(text))
 		, m_target(std::move(target))
 	{
 	}
 
 	/// @brief copy constructor
-	processing_instruction(const processing_instruction &pi) = default;
+	ZEEM_API processing_instruction(const processing_instruction &pi) = default;
 
 	/// @brief move constructor
-	processing_instruction(processing_instruction &&pi) noexcept = default;
+	ZEEM_API processing_instruction(processing_instruction &&pi) noexcept = default;
 
 	/// @brief assignment operator
-	processing_instruction &operator=(processing_instruction pi) noexcept
+	ZEEM_API processing_instruction &operator=(processing_instruction pi) noexcept
 	{
 		swap(*this, pi);
 		return *this;
 	}
 
 	/** @cond */
-	friend void swap(processing_instruction &a, processing_instruction &b) noexcept
+	ZEEM_API friend void swap(processing_instruction &a, processing_instruction &b) noexcept
 	{
 		swap(static_cast<node_with_text &>(a), static_cast<node_with_text &>(b));
 		std::swap(a.m_target, b.m_target);
@@ -1006,16 +1011,16 @@ ZEEM_EXPORT class processing_instruction final : public node_with_text
 	/** @endcond */
 
 	/// \brief return the qname which is the same as the target in this case
-	[[nodiscard]] std::string get_qname() const override { return m_target; }
+	ZEEM_API [[nodiscard]] std::string get_qname() const override { return m_target; }
 
 	/// \brief return the target
-	[[nodiscard]] std::string get_target() const { return m_target; }
+	ZEEM_API [[nodiscard]] std::string get_target() const { return m_target; }
 
 	/// \brief set the target
-	void set_target(std::string target) { m_target = std::move(target); }
+	ZEEM_API void set_target(std::string target) { m_target = std::move(target); }
 
 	/// \brief compare nodes for equality
-	bool equals(const node *n) const override
+	ZEEM_API bool equals(const node *n) const override
 	{
 		return this == n or
 		       (n->type() == node_type::processing_instruction and
@@ -1024,7 +1029,7 @@ ZEEM_EXPORT class processing_instruction final : public node_with_text
 	}
 
 	/** @cond */
-	void write(std::ostream &os, format_info fmt) const override;
+	ZEEM_API void write(std::ostream &os, format_info fmt) const override;
 
   private:
 	std::string m_target;
@@ -1041,38 +1046,38 @@ ZEEM_EXPORT class processing_instruction final : public node_with_text
 class text final : public node_with_text
 {
   public:
-	[[nodiscard]] constexpr node_type type() const override { return node_type::text; }
+	ZEEM_API [[nodiscard]] constexpr node_type type() const override { return node_type::text; }
 
 	/// @brief default constructor
-	explicit text(std::string text = {})
+	ZEEM_API explicit text(std::string text = {})
 		: node_with_text(std::move(text))
 	{
 	}
 
 	/// @brief copy constructor
-	text(const text &t) = default;
+	ZEEM_API text(const text &t) = default;
 
 	/// @brief move constructor
-	text(text &&t) noexcept = default;
+	ZEEM_API text(text &&t) noexcept = default;
 
 	/// @brief assignment operator
-	text &operator=(text txt) noexcept
+	ZEEM_API text &operator=(text txt) noexcept
 	{
 		swap(*this, txt);
 		return *this;
 	}
 
 	/// \brief append \a text to the stored text
-	void append(std::string_view text) { append_text(text); }
+	ZEEM_API void append(std::string_view text) { append_text(text); }
 
 	/// \brief compare nodes for equality
-	bool equals(const node *n) const override;
+	ZEEM_API bool equals(const node *n) const override;
 
 	/// \brief returns true if this text contains only whitespace characters
-	[[nodiscard]] bool is_space() const;
+	ZEEM_API [[nodiscard]] bool is_space() const;
 
 	/** @cond */
-	void write(std::ostream &os, format_info fmt) const override;
+	ZEEM_API void write(std::ostream &os, format_info fmt) const override;
 	/** @endcond */
 };
 
@@ -1086,38 +1091,38 @@ class text final : public node_with_text
 ZEEM_EXPORT class cdata final : public node_with_text
 {
   public:
-	[[nodiscard]] constexpr node_type type() const override { return node_type::cdata; }
+	ZEEM_API [[nodiscard]] constexpr node_type type() const override { return node_type::cdata; }
 
 	/// @brief default constructor
-	explicit cdata(std::string s = {})
+	ZEEM_API explicit cdata(std::string s = {})
 		: node_with_text(std::move(s))
 	{
 	}
 
 	/// @brief copy constructor
-	cdata(const cdata &cd) = default;
+	ZEEM_API cdata(const cdata &cd) = default;
 
 	/// @brief move constructor
-	cdata(cdata &&cd) noexcept = default;
+	ZEEM_API cdata(cdata &&cd) noexcept = default;
 
 	/// @brief assignment operator
-	cdata &operator=(cdata cd) noexcept
+	ZEEM_API cdata &operator=(cdata cd) noexcept
 	{
 		swap(*this, cd);
 		return *this;
 	}
 
 	/// \brief append \a text to the stored text
-	void append(std::string_view text) { append_text(text); }
+	ZEEM_API void append(std::string_view text) { append_text(text); }
 
 	/// \brief compare nodes for equality
-	bool equals(const node *n) const override
+	ZEEM_API bool equals(const node *n) const override
 	{
 		return this == n or (n->type() == node_type::cdata and node_with_text::equals(n));
 	}
 
 	/** @cond */
-	void write(std::ostream &os, format_info fmt) const override;
+	ZEEM_API void write(std::ostream &os, format_info fmt) const override;
 	/** @endcond */
 };
 
@@ -1130,13 +1135,13 @@ ZEEM_EXPORT class cdata final : public node_with_text
 class attribute final : public node
 {
   public:
-	[[nodiscard]] constexpr node_type type() const override { return node_type::attribute; }
+	ZEEM_API [[nodiscard]] constexpr node_type type() const override { return node_type::attribute; }
 
 	/// @brief constructor
 	/// @param qname The qualified name
 	/// @param value The value
 	/// @param id Flag to indicate if this is an ID attribute
-	attribute(std::string_view qname, std::string_view value, bool id = false)
+	ZEEM_API attribute(std::string_view qname, std::string_view value, bool id = false)
 		: m_qname(qname)
 		, m_value(value)
 		, m_id(id)
@@ -1144,24 +1149,24 @@ class attribute final : public node
 	}
 
 	/// @brief copy constructor
-	attribute(const attribute &attr) = default;
+	ZEEM_API attribute(const attribute &attr) = default;
 
 	/// @brief move constructor
-	attribute(attribute &&attr) noexcept
+	ZEEM_API attribute(attribute &&attr) noexcept
 		: node(std::forward<attribute>(attr))
 	{
 		swap(*this, attr);
 	}
 
 	/// @brief assignment operator
-	attribute &operator=(attribute attr) noexcept
+	ZEEM_API attribute &operator=(attribute attr) noexcept
 	{
 		swap(*this, attr);
 		return *this;
 	}
 
 	/** @cond */
-	friend void swap(attribute &a, attribute &b) noexcept
+	ZEEM_API friend void swap(attribute &a, attribute &b) noexcept
 	{
 		std::swap(a.m_qname, b.m_qname);
 		std::swap(a.m_value, b.m_value);
@@ -1170,7 +1175,7 @@ class attribute final : public node
 	/** @endcond */
 
 	/// @brief Attributes can be sorted
-	friend std::strong_ordering operator<=>(const attribute &a, const attribute &b)
+	ZEEM_API friend std::strong_ordering operator<=>(const attribute &a, const attribute &b)
 	{
 		if (auto cmp = (a.m_qname <=> b.m_qname); cmp != 0)
 			return cmp;
@@ -1180,42 +1185,42 @@ class attribute final : public node
 	}
 
 	/// @brief Compare two attributes for equality
-	bool operator==(const attribute &rhs) const
+	ZEEM_API bool operator==(const attribute &rhs) const
 	{
 		return equals(&rhs);
 	}
 
 	/// @brief Get the qualified name for this attribute
-	[[nodiscard]] std::string get_qname() const override { return m_qname; }
+	ZEEM_API [[nodiscard]] std::string get_qname() const override { return m_qname; }
 
 	/// @brief Set the qualified name to \a qn
-	void set_qname(std::string qn) noexcept override { m_qname = std::move(qn); }
+	ZEEM_API void set_qname(std::string qn) noexcept override { m_qname = std::move(qn); }
 
 	using node::set_qname;
 
 	/// \brief Is this attribute an xmlns attribute?
-	[[nodiscard]] bool is_namespace() const
+	ZEEM_API [[nodiscard]] bool is_namespace() const
 	{
 		return m_qname.starts_with("xmlns") and (m_qname.length() == 5 or m_qname[5] == ':');
 	}
 
 	/// @brief Return the value of this attribute
-	[[nodiscard]] std::string value() const { return m_value; }
+	ZEEM_API [[nodiscard]] std::string value() const { return m_value; }
 
 	/// @brief Set the value of this attribute to \a v
-	void set_value(std::string v) { m_value = std::move(v); }
+	ZEEM_API void set_value(std::string v) { m_value = std::move(v); }
 
 	/// @brief Set the value of this attribute to \a v
-	void set_value(std::string_view v) { m_value = v; }
+	ZEEM_API void set_value(std::string_view v) { m_value = v; }
 
 	/// \brief same as value, but checks to see if this really is a namespace attribute
-	[[nodiscard]] std::string uri() const;
+	ZEEM_API [[nodiscard]] std::string uri() const;
 
 	/// @brief Returns the value of this attribute
-	[[nodiscard]] std::string str() const override { return m_value; }
+	ZEEM_API [[nodiscard]] std::string str() const override { return m_value; }
 
 	/// \brief compare nodes for equality
-	bool equals(const node *n) const override
+	ZEEM_API bool equals(const node *n) const override
 	{
 		bool result = false;
 		if (type() == n->type())
@@ -1227,11 +1232,11 @@ class attribute final : public node
 	}
 
 	/// \brief returns whether this attribute is an ID attribute, as defined in an accompanying DTD
-	[[nodiscard]] bool is_id() const { return m_id; }
+	ZEEM_API [[nodiscard]] bool is_id() const { return m_id; }
 
 	/// \brief support for structured binding
 	template <std::size_t N>
-	[[nodiscard]] decltype(auto) get() const
+	ZEEM_API [[nodiscard]] decltype(auto) get() const
 	{
 		if constexpr (N == 0)
 			return get_local_name();
@@ -1240,7 +1245,7 @@ class attribute final : public node
 	}
 
 	/** @cond */
-	void write(std::ostream &os, format_info fmt) const override;
+	ZEEM_API void write(std::ostream &os, format_info fmt) const override;
 
   private:
 	std::string m_qname, m_value;
@@ -1258,32 +1263,32 @@ ZEEM_EXPORT class attribute_set : public node_list<attribute>
 {
   public:
 	/// @brief constructor to create an attribute_set for an element
-	explicit attribute_set(element_container *el)
+	ZEEM_API explicit attribute_set(element_container *el)
 		: node_list(el)
 	{
 	}
 
 	/// @brief destructor
-	~attribute_set() override
+	ZEEM_API ~attribute_set() override
 	{
 		clear();
 	}
 
 	/** @cond */
-	friend void swap(attribute_set &a, attribute_set &b) noexcept
+	ZEEM_API friend void swap(attribute_set &a, attribute_set &b) noexcept
 	{
 		swap(static_cast<node_list<attribute> &>(a), static_cast<node_list<attribute> &>(b));
 	}
 	/** @endcond */
 
 	/// \brief return true if the attribute with name \a key is defined
-	[[nodiscard]] bool contains(std::string_view key) const
+	ZEEM_API [[nodiscard]] bool contains(std::string_view key) const
 	{
 		return find(key) != end();
 	}
 
 	/// \brief return const_iterator to the attribute with name \a key
-	[[nodiscard]] const_iterator find(std::string_view key) const
+	ZEEM_API [[nodiscard]] const_iterator find(std::string_view key) const
 	{
 		for (auto i = begin(); i != end(); ++i)
 		{
@@ -1294,14 +1299,14 @@ ZEEM_EXPORT class attribute_set : public node_list<attribute>
 	}
 
 	/// \brief return iterator to the attribute with name \a key
-	iterator find(std::string_view key)
+	ZEEM_API iterator find(std::string_view key)
 	{
 		return iterator{ const_cast<const attribute_set &>(*this).find(key) };
 	}
 
 	/// \brief emplace a newly constructed attribute with argumenst \a args
 	template <typename... Args>
-	std::pair<iterator, bool> emplace(Args &&...args)
+	ZEEM_API std::pair<iterator, bool> emplace(Args &&...args)
 	{
 		return emplace(value_type{ std::forward<Args>(args)... });
 	}
@@ -1309,7 +1314,7 @@ ZEEM_EXPORT class attribute_set : public node_list<attribute>
 	/// \brief emplace an attribute move constructed from \a a
 	/// \return returns a std::pair with an iterator pointing to the inserted attribute
 	/// and a boolean indicating if this attribute was inserted instead of replaced.
-	std::pair<iterator, bool> emplace(value_type &&a)
+	ZEEM_API std::pair<iterator, bool> emplace(value_type &&a)
 	{
 		bool inserted = false;
 
@@ -1329,7 +1334,7 @@ ZEEM_EXPORT class attribute_set : public node_list<attribute>
 	using node_list::erase;
 
 	/// \brief remove attribute with name \a key
-	size_type erase(std::string_view key)
+	ZEEM_API size_type erase(std::string_view key)
 	{
 		size_type result = 0;
 		auto i = find(key);
@@ -1354,23 +1359,23 @@ ZEEM_EXPORT class attribute_set : public node_list<attribute>
 class element final : public element_container
 {
   public:
-	[[nodiscard]] constexpr node_type type() const override { return node_type::element; }
+	ZEEM_API [[nodiscard]] constexpr node_type type() const override { return node_type::element; }
 
 	/// @brief default constructor
-	element()
+	ZEEM_API element()
 		: m_attributes(this)
 	{
 	}
 
 	/// @brief constructor taking a \a qname
-	explicit element(std::string_view qname)
+	ZEEM_API explicit element(std::string_view qname)
 		: m_qname(qname)
 		, m_attributes(this)
 	{
 	}
 
 	/// @brief constructor taking a \a qname and a list of \a attributes
-	element(std::string_view qname, std::initializer_list<attribute> attributes)
+	ZEEM_API element(std::string_view qname, std::initializer_list<attribute> attributes)
 		: m_qname(qname)
 		, m_attributes(this)
 	{
@@ -1378,7 +1383,7 @@ class element final : public element_container
 	}
 
 	/// @brief constructor taking a \a qname and a list of child elements
-	element(std::string_view qname, std::initializer_list<element> il)
+	ZEEM_API element(std::string_view qname, std::initializer_list<element> il)
 		: m_qname(qname)
 		, m_attributes(this)
 	{
@@ -1386,7 +1391,7 @@ class element final : public element_container
 	}
 
 	/// @brief copy constructor
-	element(const element &e)
+	ZEEM_API element(const element &e)
 		: element_container(e)
 		, m_qname(e.m_qname)
 		, m_attributes(this)
@@ -1395,21 +1400,21 @@ class element final : public element_container
 	}
 
 	/// @brief move constructor
-	element(element &&e) noexcept
+	ZEEM_API element(element &&e) noexcept
 		: m_attributes(this)
 	{
 		swap(*this, e);
 	}
 
 	/// @brief assignment operator
-	element &operator=(element e) noexcept
+	ZEEM_API element &operator=(element e) noexcept
 	{
 		swap(*this, e);
 		return *this;
 	}
 
 	/** @cond */
-	friend void swap(element &a, element &b) noexcept
+	ZEEM_API friend void swap(element &a, element &b) noexcept
 	{
 		// swap(static_cast<node&>(a), static_cast<node&>(b));
 		swap(static_cast<element_container &>(a), static_cast<element_container &>(b));
@@ -1422,46 +1427,46 @@ class element final : public element_container
 	using node::set_qname;
 
 	/// @brief Return the qualified name
-	[[nodiscard]] std::string get_qname() const override { return m_qname; }
+	ZEEM_API [[nodiscard]] std::string get_qname() const override { return m_qname; }
 
 	/// @brief Set the qualified name to \a qn
-	void set_qname(std::string qn) noexcept override { m_qname = std::move(qn); }
+	ZEEM_API void set_qname(std::string qn) noexcept override { m_qname = std::move(qn); }
 
 	/// \brief content of a xml:lang attribute of this element, or its nearest ancestor
-	[[nodiscard]] std::string lang() const override;
+	ZEEM_API [[nodiscard]] std::string lang() const override;
 
 	/// \brief content of the xml:id attribute, or the attribute that was defined to be
 	/// of type ID by the DOCTYPE.
-	[[nodiscard]] std::string id() const;
+	ZEEM_API [[nodiscard]] std::string id() const;
 
 	/// @brief Compare two elements for equality
-	bool operator==(const element &e) const
+	ZEEM_API bool operator==(const element &e) const
 	{
 		return equals(&e);
 	}
 
 	/// @brief Compare two elements for equality
-	bool equals(const node *n) const override;
+	ZEEM_API bool equals(const node *n) const override;
 
 	// --------------------------------------------------------------------
 	// attribute support
 
 	/// \brief return the set of attributes for this element
-	attribute_set &attributes() { return m_attributes; }
+	ZEEM_API attribute_set &attributes() { return m_attributes; }
 
 	/// \brief return the set of attributes for this element
-	[[nodiscard]] const attribute_set &attributes() const { return m_attributes; }
+	ZEEM_API [[nodiscard]] const attribute_set &attributes() const { return m_attributes; }
 
 	// --------------------------------------------------------------------
 
 	/// \brief return the URI of the namespace for \a prefix
-	[[nodiscard]] std::string namespace_for_prefix(std::string_view prefix) const override;
+	ZEEM_API [[nodiscard]] std::string namespace_for_prefix(std::string_view prefix) const override;
 
 	/// \brief return the prefix for the XML namespace with uri \a uri.
 	/// \return The result is a pair of a std::string containing the actual prefix value
 	/// and a boolean indicating if the namespace was found at all, needed since empty prefixes
 	/// are allowed.
-	[[nodiscard]] std::pair<std::string, bool> prefix_for_namespace(std::string_view uri) const override;
+	ZEEM_API [[nodiscard]] std::pair<std::string, bool> prefix_for_namespace(std::string_view uri) const override;
 
 	/// \brief move this element and optionally everyting beneath it to the
 	///        specified namespace/prefix
@@ -1470,40 +1475,40 @@ class element final : public element_container
 	/// \param uri					The new namespace uri
 	/// \param recursive			Apply this to the child nodes as well
 	/// \param including_attributes	Move the attributes to this new namespace as well
-	void move_to_name_space(const std::string &prefix, std::string_view uri,
+	ZEEM_API void move_to_name_space(const std::string &prefix, std::string_view uri,
 		bool recursive, bool including_attributes);
 
 	// --------------------------------------------------------------------
 
 	/// \brief write the element to \a os
-	friend std::ostream &operator<<(std::ostream &os, const element &e);
+	ZEEM_API friend std::ostream &operator<<(std::ostream &os, const element &e);
 	// 	friend class document;
 
 	/// \brief return the concatenation of the content of all enclosed zeem::text nodes
-	[[nodiscard]] std::string get_content() const;
+	ZEEM_API [[nodiscard]] std::string get_content() const;
 
 	/// \brief replace all existing child text nodes with a new single text node containing \a content
-	void set_content(std::string content);
+	ZEEM_API void set_content(std::string content);
 
 	/// \brief return the value of attribute name \a qname or the empty string if not found
-	[[nodiscard]] std::string get_attribute(std::string_view qname) const;
+	ZEEM_API [[nodiscard]] std::string get_attribute(std::string_view qname) const;
 
 	/// \brief set the value of attribute named \a qname to the value \a value
-	void set_attribute(std::string_view qname, std::string_view value);
+	ZEEM_API void set_attribute(std::string_view qname, std::string_view value);
 
 	/// \brief The set_text method replaces any text node with the new text (call set_content)
-	void set_text(std::string s);
+	ZEEM_API void set_text(std::string s);
 
 	/// The add_text method checks if the last added child is a text node,
 	/// and if so, it appends the string to this node's value. Otherwise,
 	/// it adds a new text node child with the new text.
-	void add_text(std::string s);
+	ZEEM_API void add_text(std::string s);
 
 	/// To combine all adjacent child text nodes into one
-	void flatten_text();
+	ZEEM_API void flatten_text();
 
 	/** @cond */
-	void write(std::ostream &os, format_info fmt) const override;
+	ZEEM_API void write(std::ostream &os, format_info fmt) const override;
 
   private:
 	std::string m_qname;
@@ -1633,7 +1638,7 @@ void node_list<T>::sort(const Pred &pred)
  * \param dest		The (usually) document element that is the destination
  */
 
-ZEEM_EXPORT void fix_namespaces(element &e, const element &source, const element &dest);
+ZEEM_EXPORT ZEEM_API void fix_namespaces(element &e, const element &source, const element &dest);
 
 } // namespace zeem
 

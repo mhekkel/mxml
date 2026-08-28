@@ -26,17 +26,9 @@ jobs:
       # To add more build types (Release, Debug, RelWithDebInfo, etc.) customize the build_type list.
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
-        build_type: [Release]
+        build_type: [Debug, Release]
+        shared_libs: [ "-DBUILD_SHARED_LIBS=ON", "-DBUILD_SHARED_LIBS=OFF" ]
         cpp_compiler: [g++, clang++, cl]
-        include:
-          - os: windows-latest
-            cpp_compiler: cl
-          - os: ubuntu-latest
-            cpp_compiler: g++
-          - os: ubuntu-latest
-            cpp_compiler: clang++
-          - os: macos-latest
-            cpp_compiler: clang++
         exclude:
           - os: windows-latest
             cpp_compiler: g++
@@ -76,8 +68,10 @@ jobs:
       # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
       run: >
         cmake -B ${{ steps.strings.outputs.build-output-dir }}
+        -G Ninja
         -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }}
         -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+        ${{ matrix.shared_libs }}
         -S ${{ github.workspace }}
 
     - name: Build

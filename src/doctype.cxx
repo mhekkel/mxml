@@ -3,34 +3,14 @@
 
 module;
 
-#include <algorithm>
-#include <cassert>
-#include <cctype>
-#include <charconv>
-#include <chrono>
-#include <cmath>
-#include <compare>
-#include <cstddef>
-#include <cstdint>
-#include <exception>
-#include <experimental/type_traits>
-#include <functional>
-#include <initializer_list>
-#include <iosfwd>
-#include <istream>
-#include <iterator>
-#include <map>
-#include <memory>
-#include <optional>
-#include <regex>
-#include <source_location>
-#include <string>
-#include <string_view>
-#include <system_error>
-#include <tuple>
-#include <type_traits>
-#include <utility>
-#include <vector>
+# include <cassert>
+# include <cctype>
+# include <functional>
+# include <memory>
+# include <ranges>
+# include <string_view>
+# include <tuple>
+# include <vector>
 
 module zeem;
 

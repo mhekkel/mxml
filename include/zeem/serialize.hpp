@@ -9,6 +9,7 @@
  */
 
 #ifndef ZEEM_CXX_MODULE
+# include "zeem/export.hpp"
 # include "zeem/config.hpp"
 # include "zeem/detail/charconv.hpp"
 # include "zeem/node.hpp"
@@ -53,11 +54,11 @@ template <>
 struct value_serializer<bool>
 {
 	/// \brief The XSD type name, "xsd:boolean"
-	static constexpr std::string type_name() { return "xsd:boolean"; }
+	ZEEM_API static constexpr std::string type_name() { return "xsd:boolean"; }
 	/// \brief Convert \a value to a string, either "true" or "false"
-	static constexpr std::string to_string(bool value) { return value ? "true" : "false"; }
+	ZEEM_API static constexpr std::string to_string(bool value) { return value ? "true" : "false"; }
 	/// \brief Parse \a value, accepting "true", "1" or "yes"
-	static constexpr bool from_string(std::string_view value) { return value == "true" or value == "1" or value == "yes"; }
+	ZEEM_API static constexpr bool from_string(std::string_view value) { return value == "true" or value == "1" or value == "yes"; }
 };
 
 /// @ref value_serializer implementation for std::strings
@@ -65,11 +66,11 @@ template <>
 struct value_serializer<std::string>
 {
 	/// \brief The XSD type name, "xsd:string"
-	static constexpr std::string type_name() { return "xsd:string"; }
+	ZEEM_API static constexpr std::string type_name() { return "xsd:string"; }
 	/// \brief Convert \a value to a string
-	static constexpr std::string to_string(std::string value) { return value; }
+	ZEEM_API static constexpr std::string to_string(std::string value) { return value; }
 	/// \brief Parse \a value into a string
-	static constexpr std::string from_string(std::string_view value) { return std::string{ value }; }
+	ZEEM_API static constexpr std::string from_string(std::string_view value) { return std::string{ value }; }
 };
 
 /// @ref value_serializer implementation for numbers
@@ -80,14 +81,14 @@ struct char_conv_serializer
 	using value_type = T;
 
 	/// \brief Return the derived XSD type name using the value_serializer of \a value_type
-	static constexpr std::string derived_type_name()
+	ZEEM_API static constexpr std::string derived_type_name()
 	{
 		using value_serializer_type = value_serializer<value_type>;
 		return value_serializer_type::type_name();
 	}
 
 	/// \brief Convert \a value to a string using std::to_chars
-	static std::string to_string(value_type value)
+	ZEEM_API static std::string to_string(value_type value)
 	{
 		char b[32];
 		if (auto r = std::to_chars(b, b + sizeof(b), value); r.ec == std::errc{})
@@ -97,7 +98,7 @@ struct char_conv_serializer
 	}
 
 	/// \brief Parse \a value into a value_type using from_chars, throws std::system_error on failure
-	static value_type from_string(std::string_view value)
+	ZEEM_API static value_type from_string(std::string_view value)
 	{
 		value_type result{};
 
@@ -114,7 +115,7 @@ template <>
 struct value_serializer<int8_t> : char_conv_serializer<int8_t>
 {
 	/// \brief The XSD type name, "xsd:byte"
-	static std::string type_name() { return "xsd:byte"; }
+	ZEEM_API static std::string type_name() { return "xsd:byte"; }
 };
 
 /// @ref value_serializer implementation for uint8_t
@@ -122,7 +123,7 @@ template <>
 struct value_serializer<uint8_t> : char_conv_serializer<uint8_t>
 {
 	/// \brief The XSD type name, "xsd:unsignedByte"
-	static std::string type_name() { return "xsd:unsignedByte"; }
+	ZEEM_API static std::string type_name() { return "xsd:unsignedByte"; }
 };
 
 /// @ref value_serializer implementation for int16_t
@@ -130,7 +131,7 @@ template <>
 struct value_serializer<int16_t> : char_conv_serializer<int16_t>
 {
 	/// \brief The XSD type name, "xsd:short"
-	static std::string type_name() { return "xsd:short"; }
+	ZEEM_API static std::string type_name() { return "xsd:short"; }
 };
 
 /// @ref value_serializer implementation for uint16_t
@@ -138,7 +139,7 @@ template <>
 struct value_serializer<uint16_t> : char_conv_serializer<uint16_t>
 {
 	/// \brief The XSD type name, "xsd:unsignedShort"
-	static std::string type_name() { return "xsd:unsignedShort"; }
+	ZEEM_API static std::string type_name() { return "xsd:unsignedShort"; }
 };
 
 /// @ref value_serializer implementation for int32_t
@@ -146,7 +147,7 @@ template <>
 struct value_serializer<int32_t> : char_conv_serializer<int32_t>
 {
 	/// \brief The XSD type name, "xsd:int"
-	static std::string type_name() { return "xsd:int"; }
+	ZEEM_API static std::string type_name() { return "xsd:int"; }
 };
 
 /// @ref value_serializer implementation for uint32_t
@@ -154,7 +155,7 @@ template <>
 struct value_serializer<uint32_t> : char_conv_serializer<uint32_t>
 {
 	/// \brief The XSD type name, "xsd:unsignedInt"
-	static std::string type_name() { return "xsd:unsignedInt"; }
+	ZEEM_API static std::string type_name() { return "xsd:unsignedInt"; }
 };
 
 /// @ref value_serializer implementation for int64_t
@@ -162,7 +163,7 @@ template <>
 struct value_serializer<int64_t> : char_conv_serializer<int64_t>
 {
 	/// \brief The XSD type name, "xsd:long"
-	static std::string type_name() { return "xsd:long"; }
+	ZEEM_API static std::string type_name() { return "xsd:long"; }
 };
 
 /// @ref value_serializer implementation for uint64_t
@@ -170,7 +171,7 @@ template <>
 struct value_serializer<uint64_t> : char_conv_serializer<uint64_t>
 {
 	/// \brief The XSD type name, "xsd:unsignedLong"
-	static std::string type_name() { return "xsd:unsignedLong"; }
+	ZEEM_API static std::string type_name() { return "xsd:unsignedLong"; }
 };
 
 /// @ref value_serializer implementation for float
@@ -178,7 +179,7 @@ template <>
 struct value_serializer<float> : char_conv_serializer<float>
 {
 	/// \brief The XSD type name, "xsd:float"
-	static std::string type_name() { return "xsd:float"; }
+	ZEEM_API static std::string type_name() { return "xsd:float"; }
 };
 
 /// @ref value_serializer implementation for double
@@ -186,7 +187,7 @@ template <>
 struct value_serializer<double> : char_conv_serializer<double>
 {
 	/// \brief The XSD type name, "xsd:double"
-	static std::string type_name() { return "xsd:double"; }
+	ZEEM_API static std::string type_name() { return "xsd:double"; }
 };
 
 /**
@@ -221,25 +222,25 @@ struct value_serializer<T>
 
   public:
 	/// \brief Initialize a new instance of value_serializer for this enum, with name and a set of name/value pairs
-	static void init(std::string_view name, value_map_type values)
+	ZEEM_API static void init(std::string_view name, value_map_type values)
 	{
 		create(std::string{ name }, std::move(values));
 	}
 
 	/// \brief Initialize a new anonymous instance of value_serializer for this enum with a set of name/value pairs
-	static void init(value_map_type values)
+	ZEEM_API static void init(value_map_type values)
 	{
 		create("", std::move(values));
 	}
 
 	/// \brief Return the singleton instance (must be initialized first via init())
-	static value_serializer &instance()
+	ZEEM_API static value_serializer &instance()
 	{
 		return create({}, {});
 	}
 
 	/// \brief Return the singleton instance, setting the type name
-	static value_serializer &instance(std::string_view name)
+	ZEEM_API static value_serializer &instance(std::string_view name)
 	{
 		return create(std::string{ name }, {});
 	}
@@ -253,29 +254,29 @@ struct value_serializer<T>
 
   public:
 
-	value_serializer &operator()(T v, std::string_view name)
+	ZEEM_API value_serializer &operator()(T v, std::string_view name)
 	{
 		m_value_map[v] = name;
 		return *this;
 	}
 
-	value_serializer &operator()(std::string name, T v)
+	ZEEM_API value_serializer &operator()(std::string name, T v)
 	{
 		m_value_map[v] = std::move(name);
 		return *this;
 	}
 
-	static std::string type_name()
+	ZEEM_API static std::string type_name()
 	{
 		return instance().m_type_name;
 	}
 
-	static std::string to_string(T value)
+	ZEEM_API static std::string to_string(T value)
 	{
 		return instance().m_value_map.at(value);
 	}
 
-	static T from_string(std::string_view value)
+	ZEEM_API static T from_string(std::string_view value)
 	{
 		for (auto &t : instance().m_value_map)
 		{
@@ -285,12 +286,12 @@ struct value_serializer<T>
 		throw std::invalid_argument(std::format("{} is not valid for enum {}", value, type_name()));
 	}
 
-	static bool empty()
+	ZEEM_API static bool empty()
 	{
 		return instance().m_value_map.empty();
 	}
 
-	std::vector<std::string> values() const
+	ZEEM_API [[nodiscard]] std::vector<std::string> values() const
 	{
 		std::vector<std::string> result;
 		for (const auto &[_, value] : m_value_map)
@@ -313,10 +314,10 @@ struct value_serializer<std::chrono::system_clock::time_point>
 {
 	using time_type = std::chrono::system_clock::time_point;
 
-	static std::string type_name() { return "xsd:dateTime"; }
+	ZEEM_API static std::string type_name() { return "xsd:dateTime"; }
 
 	/// to_string the time as YYYY-MM-DDThh:mm:ssZ (zero UTC offset)
-	static std::string to_string(const time_type &v)
+	ZEEM_API static std::string to_string(const time_type &v)
 	{
 		return std::format("{0:%F}T{0:%T}Z", v);
 	}
@@ -325,7 +326,7 @@ struct value_serializer<std::chrono::system_clock::time_point>
 	/// If Zulu time is specified, then the parsed xsd:dateTime is returned.
 	/// If an UTC offset is present, then the offset is added to the xsd:dateTime, this yields UTC.
 	/// If no UTC offset is present, then the xsd:dateTime is assumed to be local time and converted to UTC.
-	static time_type from_string(std::string_view s)
+	ZEEM_API static time_type from_string(std::string_view s)
 	{
 		time_type result;
 
@@ -388,16 +389,16 @@ struct value_serializer<std::chrono::system_clock::time_point>
 template <>
 struct value_serializer<std::chrono::sys_days>
 {
-	static std::string type_name() { return "xsd:date"; }
+	ZEEM_API static std::string type_name() { return "xsd:date"; }
 
 	/// to_string the date as YYYY-MM-DD
-	static std::string to_string(const std::chrono::sys_days &v)
+	ZEEM_API static std::string to_string(const std::chrono::sys_days &v)
 	{
 		return std::format("{:%F}", v);
 	}
 
 	/// from_string according to ISO8601 rules.
-	static std::chrono::sys_days from_string(std::string_view s)
+	ZEEM_API static std::chrono::sys_days from_string(std::string_view s)
 	{
 		std::chrono::sys_days result;
 
@@ -494,23 +495,23 @@ class name_value_pair
 {
   public:
 	/// @brief constructor
-	name_value_pair(std::string name, T &value)
+	ZEEM_API name_value_pair(std::string name, T &value)
 		: m_name(std::move(name))
 		, m_value(value)
 	{
 	}
 
 	/** @cond */
-	name_value_pair(const name_value_pair &) = default;
-	name_value_pair(name_value_pair &&) = default;
-	name_value_pair &operator=(const name_value_pair &) = default;
-	name_value_pair &operator=(name_value_pair &&) = default;
+	ZEEM_API name_value_pair(const name_value_pair &) = default;
+	ZEEM_API name_value_pair(name_value_pair &&) = default;
+	ZEEM_API name_value_pair &operator=(const name_value_pair &) = default;
+	ZEEM_API name_value_pair &operator=(name_value_pair &&) = default;
 	/** @endcond */
 
 	/// \brief Return the name of this name/value pair
-	[[nodiscard]] const std::string &name() const { return m_name; }
+	ZEEM_API [[nodiscard]] const std::string &name() const { return m_name; }
 	/// \brief Return a reference to the value of this name/value pair
-	[[nodiscard]] T &value() const { return m_value; }
+	ZEEM_API [[nodiscard]] T &value() const { return m_value; }
 
 	/** @cond */
   private:
@@ -525,7 +526,7 @@ class element_nvp : public name_value_pair<T>
 {
   public:
 	/// @brief constructor
-	element_nvp(std::string name, T &value)
+	ZEEM_API element_nvp(std::string name, T &value)
 		: name_value_pair<T>(std::move(name), value)
 	{
 	}
@@ -537,7 +538,7 @@ class attribute_nvp : public name_value_pair<T>
 {
   public:
 	/// @brief constructor
-	attribute_nvp(std::string name, T &value)
+	ZEEM_API attribute_nvp(std::string name, T &value)
 		: name_value_pair<T>(std::move(name), value)
 	{
 	}
@@ -547,7 +548,7 @@ class attribute_nvp : public name_value_pair<T>
  * @brief Create a name/value pair for serializing to and from an XML element
  */
 ZEEM_EXPORT template <typename T>
-constexpr attribute_nvp<T> make_attribute_nvp(std::string name, T &value)
+ZEEM_API constexpr attribute_nvp<T> make_attribute_nvp(std::string name, T &value)
 {
 	return attribute_nvp(std::move(name), value);
 }
@@ -556,7 +557,7 @@ constexpr attribute_nvp<T> make_attribute_nvp(std::string name, T &value)
  * @brief Create a name/value pair for serializing to and from an XML attribute
  */
 ZEEM_EXPORT template <typename T>
-constexpr element_nvp<T> make_element_nvp(std::string name, T &value)
+ZEEM_API constexpr element_nvp<T> make_element_nvp(std::string name, T &value)
 {
 	return element_nvp(std::move(name), value);
 }
@@ -575,7 +576,7 @@ constexpr element_nvp<T> make_element_nvp(std::string name, T &value)
 struct serializer
 {
 	/// @brief constructor, write to \a node
-	explicit serializer(element_container &node)
+	ZEEM_API explicit serializer(element_container &node)
 		: m_node(node)
 	{
 	}
@@ -583,25 +584,25 @@ struct serializer
 	/** @cond */
 
 	template <typename T>
-	serializer &operator&(const element_nvp<T> &rhs)
+	ZEEM_API serializer &operator&(const element_nvp<T> &rhs)
 	{
 		return serialize_element(rhs.name(), rhs.value());
 	}
 
 	template <typename T>
-	serializer &operator&(const attribute_nvp<T> &rhs)
+	ZEEM_API serializer &operator&(const attribute_nvp<T> &rhs)
 	{
 		return serialize_attribute(rhs.name(), rhs.value());
 	}
 
 	template <typename T>
-	serializer &serialize_element(const T &data);
+	ZEEM_API serializer &serialize_element(const T &data);
 
 	template <typename T>
-	serializer &serialize_element(std::string_view name, const T &data);
+	ZEEM_API serializer &serialize_element(std::string_view name, const T &data);
 
 	template <typename T>
-	serializer &serialize_attribute(std::string_view name, const T &data);
+	ZEEM_API serializer &serialize_attribute(std::string_view name, const T &data);
 
   private:
 	element_container &m_node;
@@ -617,7 +618,7 @@ struct serializer
 struct deserializer
 {
 	/// @brief constructor, read from \a node
-	explicit deserializer(const element_container &node)
+	ZEEM_API explicit deserializer(const element_container &node)
 		: m_node(node)
 	{
 	}
@@ -625,25 +626,25 @@ struct deserializer
 	/** @cond */
 
 	template <typename T>
-	deserializer &operator&(const element_nvp<T> &rhs)
+	ZEEM_API deserializer &operator&(const element_nvp<T> &rhs)
 	{
 		return deserialize_element(rhs.name(), rhs.value());
 	}
 
 	template <typename T>
-	deserializer &operator&(const attribute_nvp<T> &rhs)
+	ZEEM_API deserializer &operator&(const attribute_nvp<T> &rhs)
 	{
 		return deserialize_attribute(rhs.name(), rhs.value());
 	}
 
 	template <typename T>
-	deserializer &deserialize_element(T &data);
+	ZEEM_API deserializer &deserialize_element(T &data);
 
 	template <typename T>
-	deserializer &deserialize_element(std::string_view name, T &data);
+	ZEEM_API deserializer &deserialize_element(std::string_view name, T &data);
 
 	template <typename T>
-	deserializer &deserialize_attribute(std::string_view name, T &data);
+	ZEEM_API deserializer &deserialize_attribute(std::string_view name, T &data);
 
   private:
 	const element_container &m_node;
@@ -664,48 +665,48 @@ ZEEM_EXPORT using type_map = std::map<std::string, element>;
 ZEEM_EXPORT struct schema_creator
 {
 	/// @brief constructor, creating an empty schema
-	schema_creator()
+	ZEEM_API schema_creator()
 		: schema_creator(std::make_unique<type_map>(), std::make_unique<element>(element{ "xsd:schema", { { "xmlns:xsd", "http://www.w3.org/2001/XMLSchema" } } }))
 	{
 	}
 
 	/// @brief constructor, using the given \a types map and \a schema element
-	schema_creator(type_map &types, element &schema)
+	ZEEM_API schema_creator(type_map &types, element &schema)
 		: m_schema(schema)
 		, m_types(types)
 	{
 	}
 
 	/// \brief Set the namespace prefix to use for generated type names
-	void set_ns_prefix(std::string ns_prefix)
+	ZEEM_API void set_ns_prefix(std::string ns_prefix)
 	{
 		m_ns_prefix = std::move(ns_prefix);
 	}
 
 	/// \brief add the element name/value pair \a rhs to the schema
 	template <typename T>
-	schema_creator &operator&(const element_nvp<T> &rhs)
+	ZEEM_API schema_creator &operator&(const element_nvp<T> &rhs)
 	{
 		return add_element(rhs.name(), rhs.value());
 	}
 
 	/// \brief add the attribute name/value pair \a rhs to the schema
 	template <typename T>
-	schema_creator &operator&(const attribute_nvp<T> &rhs)
+	ZEEM_API schema_creator &operator&(const attribute_nvp<T> &rhs)
 	{
 		return add_attribute(rhs.name(), rhs.value());
 	}
 
 	/// \brief add an element with \a name to the schema, registering the type of \a value
 	template <typename T>
-	schema_creator &add_element(std::string_view name, const T &value);
+	ZEEM_API schema_creator &add_element(std::string_view name, const T &value);
 
 	/// \brief add an attribute with \a name to the schema, registering the type of \a value
 	template <typename T>
-	schema_creator &add_attribute(std::string_view name, const T &value);
+	ZEEM_API schema_creator &add_attribute(std::string_view name, const T &value);
 
 	/// \brief Return the generated schema as a document with \a name as the name of the root element
-	document schema(std::string name) const
+	ZEEM_API [[nodiscard]] document schema(std::string name) const
 	{
 		document doc(R"(<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema"/>)");
 		auto e = doc.child()->emplace_back(element{ "xsd:element", { { "name", name } } });
@@ -741,7 +742,7 @@ ZEEM_EXPORT struct schema_creator
 // --------------------------------------------------------------------
 
 /// \brief Return a prefixed type name
-inline std::string get_prefixed_type_name(const std::string &prefix, std::string type_name)
+ZEEM_INLINE std::string get_prefixed_type_name(const std::string &prefix, std::string type_name)
 {
 	if (prefix.empty() or type_name.find(':') != std::string::npos)
 		return type_name;
@@ -765,15 +766,15 @@ struct type_serializer<T[N]>
 	using value_type = std::remove_cvref_t<T>;
 	using type_serializer_type = type_serializer<value_type>;
 
-	static std::string type_name() { return type_serializer_type::type_name(); }
+	ZEEM_API static std::string type_name() { return type_serializer_type::type_name(); }
 
-	static void serialize_child(element_container &n, std::string_view name, const value_type (&value)[N])
+	ZEEM_API static void serialize_child(element_container &n, std::string_view name, const value_type (&value)[N])
 	{
 		for (const value_type &v : value)
 			type_serializer_type::serialize_child(n, name, v);
 	}
 
-	static void deserialize_child(const element_container &n, std::string_view name, value_type (&value)[N])
+	ZEEM_API static void deserialize_child(const element_container &n, std::string_view name, value_type (&value)[N])
 	{
 		std::size_t ix = 0;
 		for (auto &e : n)
@@ -792,7 +793,7 @@ struct type_serializer<T[N]>
 		}
 	}
 
-	static element schema(std::string_view name, std::string prefix)
+	ZEEM_API static element schema(std::string_view name, std::string prefix)
 	{
 		return element{
 			"xsd:element",
@@ -804,7 +805,7 @@ struct type_serializer<T[N]>
 		};
 	}
 
-	static void register_type(type_map &types, std::string prefix)
+	ZEEM_API static void register_type(type_map &types, std::string prefix)
 	{
 		type_serializer_type::register_type(types, prefix);
 	}
@@ -819,17 +820,17 @@ struct type_serializer<T>
 	using value_serializer_type = value_serializer<T>;
 	using value_serializer_type::type_name;
 
-	static std::string serialize_value(const T &value)
+	ZEEM_API static std::string serialize_value(const T &value)
 	{
 		return value_serializer_type::to_string(value);
 	}
 
-	static T deserialize_value(std::string_view value)
+	ZEEM_API static T deserialize_value(std::string_view value)
 	{
 		return value_serializer_type::from_string(value);
 	}
 
-	static void serialize_child(element_container &n, std::string_view name, const value_type &value)
+	ZEEM_API static void serialize_child(element_container &n, std::string_view name, const value_type &value)
 	{
 		if (name.empty() or name == ".")
 		{
@@ -840,7 +841,7 @@ struct type_serializer<T>
 			n.emplace_back(name)->set_content(value_serializer_type::to_string(value));
 	}
 
-	static void deserialize_child(const element_container &n, std::string_view name, value_type &value)
+	ZEEM_API static void deserialize_child(const element_container &n, std::string_view name, value_type &value)
 	{
 		value = value_type();
 
@@ -858,7 +859,7 @@ struct type_serializer<T>
 		}
 	}
 
-	static element schema(std::string_view name, std::string prefix)
+	ZEEM_API static element schema(std::string_view name, std::string prefix)
 	{
 		return element{
 			"xsd:element",
@@ -870,7 +871,7 @@ struct type_serializer<T>
 		};
 	}
 
-	static void register_type(type_map &types, [[maybe_unused]] std::string prefix)
+	ZEEM_API static void register_type(type_map &types, [[maybe_unused]] std::string prefix)
 	{
 		element n("xsd:simpleType", { { "name", value_serializer_type::type_name() } });
 
@@ -890,7 +891,7 @@ struct type_serializer<T>
 template <typename Archive, typename T>
 struct struct_serializer
 {
-	static void serialize(Archive &stream, T &data)
+	ZEEM_API static void serialize(Archive &stream, T &data)
 	{
 		data.serialize(stream, 0U);
 	}
@@ -905,16 +906,16 @@ struct type_serializer<T>
 	// the name of this type
 	std::string m_type_name;
 
-	static std::string type_name() { return instance().m_type_name; }
-	void type_name(std::string_view name) { m_type_name = name; }
+	ZEEM_API static std::string type_name() { return instance().m_type_name; }
+	ZEEM_API void type_name(std::string_view name) { m_type_name = name; }
 
-	static type_serializer &instance()
+	ZEEM_API static type_serializer &instance()
 	{
 		static type_serializer s_instance{ value_type::type_name() };
 		return s_instance;
 	}
 
-	static void serialize_child(element_container &n, std::string_view name, const value_type &value)
+	ZEEM_API static void serialize_child(element_container &n, std::string_view name, const value_type &value)
 	{
 		if (name.empty() or name == ".")
 		{
@@ -929,7 +930,7 @@ struct type_serializer<T>
 		}
 	}
 
-	static void deserialize_child(const element_container &n, std::string_view name, value_type &value)
+	ZEEM_API static void deserialize_child(const element_container &n, std::string_view name, value_type &value)
 	{
 		value = value_type();
 
@@ -950,7 +951,7 @@ struct type_serializer<T>
 		}
 	}
 
-	static element schema(std::string_view name, std::string prefix)
+	ZEEM_API static element schema(std::string_view name, std::string prefix)
 	{
 		return element{
 			"xsd:element",
@@ -962,7 +963,7 @@ struct type_serializer<T>
 		};
 	}
 
-	static void register_type(type_map &types, std::string prefix)
+	ZEEM_API static void register_type(type_map &types, std::string prefix)
 	{
 		auto name = value_type::type_name();
 
@@ -989,15 +990,15 @@ struct type_serializer<std::optional<T>>
 	using container_type = std::optional<value_type>;
 	using type_serializer_type = type_serializer<value_type>;
 
-	static std::string type_name() { return type_serializer_type::type_name(); }
+	ZEEM_API static std::string type_name() { return type_serializer_type::type_name(); }
 
-	static void serialize_child(element_container &n, std::string_view name, const container_type &value)
+	ZEEM_API static void serialize_child(element_container &n, std::string_view name, const container_type &value)
 	{
 		if (value.has_value())
 			type_serializer_type::serialize_child(n, name, *value);
 	}
 
-	static void deserialize_child(const element_container &n, std::string_view name, container_type &value)
+	ZEEM_API static void deserialize_child(const element_container &n, std::string_view name, container_type &value)
 	{
 		for (auto &e : n)
 		{
@@ -1010,7 +1011,7 @@ struct type_serializer<std::optional<T>>
 		}
 	}
 
-	static element schema(std::string_view name, std::string prefix)
+	ZEEM_API static element schema(std::string_view name, std::string prefix)
 	{
 		return element{
 			"xsd:element",
@@ -1022,7 +1023,7 @@ struct type_serializer<std::optional<T>>
 		};
 	}
 
-	static void register_type(type_map &types, std::string prefix)
+	ZEEM_API static void register_type(type_map &types, std::string prefix)
 	{
 		type_serializer_type::register_type(types, prefix);
 	}
@@ -1047,16 +1048,16 @@ struct type_serializer<T>
 	using value_type = value_type_t<container_type>;
 	using type_serializer_type = type_serializer<value_type>;
 
-	static std::string type_name() { return type_serializer_type::type_name(); }
+	ZEEM_API static std::string type_name() { return type_serializer_type::type_name(); }
 
-	static void serialize_child(element_container &n, std::string_view name, const container_type &value)
+	ZEEM_API static void serialize_child(element_container &n, std::string_view name, const container_type &value)
 	{
 		for (const value_type &v : value)
 			type_serializer_type::serialize_child(n, name, v);
 	}
 
 	template <std::size_t N>
-	static auto deserialize_array(const element_container &n, std::string_view name,
+	ZEEM_API static auto deserialize_array(const element_container &n, std::string_view name,
 		std::array<value_type, N> &value, [[maybe_unused]] priority_tag<2> pt)
 	{
 		std::size_t ix = 0;
@@ -1077,7 +1078,7 @@ struct type_serializer<T>
 	}
 
 	template <typename A>
-	static auto deserialize_array(const element_container &n, std::string_view name, A &arr, [[maybe_unused]] priority_tag<1> pt)
+	ZEEM_API static auto deserialize_array(const element_container &n, std::string_view name, A &arr, [[maybe_unused]] priority_tag<1> pt)
 		-> decltype(arr.reserve(std::declval<typename container_type::size_type>()),
 			void())
 	{
@@ -1095,7 +1096,7 @@ struct type_serializer<T>
 		}
 	}
 
-	static void deserialize_array(const element_container &n, std::string_view name, container_type &arr, [[maybe_unused]] priority_tag<0> pt)
+	ZEEM_API static void deserialize_array(const element_container &n, std::string_view name, container_type &arr, [[maybe_unused]] priority_tag<0> pt)
 	{
 		for (auto &e : n)
 		{
@@ -1109,13 +1110,13 @@ struct type_serializer<T>
 		}
 	}
 
-	static void deserialize_child(const element_container &n, std::string_view name, container_type &value)
+	ZEEM_API static void deserialize_child(const element_container &n, std::string_view name, container_type &value)
 	{
 		type_serializer::deserialize_array(n, name, value, priority_tag<2>{});
 	}
 
 	template <std::size_t N>
-	static element schema_array(std::string_view name, std::string prefix,
+	ZEEM_API static element schema_array(std::string_view name, std::string prefix,
 		[[maybe_unused]] const std::array<value_type, N> &value, [[maybe_unused]] priority_tag<1> pt)
 	{
 		return element{
@@ -1128,7 +1129,7 @@ struct type_serializer<T>
 		};
 	}
 
-	static element schema_array(std::string_view name, std::string prefix,
+	ZEEM_API static element schema_array(std::string_view name, std::string prefix,
 		[[maybe_unused]] const container_type &arr, [[maybe_unused]] priority_tag<0> pt)
 	{
 		return element{
@@ -1141,12 +1142,12 @@ struct type_serializer<T>
 		};
 	}
 
-	static element schema(std::string_view name, std::string prefix)
+	ZEEM_API static element schema(std::string_view name, std::string prefix)
 	{
 		return schema_array(name, prefix, container_type{}, priority_tag<1>());
 	}
 
-	static void register_type(type_map &types, std::string prefix)
+	ZEEM_API static void register_type(type_map &types, std::string prefix)
 	{
 		type_serializer_type::register_type(types, prefix);
 	}
@@ -1158,19 +1159,19 @@ struct type_serializer
 	using value_type = std::remove_cvref_t<T>;
 	using value_serializer_type = value_serializer<value_type>;
 
-	static std::string type_name() { return value_serializer_type::type_name(); }
+	ZEEM_API static std::string type_name() { return value_serializer_type::type_name(); }
 
-	static std::string serialize_value(const T &value)
+	ZEEM_API static std::string serialize_value(const T &value)
 	{
 		return value_serializer_type::to_string(value);
 	}
 
-	static T deserialize_value(std::string_view value)
+	ZEEM_API static T deserialize_value(std::string_view value)
 	{
 		return value_serializer_type::from_string(value);
 	}
 
-	static void serialize_child(element_container &n, std::string_view name, const value_type &value)
+	ZEEM_API static void serialize_child(element_container &n, std::string_view name, const value_type &value)
 	{
 		if (name.empty() or name == ".")
 		{
@@ -1181,7 +1182,7 @@ struct type_serializer
 			n.emplace_back(name)->set_content(value_serializer_type::to_string(value));
 	}
 
-	static void deserialize_child(const element_container &n, std::string_view name, value_type &value)
+	ZEEM_API static void deserialize_child(const element_container &n, std::string_view name, value_type &value)
 	{
 		value = {};
 
@@ -1199,7 +1200,7 @@ struct type_serializer
 		}
 	}
 
-	static element schema(std::string_view name, std::string prefix)
+	ZEEM_API static element schema(std::string_view name, std::string prefix)
 	{
 		return element{
 			"xsd:element",
@@ -1210,7 +1211,7 @@ struct type_serializer
 		};
 	}
 
-	static void register_type(type_map &, std::string_view)
+	ZEEM_API static void register_type(type_map &, std::string_view)
 	{
 	}
 };
@@ -1343,7 +1344,7 @@ namespace detail
 	 * @brief Write out \a value into XML into document or element \a e
 	 */
 	ZEEM_EXPORT template <typename T>
-	void to_xml(zeem::element_container &e, const T &value)
+	ZEEM_API void to_xml(zeem::element_container &e, const T &value)
 	{
 		serializer sr(e);
 		sr.serialize_element(value);
@@ -1355,7 +1356,7 @@ namespace detail
 	 */
 
 	ZEEM_EXPORT template <typename T>
-	void to_xml(zeem::element_container &e, std::string_view name, const T &value)
+	ZEEM_API void to_xml(zeem::element_container &e, std::string_view name, const T &value)
 	{
 		serializer sr(e);
 		sr.serialize_element(name, value);
@@ -1390,7 +1391,7 @@ namespace detail
 	 */
 
 	ZEEM_EXPORT template <typename T>
-	void from_xml(const zeem::element_container &e, T &value)
+	ZEEM_API void from_xml(const zeem::element_container &e, T &value)
 	{
 		deserializer dsr(e);
 		dsr.deserialize_element(value);
@@ -1402,7 +1403,7 @@ namespace detail
 	 */
 
 	ZEEM_EXPORT template <typename T>
-	void from_xml(const zeem::element_container &e, std::string_view name, T &value)
+	ZEEM_API void from_xml(const zeem::element_container &e, std::string_view name, T &value)
 	{
 		deserializer dsr(e);
 		dsr.deserialize_element(name, value);
@@ -1434,9 +1435,9 @@ namespace detail
 } // namespace detail
 
 /// @brief The customization point object for to_xml
-ZEEM_EXPORT inline constexpr detail::to_xml_fn to_xml{};
+ZEEM_EXPORT ZEEM_API constexpr detail::to_xml_fn to_xml{};
 
 /// @brief The customization point object for from_xml
-ZEEM_EXPORT inline constexpr detail::from_xml_fn from_xml{};
+ZEEM_EXPORT ZEEM_API constexpr detail::from_xml_fn from_xml{};
 
 } // namespace zeem

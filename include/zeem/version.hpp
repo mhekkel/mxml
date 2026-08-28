@@ -9,6 +9,8 @@
  */
 
 #ifndef ZEEM_CXX_MODULE
+# include "zeem/export.hpp"
+# include <compare>
 # include <cstdint>
 #endif
 
@@ -22,7 +24,7 @@ namespace zeem
  *
  */
 
-struct version_type
+ZEEM_API struct version_type
 {
 	uint8_t major; ///< major, usually 1
 	uint8_t minor; ///< minor, usually 0 or 1

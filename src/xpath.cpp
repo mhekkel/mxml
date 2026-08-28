@@ -1,8 +1,8 @@
 // Copyright (c) 2024-2026 Maarten L. Hekkelman
 // SPDX-License-Identifier: BSD-2-Clause
 
-#include <stdexcept>
 #ifndef ZEEM_CXX_MODULE
+# include "zeem/export.hpp"
 # include "zeem/zeem.hpp"
 
 # include <algorithm>
@@ -12,7 +12,6 @@
 # include <cmath>
 # include <cstddef>
 # include <exception>
-# include <functional>
 # include <map>
 # include <memory>
 # include <optional>
@@ -25,6 +24,14 @@
 
 namespace zeem
 {
+
+#ifndef ZEEM_API
+# if defined(_WIN32) && defined(ZEEM_SHARED_BUILD)
+#  define ZEEM_API __declspec(dllexport)
+# else
+#  define ZEEM_API
+# endif
+#endif
 
 // --------------------------------------------------------------------
 
@@ -401,7 +408,7 @@ int object::as<int>() const
 	int result = 0;
 	switch (m_type)
 	{
-		case object_type::number: result = std::ceil(m_number - 0.5); break;
+		case object_type::number: result = static_cast<int>(std::ceil(m_number - 0.5)); break;
 		case object_type::node_set:
 		{
 			if (not m_node_set.empty())
@@ -1202,8 +1209,8 @@ object path_expression::evaluate(expression_context &context)
 
 		node_set s = m_rhs->evaluate(ctxt).as<const node_set &>();
 
-		for (auto n : s)
-			result.emplace(n);
+		for (auto n2 : s)
+			result.emplace(n2);
 	}
 
 	return result;
@@ -2794,7 +2801,7 @@ xpath::xpath(std::string_view path)
 }
 
 template <>
-std::vector<node *> xpath::evaluate<node>(const node &root, const context &ctxt) const
+ZEEM_API std::vector<node *> xpath::evaluate<node>(const node &root, const context &ctxt) const
 {
 	node_set empty;
 	expression_context context(*ctxt.m_impl, &root, empty);
@@ -2802,7 +2809,7 @@ std::vector<node *> xpath::evaluate<node>(const node &root, const context &ctxt)
 }
 
 template <>
-std::vector<element *> xpath::evaluate<element>(const node &root, const context &ctxt) const
+ZEEM_API std::vector<element *> xpath::evaluate<element>(const node &root, const context &ctxt) const
 {
 	std::vector<element *> result;
 

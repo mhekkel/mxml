@@ -11,6 +11,7 @@
  */
 
 #ifndef ZEEM_CXX_MODULE
+# include "zeem/export.hpp"
 # include <cassert>
 # include <memory>
 # include <string>

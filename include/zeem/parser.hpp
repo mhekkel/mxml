@@ -9,6 +9,7 @@
  */
 
 #ifndef ZEEM_CXX_MODULE
+# include "zeem/export.hpp"
 # include "zeem/error.hpp"
 
 # include <functional>
@@ -36,7 +37,7 @@ ZEEM_EXPORT class invalid_exception : public exception
 {
   public:
 	/// \brief Create an exception with the message in \a msg
-	explicit invalid_exception(std::string msg)
+	ZEEM_API explicit invalid_exception(std::string msg)
 		: exception(std::move(msg))
 	{
 	}
@@ -52,7 +53,7 @@ ZEEM_EXPORT class not_wf_exception : public exception
 {
   public:
 	/// \brief Create an exception with the message in \a msg
-	explicit not_wf_exception(std::string msg)
+	ZEEM_API explicit not_wf_exception(std::string msg)
 		: exception(std::move(msg))
 	{
 	}
@@ -72,7 +73,7 @@ ZEEM_EXPORT class parser
 	 * @brief Struct containing information about a parsed attribute
 	 *
 	 */
-	struct attr
+	ZEEM_API struct attr
 	{
 		std::string m_ns;    ///< The namespace for this attribute
 		std::string m_name;  ///< The name of the attribute
@@ -84,24 +85,24 @@ ZEEM_EXPORT class parser
 	using attr_list_type = std::vector<attr>;
 
 	/// @brief constructor taking a std::istream in \a is
-	explicit parser(std::istream &is);
+	ZEEM_API explicit parser(std::istream &is);
 
 	// Avoid default constructor
-	parser() = delete;
+	ZEEM_API parser() = delete;
 
 	// Avoid copy
-	parser(const parser &) = delete;
+	ZEEM_API parser(const parser &) = delete;
 
 	/// \brief Move constructor
-	parser(parser &&rhs) noexcept;
+	ZEEM_API parser(parser &&rhs) noexcept;
 
 	// Assignment operators
-	parser &operator=(const parser &) = delete;
+	ZEEM_API parser &operator=(const parser &) = delete;
 	/// \brief Move assignment operator
-	parser &operator=(parser &&rhs) noexcept;
+	ZEEM_API parser &operator=(parser &&rhs) noexcept;
 
 	/// @brief destructor
-	virtual ~parser();
+	ZEEM_API virtual ~parser();
 
 	/**
 	 * The callbacks can be set by assinging a callback to each of
@@ -124,10 +125,10 @@ ZEEM_EXPORT class parser
 	std::function<void(std::string msg)> report_invalidation_handler;                                         ///< Called when the document fails validation
 
 	/** @brief Start the actual parsing, optionally validating content and namespaces */
-	void parse(bool validate, bool validate_ns);
+	ZEEM_API void parse(bool validate, bool validate_ns);
 
 	/// \brief Return the version of zeem
-	static std::string get_version();
+	ZEEM_API static std::string get_version();
 
   protected:
 	/** @cond */
