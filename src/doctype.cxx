@@ -5,10 +5,12 @@ module;
 
 # include <cassert>
 # include <cctype>
+# include <compare>
 # include <functional>
 # include <memory>
 # include <ranges>
 # include <string_view>
+# include <string>
 # include <tuple>
 # include <vector>
 

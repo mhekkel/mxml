@@ -5,6 +5,7 @@ module;
 
 #include <algorithm>
 #include <array>
+#include <array>
 #include <cassert>
 #include <cctype>
 #include <cstddef>
@@ -19,6 +20,8 @@ module;
 #include <tuple>
 #include <utility>
 #include <vector>
+
+#include "revision.hpp"
 
 module zeem;
 

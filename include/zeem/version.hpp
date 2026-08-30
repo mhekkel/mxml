@@ -24,7 +24,7 @@ namespace zeem
  *
  */
 
-ZEEM_API struct version_type
+struct version_type
 {
 	uint8_t major; ///< major, usually 1
 	uint8_t minor; ///< minor, usually 0 or 1

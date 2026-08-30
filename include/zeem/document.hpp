@@ -63,7 +63,7 @@ struct doc_type
  * so-called root-node.
  */
 
-ZEEM_EXPORT ZEEM_API class document final : public element_container
+ZEEM_EXPORT class document final : public element_container
 {
   public:
 	/// \brief node_type of a document

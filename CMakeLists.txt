@@ -11,7 +11,7 @@ cmake_minimum_required(VERSION 3.28)
 #     set(CMAKE_CXX_MODULE_STD 1)
 # endif()
 
-project(zeem VERSION 2.4.0 LANGUAGES CXX)
+project(zeem VERSION 2.4.1 LANGUAGES CXX)
 
 list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 
@@ -170,7 +170,7 @@ if(ZEEM_BUILD_CXX_MODULE)
     target_compile_features(zeem-module PUBLIC cxx_std_23)
 
     if(NOT STD_CHARCONV_COMPILING)
-        target_include_directories(zeem-module PRIVATE $<TARGET_PROPERTY:FastFloat::fast_float,INTERFACE_INCLUDE_DIRECTORIES>)
+		target_include_directories(zeem-module PRIVATE $<TARGET_PROPERTY:FastFloat::fast_float,INTERFACE_INCLUDE_DIRECTORIES>)
     endif()
 
     target_sources(zeem-module

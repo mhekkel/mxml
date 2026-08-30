@@ -4,6 +4,7 @@
 module;
 
 #include <algorithm>
+#include <array>
 #include <cassert>
 #include <exception>
 #include <initializer_list>

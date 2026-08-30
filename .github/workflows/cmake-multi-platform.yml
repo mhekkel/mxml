@@ -6,9 +6,9 @@ name: multi platform test
 
 on:
   push:
-    branches: [ "trunk", "develop" ]
+    branches: ["trunk", "develop"]
   pull_request:
-    branches: [ "trunk" ]
+    branches: ["trunk"]
 
 jobs:
   build:
@@ -27,7 +27,7 @@ jobs:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
         build_type: [Debug, Release]
-        shared_libs: [ "-DBUILD_SHARED_LIBS=ON", "-DBUILD_SHARED_LIBS=OFF" ]
+        shared_libs: ["-DBUILD_SHARED_LIBS=ON", "-DBUILD_SHARED_LIBS=OFF"]
         cpp_compiler: [g++, clang++, cl]
         exclude:
           - os: windows-latest
@@ -42,44 +42,44 @@ jobs:
             cpp_compiler: g++
 
     steps:
-    - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-    - name: Set reusable strings
-      id: strings
-      shell: bash
-      run: echo "build-output-dir=${{ github.workspace }}/build" >> "$GITHUB_OUTPUT"
+      - name: Set reusable strings
+        id: strings
+        shell: bash
+        run: echo "build-output-dir=${{ github.workspace }}/build" >> "$GITHUB_OUTPUT"
 
-    - name: Install dependencies Ubuntu
-      if: matrix.os == 'ubuntu-latest'
-      run: >
-        sudo apt-get update && sudo apt-get install catch2
+      - name: Install dependencies Ubuntu
+        if: matrix.os == 'ubuntu-latest'
+        run: >
+          sudo apt-get update && sudo apt-get install catch2
 
-    - name: Install Catch2 macOS
-      if: matrix.os == 'macos-latest'
-      run: >
-        brew install catch2
+      - name: Install Catch2 macOS
+        if: matrix.os == 'macos-latest'
+        run: >
+          brew install catch2
 
-    - name: Set up MSVC
-      if: matrix.os == 'windows-latest'
-      uses: ilammy/msvc-dev-cmd@v1
+      - name: Set up MSVC
+        if: matrix.os == 'windows-latest'
+        uses: ilammy/msvc-dev-cmd@v1
 
-    - name: Configure CMake
-      # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
-      # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
-      run: >
-        cmake -B ${{ steps.strings.outputs.build-output-dir }}
-        -G Ninja
-        -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }}
-        -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
-        ${{ matrix.shared_libs }}
-        -S ${{ github.workspace }}
+      - name: Configure CMake
+        # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
+        # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
+        run: >
+          cmake -B ${{ steps.strings.outputs.build-output-dir }}
+          -G Ninja
+          -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }}
+          -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+          ${{ matrix.shared_libs }}
+          -S ${{ github.workspace }}
 
-    - name: Build
-      # Build your program with the given configuration. Note that --config is needed because the default Windows generator is a multi-config generator (Visual Studio generator).
-      run: cmake --build ${{ steps.strings.outputs.build-output-dir }} --config ${{ matrix.build_type }}
+      - name: Build
+        # Build your program with the given configuration. Note that --config is needed because the default Windows generator is a multi-config generator (Visual Studio generator).
+        run: cmake --build ${{ steps.strings.outputs.build-output-dir }} --config ${{ matrix.build_type }}
 
-    - name: Test
-      working-directory: ${{ steps.strings.outputs.build-output-dir }}
-      # Execute tests defined by the CMake configuration. Note that --build-config is needed because the default Windows generator is a multi-config generator (Visual Studio generator).
-      # See https://cmake.org/cmake/help/latest/manual/ctest.1.html for more detail
-      run: ctest --build-config ${{ matrix.build_type }}
+      - name: Test
+        working-directory: ${{ steps.strings.outputs.build-output-dir }}
+        # Execute tests defined by the CMake configuration. Note that --build-config is needed because the default Windows generator is a multi-config generator (Visual Studio generator).
+        # See https://cmake.org/cmake/help/latest/manual/ctest.1.html for more detail
+        run: ctest --build-config ${{ matrix.build_type }}

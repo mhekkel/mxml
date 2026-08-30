@@ -73,7 +73,7 @@ ZEEM_EXPORT class parser
 	 * @brief Struct containing information about a parsed attribute
 	 *
 	 */
-	ZEEM_API struct attr
+	struct attr
 	{
 		std::string m_ns;    ///< The namespace for this attribute
 		std::string m_name;  ///< The name of the attribute

@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: BSD-2-Clause
 
 #ifndef ZEEM_CXX_MODULE
+# include "zeem/export.hpp"
 # include "fast_float/fast_float.h"
 # include "zeem/export.hpp"
 # include "zeem/zeem.hpp"
